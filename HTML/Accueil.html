@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SportApp – Accueil</title>
+  <link rel="stylesheet" href="../CSS/Accueil.css">
+</head>
+<body>
+  <main>
+
+    <nav>
+      <a href="Accueil.html" class="actif">Accueil</a>
+      <a href="Activite.html">Activité</a>
+      <a href="Rapport.html">Rapport</a>
+      <a href="Parametres.html">Paramètres</a>
+    </nav>
+
+    <!-- Séance du jour -->
+    <section class="hero" id="hero">
+      <small id="date-jour"></small>
+      <h1 id="seance-jour"></h1>
+    </section>
+
+    <!-- Infos de base -->
+    <section class="card">
+      <div class="row">
+        <div>
+          <div class="id" id="identite"></div>
+          <div class="mut" id="naissance"></div>
+        </div>
+        <div>
+          <div class="mut">Poids actuel</div>
+          <div class="poids" id="poids">—</div>
+        </div>
+      </div>
+
+      <label for="nouveau-poids">Mettre à jour mon poids (kg)</label>
+      <div class="row">
+        <input id="nouveau-poids" type="number" step="0.1" min="0">
+        <button class="btn" id="btn-poids">Enregistrer</button>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Données enregistrées dans le navigateur (partagées avec les autres pages)
+    const CLE = "sportapp:v1";
+    const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
+    function charger() {
+      const defaut = {
+        profil: { nom: "", prenom: "", naissance: "", poids: "" },
+        programme: ["Push", "Pull", "Leg", "Push", "Pull", "Repos", "Repos"],
+        seances: [],
+        poids: []
+      };
+      try {
+        const brut = localStorage.getItem(CLE);
+        if (brut) return Object.assign(defaut, JSON.parse(brut));
+      } catch (e) {}
+      return defaut;
+    }
+
+    function sauver(donnees) {
+      try { localStorage.setItem(CLE, JSON.stringify(donnees)); } catch (e) {}
+    }
+
+    function calculerAge(dateNaissance) {
+      const n = new Date(dateNaissance);
+      const auj = new Date();
+      let age = auj.getFullYear() - n.getFullYear();
+      const anniversaire = new Date(auj.getFullYear(), n.getMonth(), n.getDate());
+      if (auj < anniversaire) age--;
+      return age;
+    }
+
+    function afficher() {
+      const S = charger();
+      const p = S.profil;
+      const maintenant = new Date();
+      const indexJour = (maintenant.getDay() + 6) % 7; // lundi = 0
+      const seance = S.programme[indexJour];
+
+      // Séance du jour
+      document.getElementById("date-jour").textContent =
+        JOURS[indexJour] + " " +
+        maintenant.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+      const titre = document.getElementById("seance-jour");
+      titre.textContent = seance.toUpperCase();
+      document.getElementById("hero").className = "hero " + seance.toLowerCase();
+
+      // Identité
+      const nomComplet = (p.prenom + " " + p.nom.toUpperCase()).trim();
+      document.getElementById("identite").textContent =
+        nomComplet || "Renseigne ton nom dans Paramètres";
+      document.getElementById("naissance").textContent = p.naissance
+        ? "Né(e) le " + new Date(p.naissance).toLocaleDateString("fr-FR") +
+          " · " + calculerAge(p.naissance) + " ans"
+        : "";
+
+      // Poids
+      document.getElementById("poids").textContent = p.poids ? p.poids + " kg" : "—";
+    }
+
+    document.getElementById("btn-poids").addEventListener("click", function () {
+      const champ = document.getElementById("nouveau-poids");
+      const valeur = parseFloat(champ.value.replace(",", "."));
+      if (!valeur || valeur <= 0) return;
+
+      const S = charger();
+      S.profil.poids = String(valeur);
+      S.poids.push({ date: new Date().toISOString().slice(0, 10), valeur: valeur });
+      sauver(S);
+      champ.value = "";
+      afficher();
+    });
+
+    afficher();
+  </script>
+</body>
+</html>

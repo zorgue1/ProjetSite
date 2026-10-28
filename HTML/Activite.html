@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SportApp – Activité</title>
+  <link rel="stylesheet" href="../CSS/Activite.css">
+</head>
+<body>
+  <main>
+
+    <nav>
+      <a href="Accueil.html">Accueil</a>
+      <a href="Activite.html" class="actif">Activité</a>
+      <a href="Rapport.html">Rapport</a>
+      <a href="Parametres.html">Paramètres</a>
+    </nav>
+
+    <!-- Formulaire de saisie -->
+    <section class="card">
+      <h2>Nouvelle séance</h2>
+
+      <label for="date">Date</label>
+      <input id="date" type="date">
+
+      <label for="type">Ce que j’ai fait</label>
+      <input id="type" list="suggestions" placeholder="Push, bras et triceps, cardio…">
+      <datalist id="suggestions">
+        <option value="Push">
+        <option value="Pull">
+        <option value="Leg">
+        <option value="Bras et triceps">
+        <option value="Épaules">
+        <option value="Abdos">
+        <option value="Cardio">
+      </datalist>
+
+      <label for="notes">Détails (exercices, charges, ressenti)</label>
+      <textarea id="notes" rows="4"></textarea>
+
+      <div class="actions">
+        <button class="btn" id="btn-ajouter">Enregistrer la séance</button>
+        <span id="message"></span>
+      </div>
+    </section>
+
+    <!-- Historique -->
+    <h2>Historique</h2>
+    <section id="historique"></section>
+
+  </main>
+
+  <script>
+    const CLE = "sportapp:v1";
+
+    function charger() {
+      const defaut = {
+        profil: { nom: "", prenom: "", naissance: "", poids: "" },
+        programme: ["Push", "Pull", "Leg", "Push", "Pull", "Repos", "Repos"],
+        seances: [],
+        poids: []
+      };
+      try {
+        const brut = localStorage.getItem(CLE);
+        if (brut) return Object.assign(defaut, JSON.parse(brut));
+      } catch (e) {}
+      return defaut;
+    }
+
+    function sauver(donnees) {
+      try { localStorage.setItem(CLE, JSON.stringify(donnees)); } catch (e) {}
+    }
+
+    // Date du jour au format AAAA-MM-JJ (heure locale)
+    function aujourdhui() {
+      const d = new Date();
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 10);
+    }
+
+    function dateLongue(texte) {
+      return new Date(texte + "T12:00:00").toLocaleDateString("fr-FR", {
+        weekday: "long", day: "numeric", month: "long", year: "numeric"
+      });
+    }
+
+    // Crée un élément HTML (le texte est inséré en toute sécurité)
+    function el(balise, classe, texte) {
+      const e = document.createElement(balise);
+      if (classe) e.className = classe;
+      if (texte) e.textContent = texte;
+      return e;
+    }
+
+    function afficherHistorique() {
+      const S = charger();
+      const zone = document.getElementById("historique");
+      zone.innerHTML = "";
+
+      const liste = S.seances.slice().sort(function (a, b) {
+        return b.date.localeCompare(a.date) || b.id - a.id;
+      });
+
+      if (liste.length === 0) {
+        zone.appendChild(el("div", "vide",
+          "Aucune séance enregistrée. Remplis le formulaire après ton entraînement."));
+        return;
+      }
+
+      liste.forEach(function (s) {
+        const carte = el("div", "card seance");
+        const texte = el("div");
+
+        const type = el("span", "tag " + s.type.toLowerCase(), s.type);
+        texte.appendChild(type);
+        texte.appendChild(el("div", "mut", dateLongue(s.date)));
+        if (s.notes) texte.appendChild(el("div", "notes-seance", s.notes));
+
+        const bouton = el("button", "btn-suppr", "Supprimer");
+        bouton.addEventListener("click", function () {
+          const donnees = charger();
+          donnees.seances = donnees.seances.filter(function (x) { return x.id !== s.id; });
+          sauver(donnees);
+          afficherHistorique();
+        });
+
+        carte.appendChild(texte);
+        carte.appendChild(bouton);
+        zone.appendChild(carte);
+      });
+    }
+
+    document.getElementById("btn-ajouter").addEventListener("click", function () {
+      const type = document.getElementById("type").value.trim();
+      if (!type) {
+        document.getElementById("type").focus();
+        return;
+      }
+
+      const S = charger();
+      S.seances.push({
+        id: Date.now(),
+        date: document.getElementById("date").value || aujourdhui(),
+        type: type,
+        notes: document.getElementById("notes").value.trim()
+      });
+      sauver(S);
+
+      document.getElementById("type").value = "";
+      document.getElementById("notes").value = "";
+      document.getElementById("date").value = aujourdhui();
+      document.getElementById("message").textContent = "Séance enregistrée";
+      afficherHistorique();
+    });
+
+    document.getElementById("date").value = aujourdhui();
+    afficherHistorique();
+  </script>
+</body>
+</html>
