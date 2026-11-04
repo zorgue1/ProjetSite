@@ -1,35 +1,59 @@
 @import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;600&display=swap");
 
-/* ---------- Couleurs (mode clair) ---------- */
-:root {
-  --fond: #eef1f4;
-  --carte: #ffffff;
-  --texte: #14202b;
-  --gris: #5d6b78;
-  --bordure: #d9e0e6;
-  --accent: #2446d8;
-  --push: #2446d8;
-  --pull: #0f8b8d;
-  --leg: #c77700;
-  --repos: #7a8793;
-  --texte-bouton: #ffffff;
+/* ---------- Bandeau (pleine largeur) ---------- */
+.bandeau {
+  width: 100%;
+  background: var(--bandeau-fond);
+  border-bottom: 1px solid var(--bordure);
 }
 
-/* ---------- Couleurs (mode sombre automatique) ---------- */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fond: #0e1419;
-    --carte: #17202a;
-    --texte: #eaf0f5;
-    --gris: #92a1af;
-    --bordure: #26323e;
-    --accent: #6d8bff;
-    --push: #6d8bff;
-    --pull: #3cc4c6;
-    --leg: #f0a63a;
-    --repos: #8d9aa6;
-    --texte-bouton: #0e1419;
-  }
+.bandeau nav {
+  display: flex;
+  width: 100%;
+}
+
+.bandeau a {
+  flex: 1;
+  padding: 16px 8px;
+  text-align: center;
+  white-space: nowrap;
+  text-decoration: none;
+  font-weight: 600;
+  color: var(--bandeau-texte);
+  border-bottom: 3px solid transparent;
+}
+
+.bandeau a:hover {
+  background: var(--bandeau-survol);
+  color: var(--bandeau-actif);
+}
+
+.bandeau a.actif {
+  color: var(--bandeau-actif);
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- Bouton de déconnexion ---------- */
+.bandeau .deconnexion {
+  flex: 0 0 auto;
+  padding: 16px 20px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--bandeau-texte);
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+.bandeau .deconnexion:hover {
+  background: var(--bandeau-survol);
+  color: var(--bandeau-actif);
+}
+
+.bandeau .deconnexion:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 /* ---------- Base ---------- */
@@ -65,34 +89,6 @@ h2 {
   font-size: 15px;
 }
 
-/* ---------- Navigation ---------- */
-nav {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--bordure);
-  overflow-x: auto;
-}
-
-nav a {
-  flex: 1;
-  padding: 12px 8px;
-  text-align: center;
-  white-space: nowrap;
-  text-decoration: none;
-  font-weight: 600;
-  color: var(--gris);
-  border-bottom: 3px solid transparent;
-}
-
-nav a:hover {
-  color: var(--texte);
-}
-
-nav a.actif {
-  color: var(--texte);
-  border-bottom-color: var(--accent);
-}
 
 /* ---------- Cartes ---------- */
 .card {

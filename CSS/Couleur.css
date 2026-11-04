@@ -1,0 +1,57 @@
+/* =====================================================
+   COULEUR.CSS : toutes les couleurs du site sont ici.
+   Change une valeur, et toutes les pages suivent.
+   ===================================================== */
+
+/* ---------- Thème clair ---------- */
+:root {
+  /* Fonds et textes */
+  --fond: #eef1f4;            /* fond de la page */
+  --carte: #ffffff;           /* fond des cartes */
+  --texte: #14202b;           /* texte principal */
+  --gris: #5d6b78;            /* texte secondaire */
+  --bordure: #d9e0e6;         /* traits et bordures */
+
+  /* Couleur principale (boutons, courbe, menu actif) */
+  --accent: #2446d8;
+  --texte-bouton: #ffffff;    /* texte sur les boutons */
+
+  /* Couleurs des séances */
+  --push: #2446d8;
+  --pull: #0f8b8d;
+  --leg: #c77700;
+  --repos: #7a8793;
+
+  /* Bandeau de navigation */
+  --bandeau-fond: #ffffff;
+  --bandeau-texte: #5d6b78;
+  --bandeau-actif: #14202b;
+  --bandeau-survol: #eef1f4;
+
+  /* Logo */
+  --logo: var(--accent);
+}
+
+/* ---------- Thème sombre (automatique selon l'appareil) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #0e1419;
+    --carte: #17202a;
+    --texte: #eaf0f5;
+    --gris: #92a1af;
+    --bordure: #26323e;
+
+    --accent: #6d8bff;
+    --texte-bouton: #0e1419;
+
+    --push: #6d8bff;
+    --pull: #3cc4c6;
+    --leg: #f0a63a;
+    --repos: #8d9aa6;
+
+    --bandeau-fond: #17202a;
+    --bandeau-texte: #92a1af;
+    --bandeau-actif: #eaf0f5;
+    --bandeau-survol: #0e1419;
+  }
+}

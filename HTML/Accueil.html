@@ -4,17 +4,33 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Accueil</title>
+  <link rel="stylesheet" href="../CSS/Couleur.css">
   <link rel="stylesheet" href="../CSS/Accueil.css">
 </head>
 <body>
-  <main>
-
+  <header class="bandeau">
     <nav>
       <a href="Accueil.html" class="actif">Accueil</a>
       <a href="Activite.html">Activité</a>
       <a href="Rapport.html">Rapport</a>
       <a href="Parametres.html">Paramètres</a>
+      <button class="deconnexion" id="btn-deconnexion">Déconnexion</button>
     </nav>
+  </header>
+
+  <main>
+
+    <!-- Logo -->
+    <div class="logo">
+      <svg class="logo-icone" viewBox="0 0 64 64" role="img" aria-label="Logo SportApp">
+        <rect x="4"  y="24" width="6"  height="16" rx="2"/>
+        <rect x="11" y="18" width="7"  height="28" rx="2"/>
+        <rect x="18" y="29" width="28" height="6"  rx="2"/>
+        <rect x="46" y="18" width="7"  height="28" rx="2"/>
+        <rect x="54" y="24" width="6"  height="16" rx="2"/>
+      </svg>
+      <span class="logo-nom">SportApp</span>
+    </div>
 
     <!-- Séance du jour -->
     <section class="hero" id="hero">
@@ -44,28 +60,11 @@
 
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../JS/supabase.js"></script>
+  <script src="../JS/donnees.js"></script>
   <script>
-    // Données enregistrées dans le navigateur (partagées avec les autres pages)
-    const CLE = "sportapp:v1";
     const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-
-    function charger() {
-      const defaut = {
-        profil: { nom: "", prenom: "", naissance: "", poids: "" },
-        programme: ["Push", "Pull", "Leg", "Push", "Pull", "Repos", "Repos"],
-        seances: [],
-        poids: []
-      };
-      try {
-        const brut = localStorage.getItem(CLE);
-        if (brut) return Object.assign(defaut, JSON.parse(brut));
-      } catch (e) {}
-      return defaut;
-    }
-
-    function sauver(donnees) {
-      try { localStorage.setItem(CLE, JSON.stringify(donnees)); } catch (e) {}
-    }
 
     function calculerAge(dateNaissance) {
       const n = new Date(dateNaissance);
@@ -76,19 +75,17 @@
       return age;
     }
 
-    function afficher() {
-      const S = charger();
-      const p = S.profil;
+    async function afficher() {
+      const p = await chargerProfil();
       const maintenant = new Date();
       const indexJour = (maintenant.getDay() + 6) % 7; // lundi = 0
-      const seance = S.programme[indexJour];
+      const seance = p.programme[indexJour];
 
       // Séance du jour
       document.getElementById("date-jour").textContent =
         JOURS[indexJour] + " " +
         maintenant.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
-      const titre = document.getElementById("seance-jour");
-      titre.textContent = seance.toUpperCase();
+      document.getElementById("seance-jour").textContent = seance.toUpperCase();
       document.getElementById("hero").className = "hero " + seance.toLowerCase();
 
       // Identité
@@ -104,20 +101,30 @@
       document.getElementById("poids").textContent = p.poids ? p.poids + " kg" : "—";
     }
 
-    document.getElementById("btn-poids").addEventListener("click", function () {
+    document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
+
+    document.getElementById("btn-poids").addEventListener("click", async function () {
       const champ = document.getElementById("nouveau-poids");
       const valeur = parseFloat(champ.value.replace(",", "."));
       if (!valeur || valeur <= 0) return;
-
-      const S = charger();
-      S.profil.poids = String(valeur);
-      S.poids.push({ date: new Date().toISOString().slice(0, 10), valeur: valeur });
-      sauver(S);
-      champ.value = "";
-      afficher();
+      try {
+        await ajouterPoids(valeur);
+        champ.value = "";
+        await afficher();
+      } catch (e) {
+        alert("Erreur : " + e.message);
+      }
     });
 
-    afficher();
+    (async function () {
+      const user = await exigerConnexion();
+      if (!user) return;
+      try {
+        await afficher();
+      } catch (e) {
+        alert("Erreur de chargement : " + e.message);
+      }
+    })();
   </script>
 </body>
 </html>

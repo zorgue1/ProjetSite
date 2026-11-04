@@ -4,17 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Activité</title>
+  <link rel="stylesheet" href="../CSS/Couleur.css">
   <link rel="stylesheet" href="../CSS/Activite.css">
 </head>
 <body>
-  <main>
-
+  <header class="bandeau">
     <nav>
       <a href="Accueil.html">Accueil</a>
       <a href="Activite.html" class="actif">Activité</a>
       <a href="Rapport.html">Rapport</a>
       <a href="Parametres.html">Paramètres</a>
+      <button class="deconnexion" id="btn-deconnexion">Déconnexion</button>
     </nav>
+  </header>
+
+  <main>
 
     <!-- Formulaire de saisie -->
     <section class="card">
@@ -50,34 +54,10 @@
 
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../JS/supabase.js"></script>
+  <script src="../JS/donnees.js"></script>
   <script>
-    const CLE = "sportapp:v1";
-
-    function charger() {
-      const defaut = {
-        profil: { nom: "", prenom: "", naissance: "", poids: "" },
-        programme: ["Push", "Pull", "Leg", "Push", "Pull", "Repos", "Repos"],
-        seances: [],
-        poids: []
-      };
-      try {
-        const brut = localStorage.getItem(CLE);
-        if (brut) return Object.assign(defaut, JSON.parse(brut));
-      } catch (e) {}
-      return defaut;
-    }
-
-    function sauver(donnees) {
-      try { localStorage.setItem(CLE, JSON.stringify(donnees)); } catch (e) {}
-    }
-
-    // Date du jour au format AAAA-MM-JJ (heure locale)
-    function aujourdhui() {
-      const d = new Date();
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      return d.toISOString().slice(0, 10);
-    }
-
     function dateLongue(texte) {
       return new Date(texte + "T12:00:00").toLocaleDateString("fr-FR", {
         weekday: "long", day: "numeric", month: "long", year: "numeric"
@@ -92,14 +72,10 @@
       return e;
     }
 
-    function afficherHistorique() {
-      const S = charger();
+    async function afficherHistorique() {
+      const liste = await chargerSeances();
       const zone = document.getElementById("historique");
       zone.innerHTML = "";
-
-      const liste = S.seances.slice().sort(function (a, b) {
-        return b.date.localeCompare(a.date) || b.id - a.id;
-      });
 
       if (liste.length === 0) {
         zone.appendChild(el("div", "vide",
@@ -111,17 +87,18 @@
         const carte = el("div", "card seance");
         const texte = el("div");
 
-        const type = el("span", "tag " + s.type.toLowerCase(), s.type);
-        texte.appendChild(type);
+        texte.appendChild(el("span", "tag " + s.type.toLowerCase(), s.type));
         texte.appendChild(el("div", "mut", dateLongue(s.date)));
         if (s.notes) texte.appendChild(el("div", "notes-seance", s.notes));
 
         const bouton = el("button", "btn-suppr", "Supprimer");
-        bouton.addEventListener("click", function () {
-          const donnees = charger();
-          donnees.seances = donnees.seances.filter(function (x) { return x.id !== s.id; });
-          sauver(donnees);
-          afficherHistorique();
+        bouton.addEventListener("click", async function () {
+          try {
+            await supprimerSeance(s.id);
+            await afficherHistorique();
+          } catch (e) {
+            alert("Erreur : " + e.message);
+          }
         });
 
         carte.appendChild(texte);
@@ -130,31 +107,40 @@
       });
     }
 
-    document.getElementById("btn-ajouter").addEventListener("click", function () {
+    document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
+
+    document.getElementById("btn-ajouter").addEventListener("click", async function () {
       const type = document.getElementById("type").value.trim();
       if (!type) {
         document.getElementById("type").focus();
         return;
       }
-
-      const S = charger();
-      S.seances.push({
-        id: Date.now(),
-        date: document.getElementById("date").value || aujourdhui(),
-        type: type,
-        notes: document.getElementById("notes").value.trim()
-      });
-      sauver(S);
-
-      document.getElementById("type").value = "";
-      document.getElementById("notes").value = "";
-      document.getElementById("date").value = aujourdhui();
-      document.getElementById("message").textContent = "Séance enregistrée";
-      afficherHistorique();
+      try {
+        await ajouterSeance({
+          date: document.getElementById("date").value || aujourdhui(),
+          type: type,
+          notes: document.getElementById("notes").value.trim()
+        });
+        document.getElementById("type").value = "";
+        document.getElementById("notes").value = "";
+        document.getElementById("date").value = aujourdhui();
+        document.getElementById("message").textContent = "Séance enregistrée";
+        await afficherHistorique();
+      } catch (e) {
+        alert("Erreur : " + e.message);
+      }
     });
 
-    document.getElementById("date").value = aujourdhui();
-    afficherHistorique();
+    (async function () {
+      const user = await exigerConnexion();
+      if (!user) return;
+      document.getElementById("date").value = aujourdhui();
+      try {
+        await afficherHistorique();
+      } catch (e) {
+        alert("Erreur de chargement : " + e.message);
+      }
+    })();
   </script>
 </body>
 </html>

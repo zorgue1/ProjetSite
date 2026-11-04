@@ -4,17 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Rapport</title>
+  <link rel="stylesheet" href="../CSS/Couleur.css">
   <link rel="stylesheet" href="../CSS/Rapport.css">
 </head>
 <body>
-  <main>
-
+  <header class="bandeau">
     <nav>
       <a href="Accueil.html">Accueil</a>
       <a href="Activite.html">Activité</a>
       <a href="Rapport.html" class="actif">Rapport</a>
       <a href="Parametres.html">Paramètres</a>
+      <button class="deconnexion" id="btn-deconnexion">Déconnexion</button>
     </nav>
+  </header>
+
+  <main>
 
     <h2>Rapport</h2>
 
@@ -54,22 +58,11 @@
 
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../JS/supabase.js"></script>
+  <script src="../JS/donnees.js"></script>
   <script>
-    const CLE = "sportapp:v1";
-
-    function charger() {
-      const defaut = {
-        profil: { nom: "", prenom: "", naissance: "", poids: "" },
-        programme: ["Push", "Pull", "Leg", "Push", "Pull", "Repos", "Repos"],
-        seances: [],
-        poids: []
-      };
-      try {
-        const brut = localStorage.getItem(CLE);
-        if (brut) return Object.assign(defaut, JSON.parse(brut));
-      } catch (e) {}
-      return defaut;
-    }
+    let seances = [];
 
     // Date au format AAAA-MM-JJ (heure locale)
     function versTexte(date) {
@@ -90,7 +83,6 @@
     }
 
     function afficher() {
-      const S = charger();
       const N = parseInt(document.getElementById("periode").value, 10);
       const lundiActuel = lundiDe(versTexte(new Date()));
 
@@ -103,7 +95,7 @@
       }
 
       // Compter les séances de chaque semaine
-      S.seances.forEach(function (s) {
+      seances.forEach(function (s) {
         const semaine = semaines.find(function (w) { return w.debut === lundiDe(s.date); });
         if (semaine) semaine.n++;
       });
@@ -146,7 +138,7 @@
       const points = semaines.map(function (w, i) { return X(i) + "," + Y(w.n); }).join(" ");
       svg += '<polyline class="courbe" points="' + points + '"/>';
 
-      // Points et dates (une date sur deux ou plus si la période est longue)
+      // Points et dates (moins de dates si la période est longue)
       const pas = Math.ceil(N / 8);
       semaines.forEach(function (w, i) {
         svg += '<circle class="point" cx="' + X(i) + '" cy="' + Y(w.n) + '" r="4.5"/>';
@@ -162,8 +154,19 @@
         'aria-label="Courbe du nombre de séances par semaine">' + svg + '</svg>';
     }
 
+    document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
     document.getElementById("periode").addEventListener("change", afficher);
-    afficher();
+
+    (async function () {
+      const user = await exigerConnexion();
+      if (!user) return;
+      try {
+        seances = await chargerSeances();
+        afficher();
+      } catch (e) {
+        alert("Erreur de chargement : " + e.message);
+      }
+    })();
   </script>
 </body>
 </html>

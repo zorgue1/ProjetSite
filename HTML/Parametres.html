@@ -4,17 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Paramètres</title>
+  <link rel="stylesheet" href="../CSS/Couleur.css">
   <link rel="stylesheet" href="../CSS/Parametres.css">
 </head>
 <body>
-  <main>
-
+  <header class="bandeau">
     <nav>
       <a href="Accueil.html">Accueil</a>
       <a href="Activite.html">Activité</a>
       <a href="Rapport.html">Rapport</a>
       <a href="Parametres.html" class="actif">Paramètres</a>
+      <button class="deconnexion" id="btn-deconnexion">Déconnexion</button>
     </nav>
+  </header>
+
+  <main>
 
     <!-- Profil -->
     <section class="card">
@@ -57,38 +61,18 @@
 
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../JS/supabase.js"></script>
+  <script src="../JS/donnees.js"></script>
   <script>
-    const CLE = "sportapp:v1";
     const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
     const TYPES = ["Push", "Pull", "Leg", "Repos"];
-
-    function charger() {
-      const defaut = {
-        profil: { nom: "", prenom: "", naissance: "", poids: "" },
-        programme: ["Push", "Pull", "Leg", "Push", "Pull", "Repos", "Repos"],
-        seances: [],
-        poids: []
-      };
-      try {
-        const brut = localStorage.getItem(CLE);
-        if (brut) return Object.assign(defaut, JSON.parse(brut));
-      } catch (e) {}
-      return defaut;
-    }
-
-    function sauver(donnees) {
-      try { localStorage.setItem(CLE, JSON.stringify(donnees)); } catch (e) {}
-    }
-
-    function aujourdhui() {
-      const d = new Date();
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      return d.toISOString().slice(0, 10);
-    }
+    let profilCharge = null;
 
     // Construit un menu déroulant par jour de la semaine
     function construireProgramme(programme) {
       const zone = document.getElementById("programme");
+      zone.innerHTML = "";
       JOURS.forEach(function (jour, i) {
         const bloc = document.createElement("div");
 
@@ -111,41 +95,53 @@
       });
     }
 
-    function remplir() {
-      const S = charger();
-      document.getElementById("prenom").value = S.profil.prenom;
-      document.getElementById("nom").value = S.profil.nom;
-      document.getElementById("naissance").value = S.profil.naissance;
-      document.getElementById("poids").value = S.profil.poids;
-      construireProgramme(S.programme);
+    async function remplir() {
+      profilCharge = await chargerProfil();
+      document.getElementById("prenom").value = profilCharge.prenom;
+      document.getElementById("nom").value = profilCharge.nom;
+      document.getElementById("naissance").value = profilCharge.naissance;
+      document.getElementById("poids").value = profilCharge.poids;
+      construireProgramme(profilCharge.programme);
     }
 
-    document.getElementById("btn-enregistrer").addEventListener("click", function () {
-      const S = charger();
-      const ancienPoids = S.profil.poids;
-      const nouveauPoids = document.getElementById("poids").value.replace(",", ".");
+    document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
 
-      S.profil = {
+    document.getElementById("btn-enregistrer").addEventListener("click", async function () {
+      const poidsSaisi = document.getElementById("poids").value.replace(",", ".");
+      const profil = {
         prenom: document.getElementById("prenom").value.trim(),
         nom: document.getElementById("nom").value.trim(),
         naissance: document.getElementById("naissance").value,
-        poids: nouveauPoids
+        poids: poidsSaisi,
+        programme: JOURS.map(function (_, i) {
+          return document.getElementById("jour" + i).value;
+        })
       };
 
-      // Si le poids a changé, on le garde aussi dans l'historique
-      if (nouveauPoids && nouveauPoids !== ancienPoids) {
-        S.poids.push({ date: aujourdhui(), valeur: parseFloat(nouveauPoids) });
+      try {
+        await sauverProfil(profil);
+
+        // Si le poids a changé, on l'ajoute aussi à l'historique de poids
+        const nouveau = parseFloat(poidsSaisi);
+        if (!isNaN(nouveau) && nouveau !== parseFloat(profilCharge.poids)) {
+          await ajouterPoids(nouveau);
+        }
+        profilCharge = profil;
+        document.getElementById("message").textContent = "Paramètres enregistrés";
+      } catch (e) {
+        alert("Erreur : " + e.message);
       }
-
-      S.programme = JOURS.map(function (_, i) {
-        return document.getElementById("jour" + i).value;
-      });
-
-      sauver(S);
-      document.getElementById("message").textContent = "Paramètres enregistrés";
     });
 
-    remplir();
+    (async function () {
+      const user = await exigerConnexion();
+      if (!user) return;
+      try {
+        await remplir();
+      } catch (e) {
+        alert("Erreur de chargement : " + e.message);
+      }
+    })();
   </script>
 </body>
 </html>
