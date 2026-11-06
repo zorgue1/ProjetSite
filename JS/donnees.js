@@ -12,7 +12,7 @@ function aujourdhui() {
 async function exigerConnexion() {
   const { data } = await client.auth.getSession();
   if (!data.session) {
-    window.location.href = "Connexion.html";
+    window.location.replace("Connexion.html");
     return null;
   }
   return data.session.user;
@@ -20,9 +20,10 @@ async function exigerConnexion() {
 
 async function deconnexion() {
   await client.auth.signOut();
-  window.location.href = "Connexion.html";
+  // On vide la page : si le navigateur la garde en cache, il n'y a plus rien à voir
+  document.body.innerHTML = "";
+  window.location.replace("Connexion.html");
 }
-
 /* ---------- Profil ---------- */
 
 async function chargerProfil() {
@@ -84,3 +85,29 @@ async function ajouterPoids(valeur) {
   const { error: e2 } = await client.from("profils").upsert({ user_id: user.id, poids: valeur });
   if (e2) throw e2;
 }
+
+/* ---------- Protection du bouton « Retour » ---------- */
+
+// La page reste masquée tant que la connexion n'est pas vérifiée
+document.documentElement.style.visibility = "hidden";
+
+async function verifierSession() {
+  const { data } = await client.auth.getSession();
+  if (!data.session) {
+    window.location.replace("Connexion.html");
+  } else {
+    document.documentElement.style.visibility = "visible";
+  }
+}
+
+// Se déclenche aussi quand le navigateur restaure la page depuis son cache (bouton Retour)
+window.addEventListener("pageshow", function (e) {
+  if (e.persisted) verifierSession();
+});
+
+// Si tu te déconnectes depuis un autre onglet, celui-ci est aussi redirigé
+client.auth.onAuthStateChange(function (evenement) {
+  if (evenement === "SIGNED_OUT") window.location.replace("Connexion.html");
+});
+
+verifierSession();

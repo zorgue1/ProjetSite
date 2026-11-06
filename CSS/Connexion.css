@@ -123,3 +123,32 @@ button:focus-visible {
 #message.erreur {
   color: var(--leg);
 }
+
+/* ---------- Image de fond en diagonale ---------- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: url("../Image/Muscu.jpg") center / cover no-repeat;
+  /* La moitié gauche de l'écran, coupée en diagonale */
+  clip-path: polygon(0 0, 60% 0, 40% 100%, 0 100%);
+}
+
+/* Sur grand écran, le formulaire passe sur la moitié libre (à droite) */
+@media (min-width: 900px) {
+  main {
+    margin: 0 10vw 0 auto;
+    padding-top: 12vh;
+  }
+}
+
+/* Sur petit écran, l'image devient une bande diagonale en haut */
+@media (max-width: 899px) {
+  body::before {
+    clip-path: polygon(0 0, 100% 0, 100% 22%, 0 38%);
+  }
+  main {
+    padding-top: 36vh;
+  }
+}

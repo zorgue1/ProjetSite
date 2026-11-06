@@ -59,14 +59,14 @@
     document.getElementById("btn-connexion").addEventListener("click", async function () {
       const { error } = await client.auth.signInWithPassword(identifiants());
       if (error) return afficherMessage("Connexion impossible : " + error.message, true);
-      window.location.href = "Accueil.html";
+      window.location.replace("Accueil.html");
     });
 
     document.getElementById("btn-inscription").addEventListener("click", async function () {
       const { data, error } = await client.auth.signUp(identifiants());
       if (error) return afficherMessage("Création impossible : " + error.message, true);
       if (data.session) {
-        window.location.href = "Accueil.html";
+        window.location.replace("Accueil.html");
       } else {
         afficherMessage("Compte créé. Vérifie tes e-mails pour confirmer, puis connecte-toi.", false);
       }
@@ -74,7 +74,7 @@
 
     // Déjà connecté : on va directement à l'accueil
     client.auth.getSession().then(function (r) {
-      if (r.data.session) window.location.href = "Accueil.html";
+      if (r.data.session) window.location.replace("Accueil.html");
     });
   </script>
 </body>

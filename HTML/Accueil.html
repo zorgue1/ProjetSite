@@ -38,6 +38,13 @@
       <h1 id="seance-jour"></h1>
     </section>
 
+      <!-- Récap de la dernière séance du même type -->
+    <section class="card" id="recap" hidden>
+      <div class="recap-titre">Dernière séance <span id="recap-type"></span></div>
+      <div class="mut" id="recap-date"></div>
+      <div class="recap-notes" id="recap-notes"></div>
+    </section>
+
     <!-- Infos de base -->
     <section class="card">
       <div class="row">
@@ -75,6 +82,47 @@
       return age;
     }
 
+        function joursDepuis(dateTexte) {
+      const a = new Date(aujourdhui() + "T12:00:00");
+      const b = new Date(dateTexte + "T12:00:00");
+      return Math.round((a - b) / 86400000);
+    }
+
+    async function afficherRecap(seance) {
+      const bloc = document.getElementById("recap");
+      if (seance === "Repos") {
+        bloc.hidden = true;
+        return;
+      }
+
+      // La liste est déjà triée de la séance la plus récente à la plus ancienne
+      const liste = await chargerSeances();
+      const cle = seance.toLowerCase();
+      const derniere = liste.find(function (s) {
+        return s.date < aujourdhui() && s.type.trim().toLowerCase().startsWith(cle);
+      });
+
+      const type = document.getElementById("recap-type");
+      const date = document.getElementById("recap-date");
+      const notes = document.getElementById("recap-notes");
+      type.textContent = seance;
+      type.className = "recap-type " + cle;
+      bloc.hidden = false;
+
+      if (!derniere) {
+        date.textContent = "";
+        notes.textContent = "Aucune séance " + seance + " enregistrée pour l’instant. Ajoute-la dans l’onglet Activité.";
+        return;
+      }
+
+      const n = joursDepuis(derniere.date);
+      date.textContent =
+        new Date(derniere.date + "T12:00:00").toLocaleDateString("fr-FR", {
+          weekday: "long", day: "numeric", month: "long", year: "numeric"
+        }) + " · il y a " + n + " jour" + (n > 1 ? "s" : "");
+      notes.textContent = derniere.notes || "Aucun détail enregistré pour cette séance.";
+    }
+
     async function afficher() {
       const p = await chargerProfil();
       const maintenant = new Date();
@@ -87,6 +135,8 @@
         maintenant.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
       document.getElementById("seance-jour").textContent = seance.toUpperCase();
       document.getElementById("hero").className = "hero " + seance.toLowerCase();
+
+      await afficherRecap(seance);
 
       // Identité
       const nomComplet = (p.prenom + " " + p.nom.toUpperCase()).trim();

@@ -212,3 +212,21 @@ nav a:focus-visible {
   line-height: 1;
   color: var(--logo);
 }
+
+/* ---------- Récap de la dernière séance ---------- */
+.recap-titre {
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.recap-type        { color: var(--accent); }
+.recap-type.push   { color: var(--push); }
+.recap-type.pull   { color: var(--pull); }
+.recap-type.leg    { color: var(--leg); }
+
+.recap-notes {
+  margin-top: 10px;
+  white-space: pre-wrap;
+}
