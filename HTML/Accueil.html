@@ -32,18 +32,25 @@
       <span class="logo-nom">SportApp</span>
     </div>
 
-    <!-- Séance du jour -->
+    <!-- Séance du jour + récap de la séance précédente -->
     <section class="hero" id="hero">
       <small id="date-jour"></small>
       <h1 id="seance-jour"></h1>
+
+      <details class="recap" id="recap" hidden>
+        <summary>
+          <span class="txt-ferme">Afficher la séance précédente</span>
+          <span class="txt-ouvert">Masquer la séance précédente</span>
+        </summary>
+        <div class="recap-contenu">
+          <div class="recap-titre">Dernière séance <span id="recap-type"></span></div>
+          <div class="mut" id="recap-date"></div>
+          <div class="recap-notes" id="recap-notes"></div>
+        </div>
+      </details>
     </section>
 
-      <!-- Récap de la dernière séance du même type -->
-    <section class="card" id="recap" hidden>
-      <div class="recap-titre">Dernière séance <span id="recap-type"></span></div>
-      <div class="mut" id="recap-date"></div>
-      <div class="recap-notes" id="recap-notes"></div>
-    </section>
+      
 
     <!-- Infos de base -->
     <section class="card">

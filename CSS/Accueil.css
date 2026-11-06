@@ -230,3 +230,55 @@ nav a:focus-visible {
   margin-top: 10px;
   white-space: pre-wrap;
 }
+
+/* ---------- Menu déroulant « séance précédente » ---------- */
+.recap {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--bordure);
+}
+
+.recap summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--c);
+}
+
+.recap summary::-webkit-details-marker {
+  display: none;
+}
+
+.recap summary::before {
+  content: "▸";
+  transition: transform 0.15s;
+}
+
+.recap[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.recap summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* Le texte du menu change selon qu'il est ouvert ou fermé */
+.recap .txt-ouvert {
+  display: none;
+}
+
+.recap[open] .txt-ouvert {
+  display: inline;
+}
+
+.recap[open] .txt-ferme {
+  display: none;
+}
+
+.recap-contenu {
+  margin-top: 12px;
+}
