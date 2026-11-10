@@ -3,55 +3,70 @@
    Change une valeur, et toutes les pages suivent.
    ===================================================== */
 
-/* ---------- Thème clair ---------- */
+/* ---------- Thème sombre (par défaut) ---------- */
 :root {
-  /* Fonds et textes */
-  --fond: #eef1f4;            /* fond de la page */
-  --carte: #ffffff;           /* fond des cartes */
-  --texte: #14202b;           /* texte principal */
-  --gris: #5d6b78;            /* texte secondaire */
-  --bordure: #d9e0e6;         /* traits et bordures */
+  color-scheme: dark;
 
-  /* Couleur principale (boutons, courbe, menu actif) */
-  --accent: #2446d8;
-  --texte-bouton: #ffffff;    /* texte sur les boutons */
+  /* Fonds et textes */
+  --fond: #090d13;
+  --halo: rgba(255, 106, 61, 0.16);   /* lueur en haut à droite */
+  --carte: #121923;
+  --carte-douce: #0c121a;             /* fond des champs de saisie */
+  --texte: #f1f4f8;
+  --gris: #8c99aa;
+  --bordure: #202b3a;
+  --ombre: 0 10px 40px rgba(0, 0, 0, 0.45);
+
+  /* Couleur principale */
+  --accent: #ff6a3d;
+  --accent-halo: rgba(255, 106, 61, 0.30);
+  --degrade: linear-gradient(135deg, #ff6a3d, #ffa12e);
+  --texte-bouton: #1a0d06;
 
   /* Couleurs des séances */
-  --push: #2446d8;
-  --pull: #0f8b8d;
-  --leg: #c77700;
-  --repos: #7a8793;
+  --push: #ff6a3d;
+  --pull: #2fd9c5;
+  --leg: #a78bfa;
+  --repos: #6f7b8a;
 
   /* Bandeau de navigation */
-  --bandeau-fond: #ffffff;
-  --bandeau-texte: #5d6b78;
-  --bandeau-actif: #14202b;
-  --bandeau-survol: #eef1f4;
+  --bandeau-fond: rgba(9, 13, 19, 0.78);
+  --bandeau-texte: #8c99aa;
+  --bandeau-actif: #f1f4f8;
+  --bandeau-survol: rgba(255, 255, 255, 0.07);
 
-  /* Logo */
+  /* Logo et formes */
   --logo: var(--accent);
+  --rayon: 18px;
 }
 
-/* ---------- Thème sombre (automatique selon l'appareil) ---------- */
-@media (prefers-color-scheme: dark) {
+/* ---------- Thème clair (si l'appareil est en mode clair) ---------- */
+@media (prefers-color-scheme: light) {
   :root {
-    --fond: #0e1419;
-    --carte: #17202a;
-    --texte: #eaf0f5;
-    --gris: #92a1af;
-    --bordure: #26323e;
+    color-scheme: light;
 
-    --accent: #6d8bff;
-    --texte-bouton: #0e1419;
+    --fond: #f4f2ee;
+    --halo: rgba(217, 64, 15, 0.10);
+    --carte: #ffffff;
+    --carte-douce: #f3f0ea;
+    --texte: #16191f;
+    --gris: #66707c;
+    --bordure: #e3ddd3;
+    --ombre: 0 8px 30px rgba(22, 25, 31, 0.08);
 
-    --push: #6d8bff;
-    --pull: #3cc4c6;
-    --leg: #f0a63a;
-    --repos: #8d9aa6;
+    --accent: #d9400f;
+    --accent-halo: rgba(217, 64, 15, 0.25);
+    --degrade: linear-gradient(135deg, #d9400f, #e8560f);
+    --texte-bouton: #ffffff;
 
-    --bandeau-fond: #17202a;
-    --bandeau-texte: #92a1af;
-    --bandeau-actif: #eaf0f5;
-    --bandeau-survol: #0e1419;
+    --push: #d9400f;
+    --pull: #0b8f84;
+    --leg: #6d4ce0;
+    --repos: #8b8f96;
+
+    --bandeau-fond: rgba(244, 242, 238, 0.82);
+    --bandeau-texte: #66707c;
+    --bandeau-actif: #16191f;
+    --bandeau-survol: rgba(22, 25, 31, 0.06);
   }
 }

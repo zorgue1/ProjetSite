@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Activité</title>
   <link rel="stylesheet" href="../CSS/Couleur.css">
+  <link rel="stylesheet" href="../CSS/Commun.css">
   <link rel="stylesheet" href="../CSS/Activite.css">
 </head>
 <body>
@@ -12,6 +13,7 @@
     <nav>
       <a href="Accueil.html">Accueil</a>
       <a href="Activite.html" class="actif">Activité</a>
+      <a href="Exercices.html">Exercices</a>
       <a href="Rapport.html">Rapport</a>
       <a href="Parametres.html">Paramètres</a>
       <button class="deconnexion" id="btn-deconnexion">Déconnexion</button>
@@ -27,8 +29,8 @@
       <label for="date">Date</label>
       <input id="date" type="date">
 
-      <label for="type">Ce que j’ai fait</label>
-      <input id="type" list="suggestions" placeholder="Push, bras et triceps, cardio…">
+      <label for="type">Type de séance</label>
+      <input id="type" list="suggestions" placeholder="Push, Pull, Leg, bras et triceps…">
       <datalist id="suggestions">
         <option value="Push">
         <option value="Pull">
@@ -39,8 +41,20 @@
         <option value="Cardio">
       </datalist>
 
-      <label for="notes">Détails (exercices, charges, ressenti)</label>
-      <textarea id="notes" rows="4"></textarea>
+      <label for="recherche-exo">Ajouter un exercice</label>
+      <div class="picker" id="picker">
+        <input id="recherche-exo" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
+        <div class="chips" id="chips-muscle"></div>
+        <div class="resultats" id="resultats"></div>
+      </div>
+      <p class="mut" id="aide-exo" hidden>
+        Ta bibliothèque est vide. <a href="Exercices.html">Ajoute des exercices</a> pour les saisir ici.
+      </p>
+
+      <div id="blocs"></div>
+
+      <label for="notes">Notes (ressenti, remarques)</label>
+      <textarea id="notes" rows="3"></textarea>
 
       <div class="actions">
         <button class="btn" id="btn-ajouter">Enregistrer la séance</button>
@@ -58,9 +72,20 @@
   <script src="../JS/supabase.js"></script>
   <script src="../JS/donnees.js"></script>
   <script>
+    let exercices = [];          // bibliothèque d'exercices
+    let blocs = [];              // exercices de la séance en cours : { exercice, series: [{ rep, charge }], indice }
+    let limite = 30;             // nombre de séances affichées dans l'historique
+    let rechercheMuscle = "Tous";
+
     function dateLongue(texte) {
       return new Date(texte + "T12:00:00").toLocaleDateString("fr-FR", {
         weekday: "long", day: "numeric", month: "long", year: "numeric"
+      });
+    }
+
+    function dateCourte(texte) {
+      return new Date(texte + "T12:00:00").toLocaleDateString("fr-FR", {
+        day: "2-digit", month: "2-digit"
       });
     }
 
@@ -72,24 +97,237 @@
       return e;
     }
 
+    function champNombre(placeholder, valeur, mode, pas) {
+      const c = document.createElement("input");
+      c.type = "number";
+      c.min = "0";
+      c.step = pas;
+      c.inputMode = mode;
+      c.placeholder = placeholder;
+      c.setAttribute("aria-label", placeholder);
+      c.value = valeur;
+      return c;
+    }
+
+    /* ---------- Recherche et choix des exercices ---------- */
+
+    function afficherChoix() {
+      const vide = exercices.length === 0;
+      document.getElementById("aide-exo").hidden = !vide;
+      document.getElementById("picker").hidden = vide;
+      if (vide) return;
+      afficherChips();
+      afficherResultats();
+    }
+
+    // Pastilles : seulement les muscles qui ont au moins un exercice
+    function afficherChips() {
+      const zone = document.getElementById("chips-muscle");
+      zone.innerHTML = "";
+      const muscles = MUSCLES.filter(function (m) {
+        return exercices.some(function (e) { return e.muscle === m; });
+      });
+      ["Tous"].concat(muscles).forEach(function (m) {
+        const bouton = el("button", "chip", m);
+        bouton.type = "button";
+        bouton.setAttribute("aria-pressed", m === rechercheMuscle ? "true" : "false");
+        bouton.addEventListener("click", function () {
+          rechercheMuscle = m;
+          afficherChips();
+          afficherResultats();
+        });
+        zone.appendChild(bouton);
+      });
+    }
+
+    function afficherResultats() {
+      const zone = document.getElementById("resultats");
+      const haut = zone.scrollTop;
+      zone.innerHTML = "";
+
+      const mots = normaliser(document.getElementById("recherche-exo").value)
+        .split(" ").filter(Boolean);
+
+      const trouves = exercices.filter(function (e) {
+        if (rechercheMuscle !== "Tous" && e.muscle !== rechercheMuscle) return false;
+        const texte = normaliser(e.nom + " " + e.muscle + " " + e.groupe);
+        return mots.every(function (m) { return texte.indexOf(m) !== -1; });
+      }).sort(function (a, b) {
+        return MUSCLES.indexOf(a.muscle) - MUSCLES.indexOf(b.muscle) ||
+               a.nom.localeCompare(b.nom, "fr");
+      });
+
+      if (trouves.length === 0) {
+        zone.appendChild(el("div", "aucun", "Aucun exercice trouvé."));
+        return;
+      }
+
+      let muscleCourant = null;
+      trouves.forEach(function (ex) {
+        // Titre de section quand on parcourt toute la liste sans recherche
+        if (mots.length === 0 && ex.muscle !== muscleCourant) {
+          muscleCourant = ex.muscle;
+          zone.appendChild(el("div", "resultat-titre", ex.muscle));
+        }
+
+        const deja = blocs.some(function (b) { return b.exercice.id === ex.id; });
+        const ligne = el("button", "resultat");
+        ligne.type = "button";
+        ligne.disabled = deja;
+        ligne.appendChild(creerVignette(ex));
+
+        const texte = el("div", "resultat-texte");
+        texte.appendChild(el("div", "exo-nom-ligne", ex.nom));
+        texte.appendChild(el("div", "mut", ex.muscle + " · " + ex.groupe));
+        ligne.appendChild(texte);
+
+        ligne.appendChild(el("span", "resultat-action", deja ? "Ajouté ✓" : "+ Ajouter"));
+        ligne.addEventListener("click", function () { ajouterBloc(ex); });
+        zone.appendChild(ligne);
+      });
+      zone.scrollTop = haut;
+    }
+
+    async function ajouterBloc(exercice) {
+      if (blocs.some(function (b) { return b.exercice.id === exercice.id; })) return;
+
+      const bloc = { exercice: exercice, series: [{ rep: "", charge: "" }], indice: null };
+      blocs.push(bloc);
+      afficherBlocs();
+      afficherResultats();
+
+      // Montre le nouvel exercice dans la séance
+      const cartes = document.querySelectorAll(".bloc-exo");
+      cartes[cartes.length - 1].scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+      // Charge en arrière-plan ce qui avait été fait la dernière fois
+      try {
+        bloc.indice = await chargerDerniereFois(exercice.id);
+        if (bloc.indice && blocs.indexOf(bloc) !== -1) afficherBlocs();
+      } catch (e) {}
+    }
+
+    document.getElementById("recherche-exo").addEventListener("input", afficherResultats);
+
+    // Entrée : ajoute le premier résultat
+    document.getElementById("recherche-exo").addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const premier = document.querySelector("#resultats .resultat:not(:disabled)");
+      if (premier) premier.click();
+    });
+
+    /* ---------- Exercices de la séance en cours ---------- */
+
+    function afficherBlocs() {
+      const zone = document.getElementById("blocs");
+      zone.innerHTML = "";
+
+      blocs.forEach(function (bloc, i) {
+        const carte = el("div", "bloc-exo");
+
+        // En-tête : photo, nom, bouton Retirer
+        const tete = el("div", "bloc-tete");
+        tete.appendChild(creerVignette(bloc.exercice));
+        tete.appendChild(el("div", "exo-nom-ligne", bloc.exercice.nom));
+        const retirer = el("button", "btn-suppr", "Retirer");
+        retirer.type = "button";
+        retirer.addEventListener("click", function () {
+          blocs.splice(i, 1);
+          afficherBlocs();
+          afficherResultats();
+        });
+        tete.appendChild(retirer);
+        carte.appendChild(tete);
+
+        // Rappel de la dernière fois
+        if (bloc.indice) {
+          const indice = el("div", "indice");
+          indice.appendChild(el("span", null,
+            "Dernière fois (" + dateCourte(bloc.indice.date) + ") : " +
+            bloc.indice.series.map(texteSerie).join(" · ")));
+          const reprendre = el("button", "btn-suppr", "Reprendre");
+          reprendre.type = "button";
+          reprendre.addEventListener("click", function () {
+            bloc.series = bloc.indice.series.map(function (s) {
+              return { rep: String(s.repetitions), charge: s.charge > 0 ? String(s.charge) : "" };
+            });
+            afficherBlocs();
+          });
+          indice.appendChild(reprendre);
+          carte.appendChild(indice);
+        }
+
+        // Séries
+        bloc.series.forEach(function (serie, j) {
+          const ligne = el("div", "ligne-serie");
+          ligne.appendChild(el("span", "num-serie", String(j + 1)));
+
+          const rep = champNombre("Reps", serie.rep, "numeric", "1");
+          rep.addEventListener("input", function () { serie.rep = rep.value; });
+          ligne.appendChild(rep);
+
+          ligne.appendChild(el("span", "croix", "×"));
+
+          const charge = champNombre("kg", serie.charge, "decimal", "0.5");
+          charge.addEventListener("input", function () { serie.charge = charge.value; });
+          ligne.appendChild(charge);
+
+          const supprimer = el("button", "btn-mini", "✕");
+          supprimer.type = "button";
+          supprimer.setAttribute("aria-label", "Supprimer la série " + (j + 1));
+          supprimer.addEventListener("click", function () {
+            bloc.series.splice(j, 1);
+            if (bloc.series.length === 0) bloc.series.push({ rep: "", charge: "" });
+            afficherBlocs();
+          });
+          ligne.appendChild(supprimer);
+
+          carte.appendChild(ligne);
+        });
+
+        // Ajouter une série (copie les valeurs de la précédente)
+        const ajout = el("button", "btn-suppr", "+ Série");
+        ajout.type = "button";
+        ajout.addEventListener("click", function () {
+          const derniere = bloc.series[bloc.series.length - 1];
+          bloc.series.push({ rep: derniere.rep, charge: derniere.charge });
+          afficherBlocs();
+          const champs = document.querySelectorAll(".bloc-exo")[i].querySelectorAll(".ligne-serie input");
+          champs[champs.length - 2].focus();
+        });
+        carte.appendChild(ajout);
+
+        zone.appendChild(carte);
+      });
+    }
+
+    /* ---------- Historique ---------- */
+
     async function afficherHistorique() {
-      const liste = await chargerSeances();
+      const seances = await chargerSeances();
       const zone = document.getElementById("historique");
       zone.innerHTML = "";
 
-      if (liste.length === 0) {
+      if (seances.length === 0) {
         zone.appendChild(el("div", "vide",
           "Aucune séance enregistrée. Remplis le formulaire après ton entraînement."));
         return;
       }
 
-      liste.forEach(function (s) {
-        const carte = el("div", "card seance");
-        const texte = el("div");
+      const visibles = seances.slice(0, limite);
+      const parSeance = grouperSeries(await chargerSeries(visibles.map(function (s) { return s.id; })));
 
-        texte.appendChild(el("span", "tag " + s.type.toLowerCase(), s.type));
-        texte.appendChild(el("div", "mut", dateLongue(s.date)));
-        if (s.notes) texte.appendChild(el("div", "notes-seance", s.notes));
+      visibles.forEach(function (s) {
+        const carte = el("div", "card seance");
+        const corps = el("div", "seance-corps");
+
+        corps.appendChild(el("span", "tag " + s.type.toLowerCase(), s.type));
+        corps.appendChild(el("div", "mut", dateLongue(s.date)));
+        (parSeance[s.id] || []).forEach(function (ex) {
+          corps.appendChild(creerLigneExercice(ex));
+        });
+        if (s.notes) corps.appendChild(el("div", "notes-seance", s.notes));
 
         const bouton = el("button", "btn-suppr", "Supprimer");
         bouton.addEventListener("click", async function () {
@@ -101,41 +339,88 @@
           }
         });
 
-        carte.appendChild(texte);
+        carte.appendChild(corps);
         carte.appendChild(bouton);
         zone.appendChild(carte);
       });
+
+      if (seances.length > limite) {
+        const plus = el("button", "btn-suppr plus", "Afficher plus de séances");
+        plus.addEventListener("click", async function () {
+          limite += 30;
+          await afficherHistorique();
+        });
+        zone.appendChild(plus);
+      }
     }
+
+    /* ---------- Enregistrement ---------- */
 
     document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
 
     document.getElementById("btn-ajouter").addEventListener("click", async function () {
+      const bouton = this;
       const type = document.getElementById("type").value.trim();
       if (!type) {
         document.getElementById("type").focus();
         return;
       }
+
+      // Séries valides : au moins une répétition
+      const lignes = [];
+      blocs.forEach(function (bloc) {
+        let numero = 0;
+        bloc.series.forEach(function (s) {
+          const rep = parseInt(s.rep, 10);
+          if (!rep || rep <= 0) return;
+          numero++;
+          lignes.push({
+            exercice_id: bloc.exercice.id,
+            numero: numero,
+            repetitions: rep,
+            charge: parseFloat(String(s.charge).replace(",", ".")) || 0
+          });
+        });
+      });
+
+      bouton.disabled = true;
       try {
-        await ajouterSeance({
+        const id = await ajouterSeance({
           date: document.getElementById("date").value || aujourdhui(),
           type: type,
           notes: document.getElementById("notes").value.trim()
         });
+        try {
+          await ajouterSeries(id, lignes);
+        } catch (e) {
+          await supprimerSeance(id);   // on n'enregistre pas une séance à moitié
+          throw e;
+        }
+
         document.getElementById("type").value = "";
         document.getElementById("notes").value = "";
         document.getElementById("date").value = aujourdhui();
+        blocs = [];
+        afficherBlocs();
+        afficherResultats();
         document.getElementById("message").textContent = "Séance enregistrée";
         await afficherHistorique();
       } catch (e) {
         alert("Erreur : " + e.message);
+      } finally {
+        bouton.disabled = false;
       }
     });
+
+    /* ---------- Démarrage ---------- */
 
     (async function () {
       const user = await exigerConnexion();
       if (!user) return;
       document.getElementById("date").value = aujourdhui();
       try {
+        exercices = await chargerExercices();
+        afficherChoix();
         await afficherHistorique();
       } catch (e) {
         alert("Erreur de chargement : " + e.message);

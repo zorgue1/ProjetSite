@@ -1,0 +1,267 @@
+/* ---------- Aperçu de la photo choisie ---------- */
+.apercu img {
+  display: block;
+  max-width: 220px;
+  margin-top: 10px;
+  border-radius: 12px;
+}
+
+input[type="file"] {
+  padding: 10px;
+}
+
+/* ---------- Filtres par groupe ---------- */
+.filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filtre {
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gris);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.filtre:hover {
+  color: var(--texte);
+  border-color: var(--gris);
+}
+
+.filtre[aria-pressed="true"] {
+  color: var(--texte-bouton);
+  background: var(--degrade);
+  border-color: transparent;
+}
+
+/* ---------- Grille d'exercices ---------- */
+.grille-exercices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.grille-exercices .vide {
+  grid-column: 1 / -1;
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--gris);
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon);
+}
+
+.exo {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.exo-photo,
+.exo-vide {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--carte-douce);
+}
+
+.exo-photo {
+  display: block;
+  object-fit: cover;
+}
+
+.exo-vide {
+  display: grid;
+  place-items: center;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 48px;
+  font-weight: 900;
+  color: var(--gris);
+}
+
+.exo-corps {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px;
+}
+
+.exo-nom {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.tag {
+  --c: var(--repos);
+  padding: 2px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 16%, transparent);
+  border-radius: 999px;
+}
+
+.tag.push { --c: var(--push); }
+.tag.pull { --c: var(--pull); }
+.tag.leg  { --c: var(--leg); }
+
+.btn-suppr {
+  margin-top: auto;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gris);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.btn-suppr:hover {
+  color: var(--texte);
+  border-color: var(--gris);
+}
+
+/* ---------- Recherche et sections par muscle ---------- */
+#recherche {
+  margin-bottom: 12px;
+}
+
+.section-muscle h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 26px 0 12px;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.compte {
+  padding: 2px 10px;
+  font-family: Manrope, "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gris);
+  background: var(--carte-douce);
+  border-radius: 999px;
+}
+
+.vide {
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--gris);
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon);
+}
+
+/* Petits menus de rangement sur chaque carte */
+.exo-corps .mini-select {
+  align-self: stretch;
+  margin: 0;
+  font-size: 11px;
+}
+
+.mini-select select {
+  margin-top: 4px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ---------- Boutons des muscles ---------- */
+.tuiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.tuile {
+  --c: var(--repos);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 14px 12px;
+  font: inherit;
+  text-align: left;
+  color: var(--texte);
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-left: 5px solid var(--c);
+  border-radius: 14px;
+  box-shadow: var(--ombre);
+  cursor: pointer;
+  transition: transform 0.12s, background 0.15s, border-color 0.15s;
+}
+
+.tuile.tous { --c: var(--accent); }
+.tuile.push { --c: var(--push); }
+.tuile.pull { --c: var(--pull); }
+.tuile.leg  { --c: var(--leg); }
+
+.tuile:hover {
+  transform: translateY(-2px);
+}
+
+.tuile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.tuile[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--c) 18%, var(--carte));
+  border-color: var(--c);
+}
+
+.tuile-nom {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.tuile-nb {
+  font-size: 13px;
+  color: var(--gris);
+}
+
+.tuile-zero {
+  opacity: 0.55;
+}
+
+/* ---------- Titre et message de la liste ---------- */
+.titre-liste {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 24px 0 12px;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.invite {
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--gris);
+}

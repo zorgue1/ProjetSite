@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SportApp – Exercices</title>
+  <link rel="stylesheet" href="../CSS/Couleur.css">
+  <link rel="stylesheet" href="../CSS/Commun.css">
+  <link rel="stylesheet" href="../CSS/Exercices.css">
+</head>
+<body>
+  <header class="bandeau">
+    <nav>
+      <a href="Accueil.html">Accueil</a>
+      <a href="Activite.html">Activité</a>
+      <a href="Exercices.html" class="actif">Exercices</a>
+      <a href="Rapport.html">Rapport</a>
+      <a href="Parametres.html">Paramètres</a>
+      <button class="deconnexion" id="btn-deconnexion">Déconnexion</button>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- Nouvel exercice -->
+    <section class="card">
+      <h2>Nouvel exercice</h2>
+
+      <label for="nom">Nom</label>
+      <input id="nom" type="text" placeholder="Développé couché">
+
+      <div class="row">
+        <div>
+          <label for="muscle">Muscle</label>
+          <select id="muscle"></select>
+        </div>
+        <div>
+          <label for="groupe">Séance</label>
+          <select id="groupe"></select>
+        </div>
+      </div>
+
+      <label for="photo">Photo (depuis ton appareil)</label>
+      <input id="photo" type="file" accept="image/*">
+      <div class="apercu" id="apercu"></div>
+
+      <label for="lien">…ou lien d’une image</label>
+      <input id="lien" type="url" placeholder="https://…">
+
+      <div class="actions">
+        <button class="btn" id="btn-ajouter">Ajouter l’exercice</button>
+        <span id="message"></span>
+      </div>
+    </section>
+
+    <!-- Bibliothèque -->
+    <h2>Ma bibliothèque</h2>
+    <input id="recherche" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
+    <div class="tuiles" id="tuiles"></div>
+    <section id="liste"></section>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../JS/supabase.js"></script>
+  <script src="../JS/donnees.js"></script>
+  <script>
+    let exercices = [];
+    let muscleChoisi = null;   // null = rien d'affiché ; "Tous" = toute la bibliothèque
+
+    // Crée un élément HTML (le texte est inséré en toute sécurité)
+    function el(balise, classe, texte) {
+      const e = document.createElement(balise);
+      if (classe) e.className = classe;
+      if (texte) e.textContent = texte;
+      return e;
+    }
+
+    function remplirListe(select, valeurs) {
+      valeurs.forEach(function (v) {
+        const option = document.createElement("option");
+        option.textContent = v;
+        select.appendChild(option);
+      });
+    }
+
+    // Menu déroulant compact avec son libellé
+    function creerSelect(valeurs, valeur, libelle, auChangement) {
+      const bloc = el("label", "mini-select");
+      bloc.appendChild(el("span", null, libelle));
+      const select = document.createElement("select");
+      valeurs.forEach(function (v) {
+        const option = document.createElement("option");
+        option.textContent = v;
+        if (v === valeur) option.selected = true;
+        select.appendChild(option);
+      });
+      select.addEventListener("change", function () { auChangement(select.value); });
+      bloc.appendChild(select);
+      return bloc;
+    }
+
+    async function changer(ex, champs) {
+      try {
+        await modifierExercice(ex.id, champs);
+        Object.assign(ex, champs);
+      } catch (e) {
+        alert("Erreur : " + e.message);
+      }
+      afficherTuiles();
+      afficherListe();
+    }
+
+    /* ---------- Boutons des muscles ---------- */
+
+    function afficherTuiles() {
+      const zone = document.getElementById("tuiles");
+      zone.innerHTML = "";
+
+      ["Tous"].concat(MUSCLES).forEach(function (m) {
+        const nb = m === "Tous"
+          ? exercices.length
+          : exercices.filter(function (e) { return e.muscle === m; }).length;
+
+        // La couleur suit la séance habituelle du muscle
+        const couleur = m === "Tous" ? "tous" : (GROUPE_PAR_MUSCLE[m] || "Autre").toLowerCase();
+
+        const tuile = el("button", "tuile " + couleur + (nb === 0 ? " tuile-zero" : ""));
+        tuile.type = "button";
+        tuile.setAttribute("aria-pressed", m === muscleChoisi ? "true" : "false");
+        tuile.appendChild(el("span", "tuile-nom", m));
+        tuile.appendChild(el("span", "tuile-nb", nb + (nb > 1 ? " exercices" : " exercice")));
+
+        tuile.addEventListener("click", function () {
+          muscleChoisi = (muscleChoisi === m) ? null : m;   // un second clic referme
+          afficherTuiles();
+          afficherListe();
+        });
+        zone.appendChild(tuile);
+      });
+    }
+
+    /* ---------- Liste d'exercices ---------- */
+
+    function creerCarte(ex) {
+      const carte = el("article", "card exo");
+      const initiale = ex.nom.charAt(0).toUpperCase();
+
+      if (ex.image_url) {
+        const img = el("img", "exo-photo");
+        img.src = ex.image_url;
+        img.alt = ex.nom;
+        img.loading = "lazy";
+        img.onerror = function () { img.replaceWith(el("div", "exo-vide", initiale)); };
+        carte.appendChild(img);
+      } else {
+        carte.appendChild(el("div", "exo-vide", initiale));
+      }
+
+      const corps = el("div", "exo-corps");
+      corps.appendChild(el("div", "exo-nom", ex.nom));
+      corps.appendChild(creerSelect(MUSCLES, ex.muscle, "Muscle", function (v) {
+        changer(ex, { muscle: v });
+      }));
+      corps.appendChild(creerSelect(GROUPES_SEANCE, ex.groupe, "Séance", function (v) {
+        changer(ex, { groupe: v });
+      }));
+
+      const bouton = el("button", "btn-suppr", "Supprimer");
+      bouton.addEventListener("click", async function () {
+        if (!confirm("Supprimer « " + ex.nom + " » ?")) return;
+        try {
+          await supprimerExercice(ex);
+          exercices = await chargerExercices();
+          afficherTuiles();
+          afficherListe();
+        } catch (e) {
+          if (/foreign key|violates/i.test(e.message)) {
+            alert("Cet exercice est utilisé dans des séances, il ne peut pas être supprimé.");
+          } else {
+            alert("Erreur : " + e.message);
+          }
+        }
+      });
+      corps.appendChild(bouton);
+
+      carte.appendChild(corps);
+      return carte;
+    }
+
+    function afficherListe() {
+      const zone = document.getElementById("liste");
+      zone.innerHTML = "";
+
+      const mots = normaliser(document.getElementById("recherche").value)
+        .split(" ").filter(Boolean);
+
+      let titre, visibles;
+
+      if (mots.length > 0) {
+        // Recherche : dans tous les muscles
+        visibles = exercices.filter(function (e) {
+          const texte = normaliser(e.nom + " " + e.muscle);
+          return mots.every(function (m) { return texte.indexOf(m) !== -1; });
+        });
+        titre = "Résultats";
+      } else if (muscleChoisi === null) {
+        zone.appendChild(el("div", "invite", exercices.length
+          ? "Choisis un muscle ci-dessus pour afficher ses exercices."
+          : "Ta bibliothèque est vide. Ajoute ton premier exercice ci-dessus."));
+        return;
+      } else {
+        visibles = exercices.filter(function (e) {
+          return muscleChoisi === "Tous" || e.muscle === muscleChoisi;
+        });
+        titre = muscleChoisi === "Tous" ? "Tous les exercices" : muscleChoisi;
+      }
+
+      const entete = el("h3", "titre-liste", titre);
+      entete.appendChild(el("span", "compte", String(visibles.length)));
+      zone.appendChild(entete);
+
+      if (visibles.length === 0) {
+        zone.appendChild(el("div", "vide", mots.length > 0
+          ? "Aucun exercice ne correspond."
+          : "Aucun exercice dans cette catégorie pour l’instant."));
+        return;
+      }
+
+      const grille = el("div", "grille-exercices");
+      visibles.forEach(function (ex) { grille.appendChild(creerCarte(ex)); });
+      zone.appendChild(grille);
+    }
+
+    /* ---------- Formulaire d'ajout ---------- */
+
+    // Aperçu de la photo choisie
+    document.getElementById("photo").addEventListener("change", function () {
+      const zone = document.getElementById("apercu");
+      zone.innerHTML = "";
+      const fichier = this.files[0];
+      if (fichier) {
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(fichier);
+        img.alt = "Aperçu de la photo";
+        zone.appendChild(img);
+      }
+    });
+
+    // Choisir un muscle propose automatiquement la séance habituelle
+    document.getElementById("muscle").addEventListener("change", function () {
+      document.getElementById("groupe").value = GROUPE_PAR_MUSCLE[this.value] || "Autre";
+    });
+
+    document.getElementById("recherche").addEventListener("input", afficherListe);
+    document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
+
+    document.getElementById("btn-ajouter").addEventListener("click", async function () {
+      const bouton = this;
+      const message = document.getElementById("message");
+      const nom = document.getElementById("nom").value.trim();
+      if (!nom) {
+        document.getElementById("nom").focus();
+        return;
+      }
+
+      const muscle = document.getElementById("muscle").value;
+
+      bouton.disabled = true;
+      message.textContent = "Envoi en cours…";
+      try {
+        await ajouterExercice({
+          nom: nom,
+          muscle: muscle,
+          groupe: document.getElementById("groupe").value,
+          lienImage: document.getElementById("lien").value.trim()
+        }, document.getElementById("photo").files[0] || null);
+
+        document.getElementById("nom").value = "";
+        document.getElementById("lien").value = "";
+        document.getElementById("photo").value = "";
+        document.getElementById("apercu").innerHTML = "";
+        document.getElementById("recherche").value = "";
+        exercices = await chargerExercices();
+
+        // On affiche le muscle de l'exercice qui vient d'être ajouté
+        muscleChoisi = muscle;
+        afficherTuiles();
+        afficherListe();
+        message.textContent = "Exercice ajouté";
+      } catch (e) {
+        message.textContent = "";
+        alert("Erreur : " + e.message);
+      } finally {
+        bouton.disabled = false;
+      }
+    });
+
+    /* ---------- Démarrage ---------- */
+
+    (async function () {
+      const user = await exigerConnexion();
+      if (!user) return;
+
+      remplirListe(document.getElementById("muscle"), MUSCLES);
+      remplirListe(document.getElementById("groupe"), GROUPES_SEANCE);
+      document.getElementById("groupe").value = GROUPE_PAR_MUSCLE[MUSCLES[0]];
+      afficherTuiles();
+      afficherListe();
+
+      try {
+        exercices = await chargerExercices();
+        afficherTuiles();
+        afficherListe();
+      } catch (e) {
+        alert("Erreur de chargement : " + e.message);
+      }
+    })();
+  </script>
+</body>
+</html>

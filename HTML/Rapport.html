@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Rapport</title>
   <link rel="stylesheet" href="../CSS/Couleur.css">
+  <link rel="stylesheet" href="../CSS/Commun.css">
   <link rel="stylesheet" href="../CSS/Rapport.css">
 </head>
 <body>
@@ -12,6 +13,7 @@
     <nav>
       <a href="Accueil.html">Accueil</a>
       <a href="Activite.html">Activité</a>
+      <a href="Exercices.html">Exercices</a>
       <a href="Rapport.html" class="actif">Rapport</a>
       <a href="Parametres.html">Paramètres</a>
       <button class="deconnexion" id="btn-deconnexion">Déconnexion</button>
@@ -56,6 +58,22 @@
       <div class="graphique" id="graphique"></div>
     </section>
 
+     <!-- Courbe de poids -->
+    <section class="card">
+      <h2>Poids</h2>
+      <div class="stats-poids">
+        <div>   
+          <div class="mut">Poids actuel</div>
+          <div class="chiffre-poids" id="poids-actuel">—</div>
+        </div>
+        <div>
+          <div class="mut">Évolution sur la période</div>
+          <div class="chiffre-poids" id="poids-evolution">—</div>
+        </div>
+      </div>
+      <div class="graphique" id="graphique-poids"></div>
+    </section>
+
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -63,6 +81,7 @@
   <script src="../JS/donnees.js"></script>
   <script>
     let seances = [];
+    let poids = [];
 
     // Date au format AAAA-MM-JJ (heure locale)
     function versTexte(date) {
@@ -109,6 +128,7 @@
       document.getElementById("stat-total").textContent = total;
 
       dessiner(semaines, moyenne);
+      dessinerPoids();
     }
 
     function dessiner(semaines, moyenne) {
@@ -154,6 +174,100 @@
         'aria-label="Courbe du nombre de séances par semaine">' + svg + '</svg>';
     }
 
+    function formaterPoids(v) {
+      return Number(v).toFixed(1).replace(".", ",");
+    }
+
+    function dessinerPoids() {
+      const N = parseInt(document.getElementById("periode").value, 10);
+      const zone = document.getElementById("graphique-poids");
+      const actuel = document.getElementById("poids-actuel");
+      const evolution = document.getElementById("poids-evolution");
+
+      // Poids actuel : la dernière valeur enregistrée
+      actuel.textContent = poids.length
+        ? formaterPoids(poids[poids.length - 1].valeur) + " kg"
+        : "—";
+
+      // Valeurs de la période, une seule par jour (la dernière saisie)
+      const limite = enDate(versTexte(new Date()));
+      limite.setDate(limite.getDate() - N * 7);
+      const limiteTexte = versTexte(limite);
+      const parJour = {};
+      poids.forEach(function (p) {
+        if (p.date >= limiteTexte) parJour[p.date] = Number(p.valeur);
+      });
+      const jours = Object.keys(parJour).sort();
+
+      if (jours.length < 2) {
+        evolution.textContent = "—";
+        zone.innerHTML = '<div class="vide">Enregistre ton poids sur au moins deux jours différents pour voir la courbe.</div>';
+        return;
+      }
+
+      // Évolution entre la première et la dernière valeur de la période
+      const delta = Math.round((parJour[jours[jours.length - 1]] - parJour[jours[0]]) * 10) / 10;
+      evolution.textContent =
+        (delta > 0 ? "+" : delta < 0 ? "−" : "") + formaterPoids(Math.abs(delta)) + " kg";
+
+      // Dimensions du graphique
+      const L = 600, H = 230;
+      const gauche = 44, droite = 16, haut = 22, bas = 34;
+      const valeurs = jours.map(function (j) { return parJour[j]; });
+      const vmin = Math.floor(Math.min.apply(null, valeurs) - 0.5);
+      const vmax = Math.ceil(Math.max.apply(null, valeurs) + 0.5);
+      const t0 = enDate(jours[0]).getTime();
+      const t1 = enDate(jours[jours.length - 1]).getTime();
+
+      // Les points sont placés selon la vraie date, pas à intervalles réguliers
+      const X = function (t) { return gauche + (t - t0) / (t1 - t0) * (L - gauche - droite); };
+      const Y = function (v) { return haut + (H - haut - bas) * (1 - (v - vmin) / (vmax - vmin)); };
+
+      let svg = "";
+
+      // Grille et valeurs de l'axe vertical
+      for (let i = 0; i <= 4; i++) {
+        const v = vmin + i * (vmax - vmin) / 4;
+        svg += '<line class="grille" x1="' + gauche + '" x2="' + (L - droite) +
+               '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>';
+        svg += '<text class="axe" x="' + (gauche - 8) + '" y="' + (Y(v) + 4) +
+               '" text-anchor="end">' + formaterPoids(v) + '</text>';
+      }
+
+      // Aire sous la courbe, puis courbe
+      const pts = jours.map(function (j) {
+        return X(enDate(j).getTime()) + "," + Y(parJour[j]);
+      });
+      const bord = H - bas;
+      svg += '<polygon class="aire" points="' + X(t0) + ',' + bord + ' ' +
+             pts.join(" ") + ' ' + X(t1) + ',' + bord + '"/>';
+      svg += '<polyline class="courbe" points="' + pts.join(" ") + '"/>';
+
+      // Points (si pas trop nombreux) et valeur finale
+      if (jours.length <= 40) {
+        jours.forEach(function (j) {
+          svg += '<circle class="point" cx="' + X(enDate(j).getTime()) +
+                 '" cy="' + Y(parJour[j]) + '" r="4.5"/>';
+        });
+      }
+      const dernier = jours[jours.length - 1];
+      svg += '<text class="valeur-fin" x="' + (X(t1) - 6) + '" y="' + (Y(parJour[dernier]) - 12) +
+             '" text-anchor="end">' + formaterPoids(parJour[dernier]) + ' kg</text>';
+
+      // Dates sous la courbe (5 repères répartis dans le temps)
+      for (let i = 0; i <= 4; i++) {
+        const t = t0 + i * (t1 - t0) / 4;
+        const ancre = i === 0 ? "start" : (i === 4 ? "end" : "middle");
+        const label = new Date(t).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+        svg += '<text class="axe" x="' + X(t) + '" y="' + (H - 10) +
+               '" text-anchor="' + ancre + '">' + label + '</text>';
+      }
+
+      zone.innerHTML =
+        '<svg viewBox="0 0 ' + L + ' ' + H + '" role="img" ' +
+        'aria-label="Courbe du poids">' + svg + '</svg>';
+    }
+
     document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
     document.getElementById("periode").addEventListener("change", afficher);
 
@@ -162,6 +276,7 @@
       if (!user) return;
       try {
         seances = await chargerSeances();
+        poids = await chargerPoids();
         afficher();
       } catch (e) {
         alert("Erreur de chargement : " + e.message);

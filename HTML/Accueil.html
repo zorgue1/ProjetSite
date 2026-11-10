@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Accueil</title>
   <link rel="stylesheet" href="../CSS/Couleur.css">
+  <link rel="stylesheet" href="../CSS/Commun.css">
   <link rel="stylesheet" href="../CSS/Accueil.css">
 </head>
 <body>
@@ -12,6 +13,7 @@
     <nav>
       <a href="Accueil.html" class="actif">Accueil</a>
       <a href="Activite.html">Activité</a>
+      <a href="Exercices.html">Exercices</a>
       <a href="Rapport.html">Rapport</a>
       <a href="Parametres.html">Paramètres</a>
       <button class="deconnexion" id="btn-deconnexion">Déconnexion</button>
@@ -45,6 +47,7 @@
         <div class="recap-contenu">
           <div class="recap-titre">Dernière séance <span id="recap-type"></span></div>
           <div class="mut" id="recap-date"></div>
+          <div class="recap-exercices" id="recap-exercices"></div>
           <div class="recap-notes" id="recap-notes"></div>
         </div>
       </details>
@@ -95,7 +98,7 @@
       return Math.round((a - b) / 86400000);
     }
 
-    async function afficherRecap(seance) {
+        async function afficherRecap(seance) {
       const bloc = document.getElementById("recap");
       if (seance === "Repos") {
         bloc.hidden = true;
@@ -111,9 +114,11 @@
 
       const type = document.getElementById("recap-type");
       const date = document.getElementById("recap-date");
+      const zoneExos = document.getElementById("recap-exercices");
       const notes = document.getElementById("recap-notes");
       type.textContent = seance;
       type.className = "recap-type " + cle;
+      zoneExos.innerHTML = "";
       bloc.hidden = false;
 
       if (!derniere) {
@@ -127,7 +132,18 @@
         new Date(derniere.date + "T12:00:00").toLocaleDateString("fr-FR", {
           weekday: "long", day: "numeric", month: "long", year: "numeric"
         }) + " · il y a " + n + " jour" + (n > 1 ? "s" : "");
-      notes.textContent = derniere.notes || "Aucun détail enregistré pour cette séance.";
+
+      // Exercices, séries et charges de cette séance
+      let exos = [];
+      try {
+        exos = grouperSeries(await chargerSeries([derniere.id]))[derniere.id] || [];
+      } catch (e) {}
+      exos.forEach(function (ex) {
+        zoneExos.appendChild(creerLigneExercice(ex));
+      });
+
+      notes.textContent = derniere.notes ||
+        (exos.length ? "" : "Aucun détail enregistré pour cette séance.");
     }
 
     async function afficher() {

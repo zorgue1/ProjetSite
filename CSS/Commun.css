@@ -1,0 +1,328 @@
+@import url("https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Manrope:wght@400;500;600;700&display=swap");
+
+/* ---------- Base ---------- */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 520px at 90% -10%, var(--halo), transparent 65%),
+    var(--fond);
+  background-attachment: fixed;
+  color: var(--texte);
+  font-family: Manrope, "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 18px 64px;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+
+h2 {
+  margin-bottom: 16px;
+  font-size: 30px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.mut {
+  color: var(--gris);
+  font-size: 15px;
+}
+
+/* ---------- Bandeau (pleine largeur, collé en haut) ---------- */
+.bandeau {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  width: 100%;
+  background: var(--bandeau-fond);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.bandeau nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+}
+
+.bandeau a {
+  flex: 1;
+  padding: 12px 10px;
+  text-align: center;
+  white-space: nowrap;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bandeau-texte);
+  border-radius: 12px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.bandeau a:hover {
+  background: var(--bandeau-survol);
+  color: var(--bandeau-actif);
+}
+
+.bandeau a.actif {
+  color: var(--bandeau-actif);
+  background: var(--bandeau-survol);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.bandeau .deconnexion {
+  flex: 0 0 auto;
+  padding: 11px 16px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bandeau-texte);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.bandeau .deconnexion:hover {
+  background: var(--bandeau-survol);
+  color: var(--bandeau-actif);
+}
+
+.bandeau a:focus-visible,
+.bandeau .deconnexion:focus-visible,
+.btn:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .bandeau nav {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .bandeau nav::-webkit-scrollbar {
+    display: none;
+  }
+  .bandeau a {
+    flex: 0 0 auto;
+    padding: 12px 14px;
+  }
+}
+
+/* ---------- Cartes ---------- */
+.card {
+  margin-bottom: 16px;
+  padding: 20px;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.row > * {
+  flex: 1 1 150px;
+}
+
+/* ---------- Formulaires ---------- */
+label {
+  display: block;
+  margin: 16px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.card > label:first-child {
+  margin-top: 0;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 12px 14px;
+  font: inherit;
+  color: var(--texte);
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-halo);
+}
+
+textarea {
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+#message {
+  color: var(--pull);
+  font-weight: 600;
+}
+
+/* ---------- Boutons ---------- */
+.btn {
+  padding: 12px 22px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--texte-bouton);
+  background: var(--degrade);
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px var(--accent-halo);
+  transition: transform 0.12s, filter 0.12s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* ---------- Logo ---------- */
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 6px 0 22px;
+}
+
+.logo-icone {
+  width: 54px;
+  height: 54px;
+  fill: var(--logo);
+  filter: drop-shadow(0 4px 14px var(--accent-halo));
+}
+
+.logo-nom {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texte);
+}
+
+/* ---------- Animation d'apparition ---------- */
+@keyframes monter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.card,
+.hero,
+.stats {
+  animation: monter 0.4s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ---------- Attribut hidden toujours respecté ---------- */
+[hidden] {
+  display: none !important;
+}
+
+/* ---------- Exercices : vignette et séries (partagé) ---------- */
+.exo-ligne {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.miniature {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: var(--carte-douce);
+}
+
+.miniature.vide {
+  display: grid;
+  place-items: center;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--gris);
+}
+
+.exo-detail {
+  min-width: 0;
+}
+
+.exo-nom-ligne {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.puce {
+  padding: 2px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+}

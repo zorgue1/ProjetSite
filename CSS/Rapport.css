@@ -1,148 +1,48 @@
-@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;600&display=swap");
-
-/* ---------- Bandeau (pleine largeur) ---------- */
-.bandeau {
-  width: 100%;
-  background: var(--bandeau-fond);
-  border-bottom: 1px solid var(--bordure);
-}
-
-.bandeau nav {
-  display: flex;
-  width: 100%;
-}
-
-.bandeau a {
-  flex: 1;
-  padding: 16px 8px;
-  text-align: center;
-  white-space: nowrap;
-  text-decoration: none;
-  font-weight: 600;
-  color: var(--bandeau-texte);
-  border-bottom: 3px solid transparent;
-}
-
-.bandeau a:hover {
-  background: var(--bandeau-survol);
-  color: var(--bandeau-actif);
-}
-
-.bandeau a.actif {
-  color: var(--bandeau-actif);
-  border-bottom-color: var(--accent);
-}
-
-/* ---------- Bouton de déconnexion ---------- */
-.bandeau .deconnexion {
-  flex: 0 0 auto;
-  padding: 16px 20px;
-  font: inherit;
-  font-weight: 600;
-  color: var(--bandeau-texte);
-  background: none;
-  border: 0;
-  border-bottom: 3px solid transparent;
-  cursor: pointer;
-}
-
-.bandeau .deconnexion:hover {
-  background: var(--bandeau-survol);
-  color: var(--bandeau-actif);
-}
-
-.bandeau .deconnexion:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
-
-/* ---------- Base ---------- */
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  background: var(--fond);
-  color: var(--texte);
-  font-family: Barlow, "Segoe UI", system-ui, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-}
-
-main {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 16px 16px 48px;
-}
-
-h2 {
-  margin: 0 0 12px;
-  font-family: "Barlow Condensed", Impact, sans-serif;
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.mut {
-  color: var(--gris);
-  font-size: 15px;
-}
-
-nav a:focus-visible,
-select:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
-/* ---------- Cartes ---------- */
-.card {
-  background: var(--carte);
-  border: 1px solid var(--bordure);
-  border-radius: 6px;
-  padding: 16px;
-  margin-bottom: 14px;
-}
-
 /* ---------- Chiffres clés ---------- */
 .stats {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+  margin-bottom: 16px;
 }
 
 .stats .card {
-  flex: 1;
+  margin: 0;
+  padding: 16px;
+}
+
+.stats .mut {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .chiffre {
-  font-family: "Barlow Condensed", sans-serif;
-  font-size: 44px;
-  font-weight: 800;
+  margin-top: 6px;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 54px;
+  font-weight: 900;
   line-height: 1;
 }
 
-/* ---------- Sélecteur de période ---------- */
-label {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 14px;
-  font-weight: 600;
+.stats .card:first-child .chiffre {
+  color: var(--accent);
 }
 
+@media (max-width: 480px) {
+  .stats { gap: 8px; }
+  .stats .card { padding: 12px; }
+  .chiffre { font-size: 40px; }
+}
+
+/* ---------- Sélecteur de période ---------- */
 select {
-  width: 100%;
-  max-width: 220px;
-  padding: 10px;
-  font: inherit;
-  color: var(--texte);
-  background: var(--fond);
-  border: 1px solid var(--bordure);
-  border-radius: 4px;
+  max-width: 240px;
 }
 
 .legende {
-  margin: 12px 0 6px;
+  margin: 14px 0 8px;
 }
 
 /* ---------- Graphique ---------- */
@@ -167,7 +67,7 @@ select {
 }
 
 .moyenne {
-  stroke: var(--leg);
+  stroke: var(--pull);
   stroke-width: 2;
   stroke-dasharray: 6 5;
 }
@@ -175,17 +75,48 @@ select {
 .courbe {
   fill: none;
   stroke: var(--accent);
-  stroke-width: 3;
+  stroke-width: 3.5;
   stroke-linejoin: round;
+  stroke-linecap: round;
+  filter: drop-shadow(0 4px 8px var(--accent-halo));
 }
 
 .point {
   fill: var(--accent);
+  stroke: var(--carte);
+  stroke-width: 2;
 }
 
-/* ---------- Petits écrans ---------- */
-@media (max-width: 480px) {
-  .chiffre {
-    font-size: 36px;
-  }
+/* ---------- Carte de poids ---------- */
+.stats-poids {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.stats-poids .mut {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.chiffre-poids {
+  margin-top: 4px;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 46px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.aire {
+  fill: color-mix(in srgb, var(--accent) 14%, transparent);
+  stroke: none;
+}
+
+.valeur-fin {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--texte);
 }
