@@ -325,6 +325,30 @@ async function modifierExercice(id, champs) {
   if (error) throw error;
 }
 
+/* ---------- Progression d'un exercice ---------- */
+
+// Toutes les séries d'un exercice, avec la date de leur séance
+async function chargerHistoriqueExercice(exerciceId) {
+  const { data, error } = await client
+    .from("series")
+    .select("seance_id, numero, repetitions, charge, seances(date)")
+    .eq("exercice_id", exerciceId)
+    .order("id", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+// L'exercice de la dernière série enregistrée (ou null s'il n'y en a pas)
+async function chargerDernierExerciceUtilise() {
+  const { data, error } = await client
+    .from("series")
+    .select("exercice_id")
+    .order("id", { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  return data.length ? data[0].exercice_id : null;
+}
+
 /* ---------- Protection du bouton « Retour » ---------- */
 
 // La page reste masquée tant que la connexion n'est pas vérifiée

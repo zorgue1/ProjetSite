@@ -40,7 +40,7 @@
       </div>
     </section>
 
-    <!-- Courbe -->
+    <!-- Courbe des séances -->
     <section class="card">
       <label for="periode">Période</label>
       <select id="periode">
@@ -58,11 +58,11 @@
       <div class="graphique" id="graphique"></div>
     </section>
 
-     <!-- Courbe de poids -->
+    <!-- Courbe de poids -->
     <section class="card">
       <h2>Poids</h2>
       <div class="stats-poids">
-        <div>   
+        <div>
           <div class="mut">Poids actuel</div>
           <div class="chiffre-poids" id="poids-actuel">—</div>
         </div>
@@ -74,6 +74,28 @@
       <div class="graphique" id="graphique-poids"></div>
     </section>
 
+    <!-- Progression par exercice -->
+    <section class="card">
+      <h2>Progression par exercice</h2>
+
+      <div id="prog-selection">
+        <label for="recherche-prog">Exercice</label>
+        <input id="recherche-prog" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
+        <select id="choix-prog"></select>
+      </div>
+
+      <div class="vide" id="prog-aucune" hidden></div>
+
+      <div id="prog-contenu" hidden>
+        <div class="records" id="records"></div>
+
+        <label for="metrique">Courbe</label>
+        <select id="metrique"></select>
+        <div class="graphique" id="graphique-prog"></div>
+        <p class="mut" id="prog-note"></p>
+      </div>
+    </section>
+
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -82,6 +104,10 @@
   <script>
     let seances = [];
     let poids = [];
+    let exercicesProg = [];   // bibliothèque d'exercices
+    let idProg = null;        // exercice choisi
+    let idCharge = null;      // exercice dont les séries sont chargées
+    let donneesProg = [];     // séries de l'exercice choisi
 
     // Date au format AAAA-MM-JJ (heure locale)
     function versTexte(date) {
@@ -100,6 +126,8 @@
       d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
       return versTexte(d);
     }
+
+    /* ---------- Séances par semaine ---------- */
 
     function afficher() {
       const N = parseInt(document.getElementById("periode").value, 10);
@@ -173,6 +201,8 @@
         '<svg viewBox="0 0 ' + L + ' ' + H + '" role="img" ' +
         'aria-label="Courbe du nombre de séances par semaine">' + svg + '</svg>';
     }
+
+    /* ---------- Poids ---------- */
 
     function formaterPoids(v) {
       return Number(v).toFixed(1).replace(".", ",");
@@ -268,6 +298,259 @@
         'aria-label="Courbe du poids">' + svg + '</svg>';
     }
 
+    /* ---------- Progression par exercice ---------- */
+
+    // 62.5 -> "62,5" ; 60 -> "60"
+    function nb(v) {
+      return String(Math.round(v * 10) / 10).replace(".", ",");
+    }
+
+    function dateFr(texte) {
+      return enDate(texte).toLocaleDateString("fr-FR", {
+        day: "2-digit", month: "2-digit", year: "2-digit"
+      });
+    }
+
+    function carteRecord(titre, valeur, sous) {
+      const c = document.createElement("div");
+      c.className = "record";
+      [["record-titre", titre], ["record-valeur", valeur], ["record-sous", sous]].forEach(function (p) {
+        const d = document.createElement("div");
+        d.className = p[0];
+        d.textContent = p[1];
+        c.appendChild(d);
+      });
+      return c;
+    }
+
+    // Remplit le menu des exercices selon la recherche
+    function remplirChoixProg() {
+      const select = document.getElementById("choix-prog");
+      select.innerHTML = "";
+
+      const mots = normaliser(document.getElementById("recherche-prog").value)
+        .split(" ").filter(Boolean);
+      const trouves = exercicesProg.filter(function (e) {
+        const texte = normaliser(e.nom + " " + e.muscle);
+        return mots.every(function (m) { return texte.indexOf(m) !== -1; });
+      });
+
+      MUSCLES.forEach(function (muscle) {
+        const dans = trouves.filter(function (e) { return e.muscle === muscle; });
+        if (dans.length === 0) return;
+        const groupe = document.createElement("optgroup");
+        groupe.label = muscle;
+        dans.forEach(function (e) {
+          const option = document.createElement("option");
+          option.value = e.id;
+          option.textContent = e.nom;
+          if (e.id === idProg) option.selected = true;
+          groupe.appendChild(option);
+        });
+        select.appendChild(groupe);
+      });
+    }
+
+    async function changerExerciceProg() {
+      const valeur = document.getElementById("choix-prog").value;
+      const contenu = document.getElementById("prog-contenu");
+      const aucune = document.getElementById("prog-aucune");
+
+      if (!valeur) {
+        contenu.hidden = true;
+        aucune.textContent = "Aucun exercice ne correspond à cette recherche.";
+        aucune.hidden = false;
+        idCharge = null;
+        return;
+      }
+
+      idProg = Number(valeur);
+      if (idProg !== idCharge) {
+        donneesProg = await chargerHistoriqueExercice(idProg);
+        idCharge = idProg;
+      }
+      afficherProg();
+    }
+
+    function afficherProg() {
+      const contenu = document.getElementById("prog-contenu");
+      const aucune = document.getElementById("prog-aucune");
+
+      // Regroupe les séries par date de séance
+      const parDate = {};
+      donneesProg.forEach(function (l) {
+        const d = l.seances.date;
+        if (!parDate[d]) parDate[d] = { date: d, series: [] };
+        parDate[d].series.push({ rep: l.repetitions, charge: Number(l.charge) });
+      });
+      const liste = Object.keys(parDate).sort().map(function (d) { return parDate[d]; });
+
+      if (liste.length === 0) {
+        contenu.hidden = true;
+        aucune.textContent = "Aucune donnée pour cet exercice. Ajoute-le à une séance dans l’onglet Activité.";
+        aucune.hidden = false;
+        return;
+      }
+      aucune.hidden = true;
+      contenu.hidden = false;
+
+      // Chiffres de chaque séance
+      liste.forEach(function (s) {
+        const charges = s.series.map(function (x) { return x.charge; });
+        const reps = s.series.map(function (x) { return x.rep; });
+        s.chargeMax = Math.max.apply(null, charges);
+        s.rm = Math.max.apply(null, s.series.map(function (x) { return x.charge * (1 + x.rep / 30); }));
+        s.volume = s.series.reduce(function (a, x) { return a + x.rep * x.charge; }, 0);
+        s.repsMax = Math.max.apply(null, reps);
+        s.repsTotal = reps.reduce(function (a, r) { return a + r; }, 0);
+      });
+
+      // En cas d'égalité, le record reste à la première séance qui l'a atteint
+      function meilleur(cle) {
+        return liste.reduce(function (m, s) { return s[cle] > m[cle] ? s : m; }, liste[0]);
+      }
+
+      const avecCharge = liste.some(function (s) { return s.chargeMax > 0; });
+
+      // Cartes de records
+      const records = document.getElementById("records");
+      records.innerHTML = "";
+      if (avecCharge) {
+        const rc = meilleur("chargeMax");
+        const repsAuRecord = Math.max.apply(null, rc.series
+          .filter(function (x) { return x.charge === rc.chargeMax; })
+          .map(function (x) { return x.rep; }));
+        records.appendChild(carteRecord("Charge max", nb(rc.chargeMax) + " kg × " + repsAuRecord, dateFr(rc.date)));
+
+        const rr = meilleur("rm");
+        records.appendChild(carteRecord("1RM estimé", nb(rr.rm) + " kg", dateFr(rr.date)));
+
+        const rv = meilleur("volume");
+        records.appendChild(carteRecord("Volume max", Math.round(rv.volume).toLocaleString("fr-FR") + " kg", dateFr(rv.date)));
+      } else {
+        const rm = meilleur("repsMax");
+        records.appendChild(carteRecord("Répétitions max", rm.repsMax + " reps", dateFr(rm.date)));
+
+        const rt = meilleur("repsTotal");
+        records.appendChild(carteRecord("Total sur une séance", rt.repsTotal + " reps", dateFr(rt.date)));
+      }
+      records.appendChild(carteRecord("Séances", String(liste.length),
+        "Dernière : " + dateFr(liste[liste.length - 1].date)));
+
+      // Courbe : mesures disponibles selon l'exercice
+      const metriques = avecCharge
+        ? [["chargeMax", "Charge max (kg)", 1], ["rm", "1RM estimé (kg)", 1], ["volume", "Volume de la séance (kg)", 0]]
+        : [["repsMax", "Répétitions max (une série)", 0], ["repsTotal", "Total de répétitions", 0]];
+
+      const selM = document.getElementById("metrique");
+      const actuelle = selM.value;
+      selM.innerHTML = "";
+      metriques.forEach(function (m) {
+        const option = document.createElement("option");
+        option.value = m[0];
+        option.textContent = m[1];
+        selM.appendChild(option);
+      });
+      if (metriques.some(function (m) { return m[0] === actuelle; })) selM.value = actuelle;
+
+      const choix = metriques.find(function (m) { return m[0] === selM.value; });
+      dessinerProg(liste.map(function (s) {
+        return { t: enDate(s.date).getTime(), v: s[choix[0]] };
+      }), choix[2]);
+
+      document.getElementById("prog-note").textContent = avecCharge
+        ? "1RM estimé : charge maximale théorique sur une répétition (formule d’Epley), à prendre comme une estimation."
+        : "";
+    }
+
+    function dessinerProg(points, decimales) {
+      const zone = document.getElementById("graphique-prog");
+      if (points.length < 2) {
+        zone.innerHTML = '<div class="vide">Il faut au moins deux séances avec cet exercice pour voir la courbe.</div>';
+        return;
+      }
+
+      const L = 600, H = 230;
+      const gauche = 46, droite = 16, haut = 26, bas = 34;
+      const vals = points.map(function (p) { return p.v; });
+      const mini = Math.min.apply(null, vals);
+      const maxi = Math.max.apply(null, vals);
+
+      // Axe vertical : bornes entières, graduations régulières
+      const marge = Math.max(1, (maxi - mini) * 0.15);
+      const vmin = Math.max(0, Math.floor(mini - marge));
+      let vmax = Math.ceil(maxi + marge);
+      vmax = vmin + Math.ceil((vmax - vmin) / 4) * 4;
+
+      const t0 = points[0].t;
+      const t1 = points[points.length - 1].t;
+      const X = function (t) { return gauche + (t - t0) / (t1 - t0) * (L - gauche - droite); };
+      const Y = function (v) { return haut + (H - haut - bas) * (1 - (v - vmin) / (vmax - vmin)); };
+
+      let svg = "";
+
+      for (let i = 0; i <= 4; i++) {
+        const v = vmin + i * (vmax - vmin) / 4;
+        svg += '<line class="grille" x1="' + gauche + '" x2="' + (L - droite) +
+               '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>';
+        svg += '<text class="axe" x="' + (gauche - 8) + '" y="' + (Y(v) + 4) +
+               '" text-anchor="end">' + Math.round(v) + '</text>';
+      }
+
+      const pts = points.map(function (p) { return X(p.t) + "," + Y(p.v); });
+      const bord = H - bas;
+      svg += '<polygon class="aire" points="' + X(t0) + ',' + bord + ' ' +
+             pts.join(" ") + ' ' + X(t1) + ',' + bord + '"/>';
+      svg += '<polyline class="courbe" points="' + pts.join(" ") + '"/>';
+
+      if (points.length <= 40) {
+        points.forEach(function (p) {
+          svg += '<circle class="point" cx="' + X(p.t) + '" cy="' + Y(p.v) + '" r="4.5"/>';
+        });
+      }
+
+      const dernier = points[points.length - 1];
+      svg += '<text class="valeur-fin" x="' + (X(t1) - 6) + '" y="' + (Y(dernier.v) - 12) +
+             '" text-anchor="end">' + dernier.v.toFixed(decimales).replace(".", ",") + '</text>';
+
+      for (let i = 0; i <= 4; i++) {
+        const t = t0 + i * (t1 - t0) / 4;
+        const ancre = i === 0 ? "start" : (i === 4 ? "end" : "middle");
+        const label = new Date(t).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+        svg += '<text class="axe" x="' + X(t) + '" y="' + (H - 10) +
+               '" text-anchor="' + ancre + '">' + label + '</text>';
+      }
+
+      zone.innerHTML =
+        '<svg viewBox="0 0 ' + L + ' ' + H + '" role="img" ' +
+        'aria-label="Courbe de progression de l\'exercice">' + svg + '</svg>';
+    }
+
+    async function initialiserProg() {
+      exercicesProg = await chargerExercices();
+
+      if (exercicesProg.length === 0) {
+        document.getElementById("prog-selection").hidden = true;
+        const aucune = document.getElementById("prog-aucune");
+        aucune.textContent = "Ta bibliothèque est vide. Ajoute des exercices, puis saisis-les dans tes séances.";
+        aucune.hidden = false;
+        return;
+      }
+
+      idProg = await chargerDernierExerciceUtilise();
+      remplirChoixProg();
+      await changerExerciceProg();
+    }
+
+    document.getElementById("choix-prog").addEventListener("change", changerExerciceProg);
+    document.getElementById("metrique").addEventListener("change", afficherProg);
+    document.getElementById("recherche-prog").addEventListener("input", function () {
+      remplirChoixProg();
+      changerExerciceProg();
+    });
+
+    /* ---------- Démarrage ---------- */
+
     document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
     document.getElementById("periode").addEventListener("change", afficher);
 
@@ -278,6 +561,7 @@
         seances = await chargerSeances();
         poids = await chargerPoids();
         afficher();
+        await initialiserProg();
       } catch (e) {
         alert("Erreur de chargement : " + e.message);
       }

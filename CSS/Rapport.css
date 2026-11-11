@@ -120,3 +120,64 @@ select {
   font-weight: 700;
   fill: var(--texte);
 }
+
+/* ---------- Message quand il n'y a rien à afficher ---------- */
+.vide {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--gris);
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon);
+}
+
+/* ---------- Progression par exercice ---------- */
+#prog-selection label {
+  margin-top: 0;
+}
+
+#recherche-prog {
+  margin-bottom: 8px;
+}
+
+#choix-prog {
+  max-width: none;
+}
+
+.records {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 18px 0 4px;
+}
+
+.record {
+  padding: 14px;
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 14px;
+}
+
+.record-titre {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.record-valeur {
+  margin: 4px 0 2px;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.records .record:first-child .record-valeur {
+  color: var(--accent);
+}
+
+.record-sous {
+  font-size: 13px;
+  color: var(--gris);
+}
