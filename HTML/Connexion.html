@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Connexion</title>
-  <link rel="stylesheet" href="../CSS/Couleur.css">
-  <link rel="stylesheet" href="../CSS/Commun.css">
-  <link rel="stylesheet" href="../CSS/Connexion.css">
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#090d13">
   <link rel="apple-touch-icon" href="../Image/icon-180.png">
+  <link rel="stylesheet" href="../CSS/Couleur.css">
+  <link rel="stylesheet" href="../CSS/Commun.css">
+  <link rel="stylesheet" href="../CSS/Connexion.css">
 </head>
 <body>
   <main>
@@ -26,7 +26,11 @@
     </div>
 
     <section class="card">
-      <h2>Connexion</h2>
+
+      <div class="onglets">
+        <button type="button" class="onglet" id="onglet-connexion" aria-pressed="true">Connexion</button>
+        <button type="button" class="onglet" id="onglet-inscription" aria-pressed="false">Créer un compte</button>
+      </div>
 
       <label for="email">Adresse e-mail</label>
       <input id="email" type="email" autocomplete="email">
@@ -34,9 +38,41 @@
       <label for="mdp">Mot de passe (6 caractères minimum)</label>
       <input id="mdp" type="password" autocomplete="current-password">
 
+      <!-- Champs affichés seulement pour créer un compte -->
+      <div id="champs-inscription" hidden>
+        <div class="row">
+          <div>
+            <label for="prenom">Prénom</label>
+            <input id="prenom" type="text" autocomplete="given-name">
+          </div>
+          <div>
+            <label for="nom">Nom</label>
+            <input id="nom" type="text" autocomplete="family-name">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="naissance">Date de naissance</label>
+            <input id="naissance" type="date">
+          </div>
+          <div>
+            <label for="poids">Poids (kg)</label>
+            <input id="poids" type="number" step="0.1" min="0" inputmode="decimal">
+          </div>
+        </div>
+
+        <label for="programme">Programme de la semaine</label>
+        <select id="programme">
+          <option value="ppl5">Push / Pull / Leg · 5 jours (lun → ven)</option>
+          <option value="ppl6">Push / Pull / Leg · 6 jours (lun → sam)</option>
+          <option value="ppl3">Push / Pull / Leg · 3 jours (lun, mer, ven)</option>
+        </select>
+        <p class="mut aide">Tu pourras tout modifier ensuite dans Paramètres.</p>
+      </div>
+
       <div class="actions">
-        <button class="btn" id="btn-connexion">Se connecter</button>
-        <button class="btn secondaire" id="btn-inscription">Créer un compte</button>
+        <button class="btn" id="btn-valider" type="button">Se connecter</button>
       </div>
       <p id="message" role="status"></p>
     </section>
@@ -46,11 +82,29 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../JS/supabase.js"></script>
   <script>
+    const PROGRAMMES = {
+      ppl5: ["Push", "Pull", "Leg", "Push", "Pull", "Repos", "Repos"],
+      ppl6: ["Push", "Pull", "Leg", "Push", "Pull", "Leg", "Repos"],
+      ppl3: ["Push", "Repos", "Pull", "Repos", "Leg", "Repos", "Repos"]
+    };
+
     const message = document.getElementById("message");
+    let mode = "connexion";
 
     function afficherMessage(texte, erreur) {
       message.textContent = texte;
       message.className = erreur ? "erreur" : "ok";
+    }
+
+    function choisirMode(nouveau) {
+      mode = nouveau;
+      const inscription = nouveau === "inscription";
+      document.getElementById("onglet-connexion").setAttribute("aria-pressed", String(!inscription));
+      document.getElementById("onglet-inscription").setAttribute("aria-pressed", String(inscription));
+      document.getElementById("champs-inscription").hidden = !inscription;
+      document.getElementById("btn-valider").textContent = inscription ? "Créer mon compte" : "Se connecter";
+      document.getElementById("mdp").autocomplete = inscription ? "new-password" : "current-password";
+      afficherMessage("", false);
     }
 
     function identifiants() {
@@ -60,20 +114,74 @@
       };
     }
 
-    document.getElementById("btn-connexion").addEventListener("click", async function () {
+    function aujourdhuiTexte() {
+      const d = new Date();
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 10);
+    }
+
+    async function seConnecter() {
       const { error } = await client.auth.signInWithPassword(identifiants());
       if (error) return afficherMessage("Connexion impossible : " + error.message, true);
       window.location.replace("Accueil.html");
-    });
+    }
 
-    document.getElementById("btn-inscription").addEventListener("click", async function () {
+    async function creerCompte() {
+      const prenom = document.getElementById("prenom").value.trim();
+      if (!prenom) {
+        document.getElementById("prenom").focus();
+        return afficherMessage("Indique ton prénom pour créer le compte.", true);
+      }
+
       const { data, error } = await client.auth.signUp(identifiants());
       if (error) return afficherMessage("Création impossible : " + error.message, true);
-      if (data.session) {
-        window.location.replace("Accueil.html");
-      } else {
-        afficherMessage("Compte créé. Vérifie tes e-mails pour confirmer, puis connecte-toi.", false);
+
+      if (!data.session) {
+        return afficherMessage("Compte créé. Vérifie tes e-mails pour confirmer, puis connecte-toi.", false);
       }
+
+      // Le compte est prêt : on enregistre le profil, le poids de départ et le programme
+      const poidsNum = parseFloat(document.getElementById("poids").value.replace(",", "."));
+      const poids = poidsNum > 0 ? poidsNum : null;
+
+      await client.from("profils").upsert({
+        user_id: data.session.user.id,
+        prenom: prenom,
+        nom: document.getElementById("nom").value.trim(),
+        naissance: document.getElementById("naissance").value || null,
+        poids: poids,
+        programme: PROGRAMMES[document.getElementById("programme").value]
+      });
+
+      if (poids) {
+        await client.from("poids").insert({ date: aujourdhuiTexte(), valeur: poids });
+      }
+
+      // Même si l'enregistrement du profil échouait, le compte existe : tout se complète dans Paramètres
+      window.location.replace("Accueil.html");
+    }
+
+    document.getElementById("onglet-connexion").addEventListener("click", function () { choisirMode("connexion"); });
+    document.getElementById("onglet-inscription").addEventListener("click", function () { choisirMode("inscription"); });
+
+    document.getElementById("btn-valider").addEventListener("click", async function () {
+      const bouton = this;
+      bouton.disabled = true;
+      try {
+        if (mode === "connexion") await seConnecter();
+        else await creerCompte();
+      } catch (e) {
+        afficherMessage("Une erreur est survenue : " + e.message, true);
+      } finally {
+        bouton.disabled = false;
+      }
+    });
+
+    // La touche Entrée valide le formulaire
+    document.querySelectorAll("input").forEach(function (champ) {
+      champ.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") document.getElementById("btn-valider").click();
+      });
     });
 
     // Déjà connecté : on va directement à l'accueil

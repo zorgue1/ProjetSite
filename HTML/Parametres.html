@@ -4,24 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Paramètres</title>
-  <link rel="stylesheet" href="../CSS/Couleur.css">
-  <link rel="stylesheet" href="../CSS/Commun.css">
-  <link rel="stylesheet" href="../CSS/Parametres.css">
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#090d13">
   <link rel="apple-touch-icon" href="../Image/icon-180.png">
+  <link rel="stylesheet" href="../CSS/Couleur.css">
+  <link rel="stylesheet" href="../CSS/Commun.css">
+  <link rel="stylesheet" href="../CSS/Parametres.css">
 </head>
 <body>
-  <header class="bandeau">
-    <nav>
-      <a href="Accueil.html">Accueil</a>
-      <a href="Activite.html">Activité</a>
-      <a href="Exercices.html">Exercices</a>
-      <a href="Rapport.html">Rapport</a>
-      <a href="Parametres.html" class="actif">Paramètres</a>
-      <button class="deconnexion" id="btn-deconnexion">Déconnexion</button>
-    </nav>
-  </header>
+  <header class="bandeau" id="entete"></header>
+  <script src="../JS/entete.js"></script>
 
   <main>
 
@@ -47,7 +39,7 @@
         </div>
         <div>
           <label for="poids">Poids actuel (kg)</label>
-          <input id="poids" type="number" step="0.1" min="0">
+          <input id="poids" type="number" step="0.1" min="0" inputmode="decimal">
         </div>
       </div>
     </section>
@@ -64,6 +56,13 @@
       <span id="message"></span>
     </div>
 
+    <!-- Compte -->
+    <section class="card compte">
+      <h2>Compte</h2>
+      <p class="mut" id="email-compte"></p>
+      <button class="btn secondaire" id="btn-deconnexion" type="button">Se déconnecter</button>
+    </section>
+
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -71,7 +70,7 @@
   <script src="../JS/donnees.js"></script>
   <script>
     const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-    const TYPES = ["Push", "Pull", "Leg", "Handball", "Repos"];
+    const TYPES = ["Push", "Pull", "Leg", "Repos"];
     let profilCharge = null;
 
     // Construit un menu déroulant par jour de la semaine
@@ -141,6 +140,7 @@
     (async function () {
       const user = await exigerConnexion();
       if (!user) return;
+      document.getElementById("email-compte").textContent = "Connecté avec " + user.email;
       try {
         await remplir();
       } catch (e) {

@@ -12,16 +12,8 @@
   <link rel="apple-touch-icon" href="../Image/icon-180.png">
 </head>
 <body>
-  <header class="bandeau">
-    <nav>
-      <a href="Accueil.html">Accueil</a>
-      <a href="Activite.html">Activité</a>
-      <a href="Exercices.html">Exercices</a>
-      <a href="Rapport.html" class="actif">Rapport</a>
-      <a href="Parametres.html">Paramètres</a>
-      <button class="deconnexion" id="btn-deconnexion">Déconnexion</button>
-    </nav>
-  </header>
+    <header class="bandeau" id="entete"></header>
+  <script src="../JS/entete.js"></script>
 
   <main>
 
@@ -554,7 +546,6 @@
 
     /* ---------- Démarrage ---------- */
 
-    document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
     document.getElementById("periode").addEventListener("change", afficher);
 
     (async function () {

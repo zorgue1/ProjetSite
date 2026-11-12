@@ -45,88 +45,90 @@ h2 {
   font-size: 15px;
 }
 
-/* ---------- Bandeau (pleine largeur, collé en haut) ---------- */
+/* ---------- Bandeau : logo et paramètres ---------- */
 .bandeau {
   position: sticky;
   top: 0;
   z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
+  padding: 10px 16px;
   background: var(--bandeau-fond);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--bordure);
 }
 
-.bandeau nav {
+.marque {
   display: flex;
   align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 8px 12px;
-}
-
-.bandeau a {
-  flex: 1;
-  padding: 12px 10px;
-  text-align: center;
-  white-space: nowrap;
+  gap: 10px;
   text-decoration: none;
-  font-size: 15px;
+  color: var(--texte);
+}
+
+.marque svg {
+  width: 34px;
+  height: 34px;
+  fill: var(--logo);
+}
+
+.marque span {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.reglages {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  font-size: 14px;
   font-weight: 600;
+  text-decoration: none;
   color: var(--bandeau-texte);
-  border-radius: 12px;
-  transition: background 0.15s, color 0.15s;
-}
-
-.bandeau a:hover {
-  background: var(--bandeau-survol);
-  color: var(--bandeau-actif);
-}
-
-.bandeau a.actif {
-  color: var(--bandeau-actif);
-  background: var(--bandeau-survol);
-  box-shadow: inset 0 -2px 0 var(--accent);
-}
-
-.bandeau .deconnexion {
-  flex: 0 0 auto;
-  padding: 11px 16px;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--bandeau-texte);
-  background: none;
   border: 1px solid var(--bordure);
-  border-radius: 12px;
-  cursor: pointer;
+  border-radius: 999px;
   transition: background 0.15s, color 0.15s;
 }
 
-.bandeau .deconnexion:hover {
-  background: var(--bandeau-survol);
-  color: var(--bandeau-actif);
+.reglages svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 
-.bandeau a:focus-visible,
-.bandeau .deconnexion:focus-visible,
+.reglages:hover,
+.reglages[aria-current="page"] {
+  color: var(--bandeau-actif);
+  background: var(--bandeau-survol);
+}
+
+.marque:focus-visible,
+.reglages:focus-visible,
 .btn:focus-visible,
 summary:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
-@media (max-width: 640px) {
-  .bandeau nav {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .bandeau nav::-webkit-scrollbar {
+/* Sur téléphone : le bouton Paramètres devient une simple icône */
+@media (max-width: 480px) {
+  .reglages span {
     display: none;
   }
-  .bandeau a {
-    flex: 0 0 auto;
-    padding: 12px 14px;
+  .reglages {
+    padding: 10px;
   }
 }
 
@@ -325,4 +327,25 @@ textarea {
   background: var(--carte-douce);
   border: 1px solid var(--bordure);
   border-radius: 999px;
+}
+
+/* ---------- Bouton secondaire ---------- */
+.btn.secondaire {
+  color: var(--texte);
+  background: none;
+  border: 1px solid var(--bordure);
+  box-shadow: none;
+}
+
+/* ---------- Confort sur téléphone ---------- */
+@media (max-width: 480px) {
+  main {
+    padding: 20px 14px 56px;
+  }
+  .card {
+    padding: 16px;
+  }
+  h2 {
+    font-size: 28px;
+  }
 }

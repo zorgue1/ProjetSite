@@ -145,3 +145,92 @@
 .recap-exercices {
   margin-top: 4px;
 }
+
+/* ---------- Bouton principal ---------- */
+.cta {
+  position: relative;
+  display: block;
+  margin-top: 22px;
+  padding: 16px 20px;
+  font-size: 17px;
+  text-align: center;
+  text-decoration: none;
+}
+
+/* ---------- Menu : trois grandes cartes ---------- */
+.menu-tuiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.carte-menu {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  color: var(--texte);
+  text-decoration: none;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+  transition: transform 0.12s, border-color 0.15s;
+}
+
+.carte-menu:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.carte-menu:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.carte-icone {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: 14px;
+}
+
+.carte-icone svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.carte-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.carte-texte strong {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.carte-texte small {
+  font-size: 13px;
+  color: var(--gris);
+}
+
+.carte-fleche {
+  font-size: 26px;
+  color: var(--gris);
+}
