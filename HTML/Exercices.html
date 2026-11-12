@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="../CSS/Couleur.css">
   <link rel="stylesheet" href="../CSS/Commun.css">
   <link rel="stylesheet" href="../CSS/Exercices.css">
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#090d13">
+  <link rel="apple-touch-icon" href="../Image/icon-180.png">
 </head>
 <body>
   <header class="bandeau">
@@ -67,6 +70,7 @@
   <script>
     let exercices = [];
     let muscleChoisi = null;   // null = rien d'affiché ; "Tous" = toute la bibliothèque
+    let moiId = null;          // identifiant de l'utilisateur connecté
 
     // Crée un élément HTML (le texte est inséré en toute sécurité)
     function el(balise, classe, texte) {
@@ -142,9 +146,10 @@
 
     /* ---------- Liste d'exercices ---------- */
 
-    function creerCarte(ex) {
+        function creerCarte(ex) {
       const carte = el("article", "card exo");
       const initiale = ex.nom.charAt(0).toUpperCase();
+      const estAMoi = ex.user_id === moiId;
 
       if (ex.image_url) {
         const img = el("img", "exo-photo");
@@ -158,31 +163,42 @@
       }
 
       const corps = el("div", "exo-corps");
-      corps.appendChild(el("div", "exo-nom", ex.nom));
-      corps.appendChild(creerSelect(MUSCLES, ex.muscle, "Muscle", function (v) {
-        changer(ex, { muscle: v });
-      }));
-      corps.appendChild(creerSelect(GROUPES_SEANCE, ex.groupe, "Séance", function (v) {
-        changer(ex, { groupe: v });
-      }));
 
-      const bouton = el("button", "btn-suppr", "Supprimer");
-      bouton.addEventListener("click", async function () {
-        if (!confirm("Supprimer « " + ex.nom + " » ?")) return;
-        try {
-          await supprimerExercice(ex);
-          exercices = await chargerExercices();
-          afficherTuiles();
-          afficherListe();
-        } catch (e) {
-          if (/foreign key|violates/i.test(e.message)) {
-            alert("Cet exercice est utilisé dans des séances, il ne peut pas être supprimé.");
-          } else {
-            alert("Erreur : " + e.message);
+      const entete = el("div", "exo-entete");
+      entete.appendChild(el("div", "exo-nom", ex.nom));
+      if (ex.commun) entete.appendChild(el("span", "badge-commun", "Commun"));
+      corps.appendChild(entete);
+
+      if (estAMoi) {
+        // Mes exercices : je peux les ranger et les supprimer
+        corps.appendChild(creerSelect(MUSCLES, ex.muscle, "Muscle", function (v) {
+          changer(ex, { muscle: v });
+        }));
+        corps.appendChild(creerSelect(GROUPES_SEANCE, ex.groupe, "Séance", function (v) {
+          changer(ex, { groupe: v });
+        }));
+
+        const bouton = el("button", "btn-suppr", "Supprimer");
+        bouton.addEventListener("click", async function () {
+          if (!confirm("Supprimer « " + ex.nom + " » ?")) return;
+          try {
+            await supprimerExercice(ex);
+            exercices = await chargerExercices();
+            afficherTuiles();
+            afficherListe();
+          } catch (e) {
+            if (/foreign key|violates/i.test(e.message)) {
+              alert("Cet exercice est utilisé dans des séances, il ne peut pas être supprimé.");
+            } else {
+              alert("Erreur : " + e.message);
+            }
           }
-        }
-      });
-      corps.appendChild(bouton);
+        });
+        corps.appendChild(bouton);
+      } else {
+        // Exercice commun d'un autre utilisateur : lecture seule
+        corps.appendChild(el("div", "mut", ex.muscle + " · " + ex.groupe));
+      }
 
       carte.appendChild(corps);
       return carte;
@@ -301,6 +317,7 @@
     (async function () {
       const user = await exigerConnexion();
       if (!user) return;
+      moiId = user.id;
 
       remplirListe(document.getElementById("muscle"), MUSCLES);
       remplirListe(document.getElementById("groupe"), GROUPES_SEANCE);
