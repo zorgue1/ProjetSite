@@ -212,7 +212,7 @@
       for (let i = 0; i < 400; i++) {
         const d = new Date(base);
         d.setDate(base.getDate() - i);
-        const prevu = programme[(d.getDay() + 6) % 7] !== "Repos";
+        const prevu = !estRepos(programme[(d.getDay() + 6) % 7]);
         if (datesFaites.has(versTexte(d))) serie++;
         else if (i === 0) continue;
         else if (prevu) break;
@@ -239,7 +239,7 @@
 
       const cellule = el("div", "jour" + (fait ? " fait" : "") + (auj ? " auj" : "") + (futur ? " futur" : ""));
       const longue = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-      cellule.title = longue + (fait ? " : séance faite" : prevu !== "Repos" ? " : " + prevu + " prévu" : " : repos");
+      cellule.title = longue + (fait ? " : séance faite" : !estRepos(prevu) ? " : " + prevu + " prévu" : " : repos");
 
       if (lettre) cellule.appendChild(el("span", "jour-lettre", lettre));
 
@@ -249,7 +249,7 @@
       cellule.appendChild(rond);
 
       // Petit point de la couleur de la séance prévue (si elle n'est pas encore faite)
-      cellule.appendChild(el("span", "jour-point " + (prevu !== "Repos" && !fait ? prevu.toLowerCase() : "")));
+      cellule.appendChild(el("span", "jour-point " + (!estRepos(prevu) && !fait ? classeSeance(prevu) : "")));
       return cellule;
     }
 
@@ -300,7 +300,7 @@
       const prevuAuj = programme[indexAuj];
       document.getElementById("serie-message").textContent = datesFaites.has(aujourdhui())
         ? "Séance du jour validée, bravo !"
-        : (prevuAuj === "Repos"
+        : (estRepos(prevuAuj)
             ? "Jour de repos : ta série est préservée."
             : "Il reste ta séance " + prevuAuj + " pour continuer la série.");
 
@@ -312,7 +312,7 @@
 
     async function afficherRecap(seance, liste) {
       const bloc = document.getElementById("recap");
-      if (seance === "Repos") {
+      if (estRepos(seance)) {
         bloc.hidden = true;
         return;
       }
@@ -328,7 +328,7 @@
       const zoneExos = document.getElementById("recap-exercices");
       const notes = document.getElementById("recap-notes");
       type.textContent = seance;
-      type.className = "recap-type " + cle;
+      type.className = "recap-type " + classeSeance(seance);
       zoneExos.innerHTML = "";
       bloc.hidden = false;
 
@@ -400,8 +400,11 @@
       document.getElementById("date-jour").textContent =
         JOURS[indexJour] + " " +
         maintenant.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
-      document.getElementById("seance-jour").textContent = seance.toUpperCase();
-      document.getElementById("hero").className = "hero " + seance.toLowerCase();
+            const titre = document.getElementById("seance-jour");
+      titre.textContent = seance.toUpperCase();
+      // Les noms longs s'affichent un peu plus petits pour tenir dans la carte
+      titre.className = seance.length > 14 ? "tres-long" : (seance.length > 7 ? "long" : "");
+      document.getElementById("hero").className = "hero " + classeSeance(seance);
 
       await afficherRecap(seance, seances);
       afficherProfil(p, seances, poids);

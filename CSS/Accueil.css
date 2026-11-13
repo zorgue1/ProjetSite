@@ -467,3 +467,22 @@
   flex: 1;
   min-width: 0;
 }
+
+/* ---------- Séance libre (hand, natation…) ---------- */
+.hero.autre {
+  --c: var(--accent);
+}
+
+.hero h1.long {
+  font-size: clamp(40px, 13vw, 76px);
+}
+
+.hero h1.tres-long {
+  font-size: clamp(28px, 9vw, 48px);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.jour-point.autre {
+  background: var(--accent);
+}

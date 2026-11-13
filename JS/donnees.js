@@ -349,6 +349,19 @@ async function chargerDernierExerciceUtilise() {
   return data.length ? data[0].exercice_id : null;
 }
 
+/* ---------- Types de séance du programme ---------- */
+
+// Vrai si le jour est un jour de repos (quelle que soit la façon dont c'est écrit)
+function estRepos(nom) {
+  return normaliser(nom || "") === "repos";
+}
+
+// Classe de couleur d'une séance : push, pull, leg, repos, ou autre (texte libre)
+function classeSeance(nom) {
+  const n = normaliser(nom || "");
+  return ["push", "pull", "leg", "repos"].indexOf(n) !== -1 ? n : "autre";
+}
+
 /* ---------- Protection du bouton « Retour » ---------- */
 
 // La page reste masquée tant que la connexion n'est pas vérifiée

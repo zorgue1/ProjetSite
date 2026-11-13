@@ -6,8 +6,8 @@
   <title>SportApp – Paramètres</title>
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#090d13">
-  <script src="../JS/theme.js"></script>
   <link rel="apple-touch-icon" href="../Image/icon-180.png">
+  <script src="../JS/theme.js"></script>
   <link rel="stylesheet" href="../CSS/Couleur.css">
   <link rel="stylesheet" href="../CSS/Commun.css">
   <link rel="stylesheet" href="../CSS/Parametres.css">
@@ -48,17 +48,17 @@
     <!-- Programme de la semaine -->
     <section class="card">
       <h2>Programme de la semaine</h2>
-      <p class="mut">Choisis la séance prévue pour chaque jour. Elle s’affichera sur la page d’accueil.</p>
+      <p class="mut">Choisis la séance prévue pour chaque jour, ou écris ce que tu veux avec « Autre » (hand, natation…). Elle s’affichera sur la page d’accueil.</p>
       <div class="row" id="programme"></div>
     </section>
 
     <div class="actions">
-      <button class="btn" id="btn-enregistrer">Enregistrer les paramètres</button>
+      <button class="btn" id="btn-enregistrer" type="button">Enregistrer les paramètres</button>
       <span id="message"></span>
     </div>
 
     <!-- Apparence -->
-    <section class="card">
+    <section class="card compte">
       <h2>Apparence</h2>
       <div class="onglets trois" id="choix-theme">
         <button type="button" class="onglet" data-choix="auto" aria-pressed="false">Auto</button>
@@ -69,9 +69,9 @@
     </section>
 
     <!-- Compte -->
-    <section class="card compte">
+    <section class="card">
       <h2>Compte</h2>
-      <p class="mut" id="email-compte"></p>
+      <p class="mut email-compte" id="email-compte"></p>
       <button class="btn secondaire" id="btn-deconnexion" type="button">Se déconnecter</button>
     </section>
 
@@ -83,14 +83,22 @@
   <script>
     const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
     const TYPES = ["Push", "Pull", "Leg", "Repos"];
+    const AUTRE = "__autre";
     let profilCharge = null;
 
-    // Construit un menu déroulant par jour de la semaine
+    /* ---------- Programme de la semaine ---------- */
+
+    // Un menu par jour, avec un champ de texte qui s'ouvre si on choisit « Autre »
     function construireProgramme(programme) {
       const zone = document.getElementById("programme");
       zone.innerHTML = "";
+
       JOURS.forEach(function (jour, i) {
+        const valeur = programme[i] || "Repos";
+        const connu = TYPES.indexOf(valeur) !== -1;
+
         const bloc = document.createElement("div");
+        bloc.className = "jour-programme";
 
         const label = document.createElement("label");
         label.setAttribute("for", "jour" + i);
@@ -101,15 +109,51 @@
         TYPES.forEach(function (type) {
           const option = document.createElement("option");
           option.textContent = type;
-          if (programme[i] === type) option.selected = true;
           select.appendChild(option);
+        });
+        const autre = document.createElement("option");
+        autre.value = AUTRE;
+        autre.textContent = "Autre (écrire)…";
+        select.appendChild(autre);
+        select.value = connu ? valeur : AUTRE;
+
+        const texte = document.createElement("input");
+        texte.type = "text";
+        texte.id = "jour" + i + "-texte";
+        texte.maxLength = 30;
+        texte.placeholder = "Ex. : Hand, natation…";
+        texte.setAttribute("aria-label", "Séance du " + jour.toLowerCase());
+        texte.value = connu ? "" : valeur;
+        texte.hidden = connu;
+
+        select.addEventListener("change", function () {
+          texte.hidden = select.value !== AUTRE;
+          if (!texte.hidden) texte.focus();
         });
 
         bloc.appendChild(label);
         bloc.appendChild(select);
+        bloc.appendChild(texte);
         zone.appendChild(bloc);
       });
     }
+
+    // Lit le programme saisi : un texte par jour
+    function lireProgramme() {
+      return JOURS.map(function (_, i) {
+        const choix = document.getElementById("jour" + i).value;
+        if (choix !== AUTRE) return choix;
+
+        const texte = document.getElementById("jour" + i + "-texte").value.trim();
+        if (!texte) return "Repos";   // champ laissé vide : on le compte comme un repos
+
+        // Si le texte écrit est un type habituel (« push », « REPOS »…), on le range proprement
+        const connu = TYPES.find(function (t) { return normaliser(t) === normaliser(texte); });
+        return connu || texte;
+      });
+    }
+
+    /* ---------- Profil ---------- */
 
     async function remplir() {
       profilCharge = await chargerProfil();
@@ -120,8 +164,6 @@
       construireProgramme(profilCharge.programme);
     }
 
-    document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
-
     document.getElementById("btn-enregistrer").addEventListener("click", async function () {
       const poidsSaisi = document.getElementById("poids").value.replace(",", ".");
       const profil = {
@@ -129,9 +171,7 @@
         nom: document.getElementById("nom").value.trim(),
         naissance: document.getElementById("naissance").value,
         poids: poidsSaisi,
-        programme: JOURS.map(function (_, i) {
-          return document.getElementById("jour" + i).value;
-        })
+        programme: lireProgramme()
       };
 
       try {
@@ -143,13 +183,17 @@
           await ajouterPoids(nouveau);
         }
         profilCharge = profil;
+
+        // On réaffiche le programme tel qu'il a été enregistré
+        construireProgramme(profil.programme);
         document.getElementById("message").textContent = "Paramètres enregistrés";
       } catch (e) {
         alert("Erreur : " + e.message);
       }
     });
 
- // Apparence : automatique, clair ou sombre
+    /* ---------- Apparence ---------- */
+
     function marquerTheme() {
       const actuel = window.themeSportApp.lire();
       document.querySelectorAll("#choix-theme .onglet").forEach(function (b) {
@@ -165,6 +209,9 @@
     });
     marquerTheme();
 
+    /* ---------- Compte ---------- */
+
+    document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
 
     (async function () {
       const user = await exigerConnexion();

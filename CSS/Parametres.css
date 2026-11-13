@@ -2,15 +2,19 @@
   margin: 0 0 8px;
 }
 
-.compte {
-  margin-top: 24px;
-}
-
-.compte .mut {
-  margin-bottom: 14px;
-  word-break: break-all;
+.jour-programme input[type="text"] {
+  margin-top: 8px;
 }
 
 .aide-theme {
   margin: 12px 0 0;
+}
+
+.email-compte {
+  margin-bottom: 14px;
+  word-break: break-all;
+}
+
+.compte {
+  margin-top: 24px;
 }
