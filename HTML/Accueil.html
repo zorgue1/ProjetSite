@@ -7,15 +7,57 @@
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#090d13">
   <link rel="apple-touch-icon" href="../Image/icon-180.png">
+  <script src="../JS/theme.js"></script>
   <link rel="stylesheet" href="../CSS/Couleur.css">
   <link rel="stylesheet" href="../CSS/Commun.css">
   <link rel="stylesheet" href="../CSS/Accueil.css">
 </head>
 <body>
+  <!-- Icône de flamme réutilisée dans la page -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="flamme" viewBox="0 0 24 24">
+      <path d="M12 2C13 6 17.5 8 18 13.5C18.3 17.5 15.5 21.5 12 21.5C8.5 21.5 5.7 18.5 6 14.5C6.2 12.2 7.2 10.6 8.6 9.4C9 11 9.6 12 10.8 12.6C10.2 8.5 10.6 5 12 2Z"/>
+    </symbol>
+  </svg>
+
   <header class="bandeau" id="entete"></header>
   <script src="../JS/entete.js"></script>
 
   <main>
+
+    <!-- Série et calendrier -->
+    <section class="card serie">
+      <div class="serie-tete">
+        <div class="serie-score">
+          <svg class="serie-flamme" id="serie-flamme" aria-hidden="true"><use href="#flamme"/></svg>
+          <div>
+            <div class="serie-nombre" id="serie-nombre">0</div>
+            <div class="serie-label" id="serie-label"></div>
+          </div>
+        </div>
+        <div class="serie-semaine">
+          <div class="stat-titre">Cette semaine</div>
+          <div class="serie-semaine-valeur" id="semaine-compte">0</div>
+        </div>
+      </div>
+
+      <p class="mut" id="serie-message"></p>
+
+      <div class="semaine" id="semaine"></div>
+
+      <details class="mois-details">
+        <summary>Voir le mois</summary>
+        <div class="mois-nav">
+          <button type="button" id="mois-prec" aria-label="Mois précédent">‹</button>
+          <strong id="mois-titre"></strong>
+          <button type="button" id="mois-suiv" aria-label="Mois suivant">›</button>
+        </div>
+        <div class="mois-entete">
+          <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+        </div>
+        <div class="mois-grille" id="mois-grille"></div>
+      </details>
+    </section>
 
     <!-- Séance du jour -->
     <section class="hero" id="hero">
@@ -81,23 +123,36 @@
       </a>
     </section>
 
-    <!-- Infos de base -->
-    <section class="card">
-      <div class="row">
+    <!-- Profil -->
+    <section class="card profil">
+      <div class="profil-tete">
+        <div class="avatar" id="avatar">?</div>
         <div>
-          <div class="id" id="identite"></div>
+          <div class="profil-nom" id="identite"></div>
           <div class="mut" id="naissance"></div>
-        </div>
-        <div>
-          <div class="mut">Poids actuel</div>
-          <div class="poids" id="poids">—</div>
         </div>
       </div>
 
-      <label for="nouveau-poids">Mettre à jour mon poids (kg)</label>
-      <div class="row">
-        <input id="nouveau-poids" type="number" step="0.1" min="0" inputmode="decimal">
-        <button class="btn" id="btn-poids">Enregistrer</button>
+      <div class="profil-stats">
+        <div class="stat">
+          <span class="stat-titre">Poids</span>
+          <span class="stat-valeur" id="poids">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-titre">Évolution</span>
+          <span class="stat-valeur" id="evolution">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-titre">Séances</span>
+          <span class="stat-valeur" id="total-seances">0</span>
+        </div>
+      </div>
+
+      <button class="btn secondaire petit" id="btn-maj-poids" type="button">Mettre à jour mon poids</button>
+      <div class="maj-poids" id="maj-poids" hidden>
+        <input id="nouveau-poids" type="number" step="0.1" min="0" inputmode="decimal"
+               placeholder="Poids en kg" aria-label="Nouveau poids en kg">
+        <button class="btn" id="btn-poids" type="button">Enregistrer</button>
       </div>
     </section>
 
@@ -108,6 +163,27 @@
   <script src="../JS/donnees.js"></script>
   <script>
     const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+    const LETTRES = ["L", "M", "M", "J", "V", "S", "D"];
+
+    let programme = PROGRAMME_DEFAUT;
+    let datesFaites = new Set();      // dates où une séance a été enregistrée
+    let moisAffiche = new Date();
+    moisAffiche.setDate(1);
+
+    // Crée un élément HTML (le texte est inséré en toute sécurité)
+    function el(balise, classe, texte) {
+      const e = document.createElement(balise);
+      if (classe) e.className = classe;
+      if (texte) e.textContent = texte;
+      return e;
+    }
+
+    // Date au format AAAA-MM-JJ (heure locale)
+    function versTexte(date) {
+      const d = new Date(date.getTime());
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 10);
+    }
 
     function calculerAge(dateNaissance) {
       const n = new Date(dateNaissance);
@@ -124,7 +200,117 @@
       return Math.round((a - b) / 86400000);
     }
 
-    async function afficherRecap(seance) {
+    /* ---------- Série ---------- */
+
+    // Jours d'entraînement de suite, selon le programme :
+    // un repos prévu ne casse pas la série, un jour d'entraînement prévu manqué la casse,
+    // et aujourd'hui ne compte pas comme manqué tant que la journée n'est pas finie.
+    function calculerSerie() {
+      let serie = 0;
+      const base = new Date();
+      base.setHours(12, 0, 0, 0);
+      for (let i = 0; i < 400; i++) {
+        const d = new Date(base);
+        d.setDate(base.getDate() - i);
+        const prevu = programme[(d.getDay() + 6) % 7] !== "Repos";
+        if (datesFaites.has(versTexte(d))) serie++;
+        else if (i === 0) continue;
+        else if (prevu) break;
+      }
+      return serie;
+    }
+
+    function iconeFlamme() {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("aria-hidden", "true");
+      const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+      use.setAttribute("href", "#flamme");
+      svg.appendChild(use);
+      return svg;
+    }
+
+    // Une case du calendrier : flamme si séance faite, sinon le numéro du jour
+    function creerJour(texte, lettre) {
+      const d = new Date(texte + "T12:00:00");
+      const prevu = programme[(d.getDay() + 6) % 7];
+      const fait = datesFaites.has(texte);
+      const auj = texte === aujourdhui();
+      const futur = texte > aujourdhui();
+
+      const cellule = el("div", "jour" + (fait ? " fait" : "") + (auj ? " auj" : "") + (futur ? " futur" : ""));
+      const longue = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+      cellule.title = longue + (fait ? " : séance faite" : prevu !== "Repos" ? " : " + prevu + " prévu" : " : repos");
+
+      if (lettre) cellule.appendChild(el("span", "jour-lettre", lettre));
+
+      const rond = el("span", "jour-rond");
+      if (fait) rond.appendChild(iconeFlamme());
+      else rond.textContent = String(d.getDate());
+      cellule.appendChild(rond);
+
+      // Petit point de la couleur de la séance prévue (si elle n'est pas encore faite)
+      cellule.appendChild(el("span", "jour-point " + (prevu !== "Repos" && !fait ? prevu.toLowerCase() : "")));
+      return cellule;
+    }
+
+    function afficherSemaine() {
+      const zone = document.getElementById("semaine");
+      zone.innerHTML = "";
+      const lundi = new Date();
+      lundi.setHours(12, 0, 0, 0);
+      lundi.setDate(lundi.getDate() - ((lundi.getDay() + 6) % 7));
+
+      let compte = 0;
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(lundi);
+        d.setDate(lundi.getDate() + i);
+        const texte = versTexte(d);
+        if (datesFaites.has(texte)) compte++;
+        zone.appendChild(creerJour(texte, LETTRES[i]));
+      }
+      document.getElementById("semaine-compte").textContent = compte;
+    }
+
+    function afficherMois() {
+      const annee = moisAffiche.getFullYear();
+      const mois = moisAffiche.getMonth();
+      const titre = moisAffiche.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+      document.getElementById("mois-titre").textContent = titre.charAt(0).toUpperCase() + titre.slice(1);
+
+      const grille = document.getElementById("mois-grille");
+      grille.innerHTML = "";
+      const decalage = (new Date(annee, mois, 1).getDay() + 6) % 7;
+      for (let i = 0; i < decalage; i++) grille.appendChild(el("div"));
+
+      const nb = new Date(annee, mois + 1, 0).getDate();
+      for (let j = 1; j <= nb; j++) {
+        grille.appendChild(creerJour(versTexte(new Date(annee, mois, j, 12)), null));
+      }
+    }
+
+    function afficherSerie() {
+      const serie = calculerSerie();
+      document.getElementById("serie-nombre").textContent = serie;
+      document.getElementById("serie-label").textContent = serie === 0
+        ? "Lance ta série aujourd’hui"
+        : (serie === 1 ? "jour d’entraînement de suite" : "jours d’entraînement de suite");
+      document.getElementById("serie-flamme").setAttribute("class", "serie-flamme" + (serie === 0 ? " eteinte" : ""));
+
+      const indexAuj = (new Date().getDay() + 6) % 7;
+      const prevuAuj = programme[indexAuj];
+      document.getElementById("serie-message").textContent = datesFaites.has(aujourdhui())
+        ? "Séance du jour validée, bravo !"
+        : (prevuAuj === "Repos"
+            ? "Jour de repos : ta série est préservée."
+            : "Il reste ta séance " + prevuAuj + " pour continuer la série.");
+
+      afficherSemaine();
+      afficherMois();
+    }
+
+    /* ---------- Récap de la séance précédente ---------- */
+
+    async function afficherRecap(seance, liste) {
       const bloc = document.getElementById("recap");
       if (seance === "Repos") {
         bloc.hidden = true;
@@ -132,7 +318,6 @@
       }
 
       // La liste est déjà triée de la séance la plus récente à la plus ancienne
-      const liste = await chargerSeances();
       const cle = seance.toLowerCase();
       const derniere = liste.find(function (s) {
         return s.date < aujourdhui() && s.type.trim().toLowerCase().startsWith(cle);
@@ -172,33 +357,70 @@
         (exos.length ? "" : "Aucun détail enregistré pour cette séance.");
     }
 
+    /* ---------- Profil ---------- */
+
+    function afficherProfil(p, seances, poids) {
+      const initiales = (p.prenom.charAt(0) + p.nom.charAt(0)).toUpperCase();
+      document.getElementById("avatar").textContent = initiales || "?";
+
+      const nomComplet = (p.prenom + " " + p.nom.toUpperCase()).trim();
+      document.getElementById("identite").textContent =
+        nomComplet || "Renseigne ton nom dans Paramètres";
+      document.getElementById("naissance").textContent = p.naissance
+        ? calculerAge(p.naissance) + " ans · né(e) le " + new Date(p.naissance).toLocaleDateString("fr-FR")
+        : "";
+
+      document.getElementById("poids").textContent =
+        p.poids ? String(p.poids).replace(".", ",") + " kg" : "—";
+
+      // Évolution depuis la pesée précédente
+      let evolution = "—";
+      if (poids.length >= 2) {
+        const delta = Math.round((Number(poids[poids.length - 1].valeur) - Number(poids[poids.length - 2].valeur)) * 10) / 10;
+        evolution = (delta > 0 ? "+" : delta < 0 ? "−" : "") + String(Math.abs(delta)).replace(".", ",") + " kg";
+      }
+      document.getElementById("evolution").textContent = evolution;
+      document.getElementById("total-seances").textContent = seances.length;
+    }
+
+    /* ---------- Chargement ---------- */
+
     async function afficher() {
-      const p = await chargerProfil();
-      const maintenant = new Date();
-      const indexJour = (maintenant.getDay() + 6) % 7; // lundi = 0
-      const seance = p.programme[indexJour];
+      const r = await Promise.all([chargerProfil(), chargerSeances(), chargerPoids()]);
+      const p = r[0], seances = r[1], poids = r[2];
+
+      programme = p.programme;
+      datesFaites = new Set(seances.map(function (s) { return s.date; }));
+      afficherSerie();
 
       // Séance du jour
+      const maintenant = new Date();
+      const indexJour = (maintenant.getDay() + 6) % 7; // lundi = 0
+      const seance = programme[indexJour];
       document.getElementById("date-jour").textContent =
         JOURS[indexJour] + " " +
         maintenant.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
       document.getElementById("seance-jour").textContent = seance.toUpperCase();
       document.getElementById("hero").className = "hero " + seance.toLowerCase();
 
-      await afficherRecap(seance);
-
-      // Identité
-      const nomComplet = (p.prenom + " " + p.nom.toUpperCase()).trim();
-      document.getElementById("identite").textContent =
-        nomComplet || "Renseigne ton nom dans Paramètres";
-      document.getElementById("naissance").textContent = p.naissance
-        ? "Né(e) le " + new Date(p.naissance).toLocaleDateString("fr-FR") +
-          " · " + calculerAge(p.naissance) + " ans"
-        : "";
-
-      // Poids
-      document.getElementById("poids").textContent = p.poids ? p.poids + " kg" : "—";
+      await afficherRecap(seance, seances);
+      afficherProfil(p, seances, poids);
     }
+
+    document.getElementById("mois-prec").addEventListener("click", function () {
+      moisAffiche.setMonth(moisAffiche.getMonth() - 1);
+      afficherMois();
+    });
+    document.getElementById("mois-suiv").addEventListener("click", function () {
+      moisAffiche.setMonth(moisAffiche.getMonth() + 1);
+      afficherMois();
+    });
+
+    document.getElementById("btn-maj-poids").addEventListener("click", function () {
+      const zone = document.getElementById("maj-poids");
+      zone.hidden = !zone.hidden;
+      if (!zone.hidden) document.getElementById("nouveau-poids").focus();
+    });
 
     document.getElementById("btn-poids").addEventListener("click", async function () {
       const champ = document.getElementById("nouveau-poids");
@@ -207,6 +429,7 @@
       try {
         await ajouterPoids(valeur);
         champ.value = "";
+        document.getElementById("maj-poids").hidden = true;
         await afficher();
       } catch (e) {
         alert("Erreur : " + e.message);

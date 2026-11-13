@@ -4,21 +4,34 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Exercices</title>
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#090d13">
+  <script src="../JS/theme.js"></script>
   <link rel="stylesheet" href="../CSS/Couleur.css">
   <link rel="stylesheet" href="../CSS/Commun.css">
   <link rel="stylesheet" href="../CSS/Exercices.css">
-  <link rel="manifest" href="../manifest.json">
-  <meta name="theme-color" content="#090d13">
   <link rel="apple-touch-icon" href="../Image/icon-180.png">
 </head>
 <body>
     <header class="bandeau" id="entete"></header>
   <script src="../JS/entete.js"></script>
 
-  <main>
+    <main>
 
-    <!-- Nouvel exercice -->
-    <section class="card">
+    <h2>Bibliothèque</h2>
+
+    <p class="confirmation" id="confirmation" role="status" hidden></p>
+
+    <input id="recherche" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
+    <div class="tuiles" id="tuiles"></div>
+    <section id="liste"></section>
+
+    <!-- Ajout d'un exercice : le formulaire n'apparaît qu'après un clic -->
+    <div class="ajout-zone">
+      <button class="btn secondaire" id="btn-nouvel-exo" type="button">+ Ajouter un exercice</button>
+    </div>
+
+    <section class="card" id="formulaire" hidden>
       <h2>Nouvel exercice</h2>
 
       <label for="nom">Nom</label>
@@ -43,16 +56,11 @@
       <input id="lien" type="url" placeholder="https://…">
 
       <div class="actions">
-        <button class="btn" id="btn-ajouter">Ajouter l’exercice</button>
+        <button class="btn" id="btn-ajouter" type="button">Ajouter l’exercice</button>
+        <button class="btn secondaire" id="btn-annuler" type="button">Annuler</button>
         <span id="message"></span>
       </div>
     </section>
-
-    <!-- Bibliothèque -->
-    <h2>Ma bibliothèque</h2>
-    <input id="recherche" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
-    <div class="tuiles" id="tuiles"></div>
-    <section id="liste"></section>
 
   </main>
 
@@ -263,7 +271,7 @@
     document.getElementById("recherche").addEventListener("input", afficherListe);
     
 
-    document.getElementById("btn-ajouter").addEventListener("click", async function () {
+        document.getElementById("btn-ajouter").addEventListener("click", async function () {
       const bouton = this;
       const message = document.getElementById("message");
       const nom = document.getElementById("nom").value.trim();
@@ -284,10 +292,6 @@
           lienImage: document.getElementById("lien").value.trim()
         }, document.getElementById("photo").files[0] || null);
 
-        document.getElementById("nom").value = "";
-        document.getElementById("lien").value = "";
-        document.getElementById("photo").value = "";
-        document.getElementById("apercu").innerHTML = "";
         document.getElementById("recherche").value = "";
         exercices = await chargerExercices();
 
@@ -295,7 +299,11 @@
         muscleChoisi = muscle;
         afficherTuiles();
         afficherListe();
-        message.textContent = "Exercice ajouté";
+
+        // Le formulaire se referme et une confirmation apparaît en haut de page
+        fermerFormulaire();
+        confirmer("Exercice ajouté");
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } catch (e) {
         message.textContent = "";
         alert("Erreur : " + e.message);
@@ -303,6 +311,36 @@
         bouton.disabled = false;
       }
     });
+
+
+        /* ---------- Ouverture et fermeture du formulaire d'ajout ---------- */
+
+    function confirmer(texte) {
+      const c = document.getElementById("confirmation");
+      c.textContent = texte;
+      c.hidden = false;
+      setTimeout(function () { c.hidden = true; }, 3500);
+    }
+
+    function fermerFormulaire() {
+      document.getElementById("formulaire").hidden = true;
+      document.getElementById("btn-nouvel-exo").hidden = false;
+      document.getElementById("nom").value = "";
+      document.getElementById("lien").value = "";
+      document.getElementById("photo").value = "";
+      document.getElementById("apercu").innerHTML = "";
+      document.getElementById("message").textContent = "";
+    }
+
+    document.getElementById("btn-nouvel-exo").addEventListener("click", function () {
+      const formulaire = document.getElementById("formulaire");
+      formulaire.hidden = false;
+      this.hidden = true;
+      formulaire.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("nom").focus();
+    });
+
+    document.getElementById("btn-annuler").addEventListener("click", fermerFormulaire);
 
     /* ---------- Démarrage ---------- */
 

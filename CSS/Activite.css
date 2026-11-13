@@ -265,3 +265,132 @@
   text-align: center;
   color: var(--gris);
 }
+
+/* ---------- Bilan ---------- */
+.bilan {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mini-bilan {
+  padding: 12px;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: 14px;
+}
+
+.mini-bilan .t {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.mini-bilan .v {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+/* ---------- Historique rangé par mois ---------- */
+.mois {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 24px 0 10px;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.mois .compte {
+  padding: 2px 10px;
+  font-family: Manrope, "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gris);
+  background: var(--carte-douce);
+  border-radius: 999px;
+}
+
+.seance-ligne {
+  margin-bottom: 10px;
+  overflow: hidden;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+}
+
+.seance-ligne summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.seance-ligne summary::-webkit-details-marker {
+  display: none;
+}
+
+.date-bloc {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 14px;
+}
+
+.date-bloc strong {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.date-bloc small {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.seance-infos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.chevron {
+  font-size: 24px;
+  color: var(--gris);
+  transition: transform 0.15s;
+}
+
+.seance-ligne[open] .chevron {
+  transform: rotate(90deg);
+}
+
+.seance-detail {
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--bordure);
+}
+
+.seance-detail .btn-suppr {
+  margin-top: 14px;
+}

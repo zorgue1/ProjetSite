@@ -1,3 +1,194 @@
+/* ---------- Série et calendrier ---------- */
+.serie {
+  padding: 18px 16px 6px;
+}
+
+.serie-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.serie-score {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.serie-flamme {
+  width: 48px;
+  height: 48px;
+  fill: var(--accent);
+  filter: drop-shadow(0 4px 14px var(--accent-halo));
+}
+
+.serie-flamme.eteinte {
+  fill: var(--gris);
+  opacity: 0.5;
+  filter: none;
+}
+
+.serie-nombre {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 50px;
+  font-weight: 900;
+  line-height: 0.9;
+}
+
+.serie-label {
+  font-size: 13px;
+  color: var(--gris);
+}
+
+.serie-semaine {
+  text-align: right;
+}
+
+.serie-semaine-valeur {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.stat-titre {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+#serie-message {
+  margin: 10px 0 16px;
+}
+
+.semaine,
+.mois-entete,
+.mois-grille {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px 4px;
+}
+
+.jour {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.jour-lettre,
+.mois-entete span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gris);
+}
+
+.mois-entete span {
+  text-align: center;
+}
+
+.jour-rond {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-width: 42px;
+  aspect-ratio: 1;
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 50%;
+}
+
+.jour-rond svg {
+  width: 62%;
+  height: 62%;
+  fill: var(--texte-bouton);
+}
+
+.jour.futur .jour-rond {
+  color: var(--gris);
+}
+
+.jour.auj .jour-rond {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-halo);
+}
+
+.jour.fait .jour-rond {
+  background: var(--degrade);
+  border-color: transparent;
+  box-shadow: 0 4px 12px var(--accent-halo);
+}
+
+.jour-point {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.jour-point.push { background: var(--push); }
+.jour-point.pull { background: var(--pull); }
+.jour-point.leg  { background: var(--leg); }
+
+/* Vue du mois (menu déroulant) */
+.mois-details {
+  margin-top: 6px;
+  border-top: 1px solid var(--bordure);
+}
+
+.mois-details summary {
+  padding: 12px 0;
+  list-style: none;
+  cursor: pointer;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.mois-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.mois-details summary::after {
+  content: " ▾";
+}
+
+.mois-details[open] summary::after {
+  content: " ▴";
+}
+
+.mois-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0 12px;
+}
+
+.mois-nav button {
+  width: 38px;
+  height: 38px;
+  font: inherit;
+  font-size: 20px;
+  color: var(--gris);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.mois-grille {
+  padding-bottom: 12px;
+}
+
+.mois-grille .jour-rond {
+  font-size: 14px;
+}
+
 /* ---------- Séance du jour ---------- */
 .hero {
   --c: var(--repos);
@@ -16,7 +207,6 @@
 .hero.leg   { --c: var(--leg); }
 .hero.repos { --c: var(--repos); }
 
-/* Lueur décorative derrière le titre */
 .hero::after {
   content: "";
   position: absolute;
@@ -46,6 +236,16 @@
   font-weight: 900;
   line-height: 0.9;
   color: var(--c);
+}
+
+.cta {
+  position: relative;
+  display: block;
+  margin-top: 22px;
+  padding: 16px 20px;
+  font-size: 17px;
+  text-align: center;
+  text-decoration: none;
 }
 
 /* ---------- Menu déroulant « séance précédente » ---------- */
@@ -112,49 +312,13 @@
 .recap-type.pull   { color: var(--pull); }
 .recap-type.leg    { color: var(--leg); }
 
-.recap-notes {
-  margin-top: 10px;
-  white-space: pre-wrap;
-}
-
-/* ---------- Identité et poids ---------- */
-.id {
-  font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 36px;
-  font-weight: 800;
-  line-height: 1.05;
-  text-transform: uppercase;
-}
-
-.poids {
-  font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 60px;
-  font-weight: 900;
-  line-height: 1;
-  color: var(--accent);
-  background: var(--degrade);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.row > .btn {
-  flex: 0 0 auto;
-}
-
 .recap-exercices {
   margin-top: 4px;
 }
 
-/* ---------- Bouton principal ---------- */
-.cta {
-  position: relative;
-  display: block;
-  margin-top: 22px;
-  padding: 16px 20px;
-  font-size: 17px;
-  text-align: center;
-  text-decoration: none;
+.recap-notes {
+  margin-top: 10px;
+  white-space: pre-wrap;
 }
 
 /* ---------- Menu : trois grandes cartes ---------- */
@@ -233,4 +397,73 @@
 .carte-fleche {
   font-size: 26px;
   color: var(--gris);
+}
+
+/* ---------- Profil ---------- */
+.profil-tete {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--texte-bouton);
+  background: var(--degrade);
+  border-radius: 50%;
+  box-shadow: 0 6px 18px var(--accent-halo);
+}
+
+.profil-nom {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.profil-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 16px 0 14px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 14px;
+}
+
+.stat-valeur {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+#btn-maj-poids {
+  width: 100%;
+}
+
+.maj-poids {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.maj-poids input {
+  flex: 1;
+  min-width: 0;
 }

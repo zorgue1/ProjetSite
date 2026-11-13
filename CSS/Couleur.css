@@ -7,42 +7,37 @@
 :root {
   color-scheme: dark;
 
-  /* Fonds et textes */
   --fond: #090d13;
-  --halo: rgba(255, 106, 61, 0.16);   /* lueur en haut à droite */
+  --halo: rgba(255, 106, 61, 0.16);
   --carte: #121923;
-  --carte-douce: #0c121a;             /* fond des champs de saisie */
+  --carte-douce: #0c121a;
   --texte: #f1f4f8;
   --gris: #8c99aa;
   --bordure: #202b3a;
   --ombre: 0 10px 40px rgba(0, 0, 0, 0.45);
 
-  /* Couleur principale */
   --accent: #ff6a3d;
   --accent-halo: rgba(255, 106, 61, 0.30);
   --degrade: linear-gradient(135deg, #ff6a3d, #ffa12e);
   --texte-bouton: #1a0d06;
 
-  /* Couleurs des séances */
   --push: #ff6a3d;
   --pull: #2fd9c5;
   --leg: #a78bfa;
   --repos: #6f7b8a;
 
-  /* Bandeau de navigation */
   --bandeau-fond: rgba(9, 13, 19, 0.78);
   --bandeau-texte: #8c99aa;
   --bandeau-actif: #f1f4f8;
   --bandeau-survol: rgba(255, 255, 255, 0.07);
 
-  /* Logo et formes */
   --logo: var(--accent);
   --rayon: 18px;
 }
 
-/* ---------- Thème clair (si l'appareil est en mode clair) ---------- */
+/* ---------- Thème clair : automatique si l'appareil est en mode clair ---------- */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme]) {
     color-scheme: light;
 
     --fond: #f4f2ee;
@@ -69,4 +64,33 @@
     --bandeau-actif: #16191f;
     --bandeau-survol: rgba(22, 25, 31, 0.06);
   }
+}
+
+/* ---------- Thème clair choisi à la main (Paramètres → Apparence) ---------- */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --fond: #f4f2ee;
+  --halo: rgba(217, 64, 15, 0.10);
+  --carte: #ffffff;
+  --carte-douce: #f3f0ea;
+  --texte: #16191f;
+  --gris: #66707c;
+  --bordure: #e3ddd3;
+  --ombre: 0 8px 30px rgba(22, 25, 31, 0.08);
+
+  --accent: #d9400f;
+  --accent-halo: rgba(217, 64, 15, 0.25);
+  --degrade: linear-gradient(135deg, #d9400f, #e8560f);
+  --texte-bouton: #ffffff;
+
+  --push: #d9400f;
+  --pull: #0b8f84;
+  --leg: #6d4ce0;
+  --repos: #8b8f96;
+
+  --bandeau-fond: rgba(244, 242, 238, 0.82);
+  --bandeau-texte: #66707c;
+  --bandeau-actif: #16191f;
+  --bandeau-survol: rgba(22, 25, 31, 0.06);
 }

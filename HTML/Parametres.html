@@ -6,6 +6,7 @@
   <title>SportApp – Paramètres</title>
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#090d13">
+  <script src="../JS/theme.js"></script>
   <link rel="apple-touch-icon" href="../Image/icon-180.png">
   <link rel="stylesheet" href="../CSS/Couleur.css">
   <link rel="stylesheet" href="../CSS/Commun.css">
@@ -55,6 +56,17 @@
       <button class="btn" id="btn-enregistrer">Enregistrer les paramètres</button>
       <span id="message"></span>
     </div>
+
+    <!-- Apparence -->
+    <section class="card">
+      <h2>Apparence</h2>
+      <div class="onglets trois" id="choix-theme">
+        <button type="button" class="onglet" data-choix="auto" aria-pressed="false">Auto</button>
+        <button type="button" class="onglet" data-choix="clair" aria-pressed="false">Clair</button>
+        <button type="button" class="onglet" data-choix="sombre" aria-pressed="false">Sombre</button>
+      </div>
+      <p class="mut aide-theme">« Auto » suit le réglage de ton téléphone ou de ton ordinateur. Ce choix est mémorisé sur cet appareil.</p>
+    </section>
 
     <!-- Compte -->
     <section class="card compte">
@@ -136,6 +148,23 @@
         alert("Erreur : " + e.message);
       }
     });
+
+ // Apparence : automatique, clair ou sombre
+    function marquerTheme() {
+      const actuel = window.themeSportApp.lire();
+      document.querySelectorAll("#choix-theme .onglet").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.choix === actuel));
+      });
+    }
+
+    document.querySelectorAll("#choix-theme .onglet").forEach(function (b) {
+      b.addEventListener("click", function () {
+        window.themeSportApp.choisir(b.dataset.choix);
+        marquerTheme();
+      });
+    });
+    marquerTheme();
+
 
     (async function () {
       const user = await exigerConnexion();

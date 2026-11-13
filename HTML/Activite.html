@@ -4,21 +4,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Activité</title>
-  <link rel="stylesheet" href="../CSS/Couleur.css">
-  <link rel="stylesheet" href="../CSS/Commun.css">
-  <link rel="stylesheet" href="../CSS/Activite.css">
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#090d13">
   <link rel="apple-touch-icon" href="../Image/icon-180.png">
+  <script src="../JS/theme.js"></script>
+  <link rel="stylesheet" href="../CSS/Couleur.css">
+  <link rel="stylesheet" href="../CSS/Commun.css">
+  <link rel="stylesheet" href="../CSS/Activite.css">
 </head>
 <body>
-    <header class="bandeau" id="entete"></header>
+  <header class="bandeau" id="entete"></header>
   <script src="../JS/entete.js"></script>
 
   <main>
 
-    <!-- Formulaire de saisie -->
-    <section class="card">
+    <div class="entete-page">
+      <h2>Activité</h2>
+      <button class="btn" id="btn-nouvelle" type="button">+ Nouvelle séance</button>
+    </div>
+
+    <p class="confirmation" id="confirmation" role="status" hidden></p>
+
+    <!-- Formulaire : n'apparaît qu'après un clic sur « Nouvelle séance » -->
+    <section class="card" id="formulaire" hidden>
       <h2>Nouvelle séance</h2>
 
       <label for="date">Date</label>
@@ -52,13 +60,16 @@
       <textarea id="notes" rows="3"></textarea>
 
       <div class="actions">
-        <button class="btn" id="btn-ajouter">Enregistrer la séance</button>
-        <span id="message"></span>
+        <button class="btn" id="btn-ajouter" type="button">Enregistrer la séance</button>
+        <button class="btn secondaire" id="btn-annuler" type="button">Annuler</button>
       </div>
     </section>
 
+    <!-- Bilan -->
+    <section class="bilan" id="bilan"></section>
+
     <!-- Historique -->
-    <h2>Historique</h2>
+    <div class="chips" id="filtres-historique"></div>
     <section id="historique"></section>
 
   </main>
@@ -69,19 +80,23 @@
   <script>
     let exercices = [];          // bibliothèque d'exercices
     let blocs = [];              // exercices de la séance en cours : { exercice, series: [{ rep, charge }], indice }
-    let limite = 30;             // nombre de séances affichées dans l'historique
+    let seances = [];            // toutes les séances
+    let filtre = "Tous";         // filtre de l'historique
+    let limite = 30;             // nombre de séances affichées
     let rechercheMuscle = "Tous";
-
-    function dateLongue(texte) {
-      return new Date(texte + "T12:00:00").toLocaleDateString("fr-FR", {
-        weekday: "long", day: "numeric", month: "long", year: "numeric"
-      });
-    }
+    const FILTRES = ["Tous", "Push", "Pull", "Leg", "Autres"];
 
     function dateCourte(texte) {
       return new Date(texte + "T12:00:00").toLocaleDateString("fr-FR", {
         day: "2-digit", month: "2-digit"
       });
+    }
+
+    // Date au format AAAA-MM-JJ (heure locale)
+    function versTexte(date) {
+      const d = new Date(date.getTime());
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 10);
     }
 
     // Crée un élément HTML (le texte est inséré en toute sécurité)
@@ -104,6 +119,42 @@
       return c;
     }
 
+    // Rangement d'une séance : Push, Pull, Leg ou Autres
+    function categorie(type) {
+      const t = type.trim().toLowerCase();
+      if (t.startsWith("push")) return "Push";
+      if (t.startsWith("pull")) return "Pull";
+      if (t.startsWith("leg")) return "Leg";
+      return "Autres";
+    }
+
+    function confirmer(texte) {
+      const c = document.getElementById("confirmation");
+      c.textContent = texte;
+      c.hidden = false;
+      setTimeout(function () { c.hidden = true; }, 3500);
+    }
+
+    /* ---------- Formulaire : ouverture et fermeture ---------- */
+
+    function ouvrirFormulaire() {
+      document.getElementById("formulaire").hidden = false;
+      document.getElementById("btn-nouvelle").hidden = true;
+      document.getElementById("date").value = aujourdhui();
+      document.getElementById("formulaire").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function fermerFormulaire() {
+      document.getElementById("formulaire").hidden = true;
+      document.getElementById("btn-nouvelle").hidden = false;
+      document.getElementById("type").value = "";
+      document.getElementById("notes").value = "";
+      document.getElementById("recherche-exo").value = "";
+      blocs = [];
+      afficherBlocs();
+      afficherResultats();
+    }
+
     /* ---------- Recherche et choix des exercices ---------- */
 
     function afficherChoix() {
@@ -111,12 +162,12 @@
       document.getElementById("aide-exo").hidden = !vide;
       document.getElementById("picker").hidden = vide;
       if (vide) return;
-      afficherChips();
+      afficherChipsMuscle();
       afficherResultats();
     }
 
     // Pastilles : seulement les muscles qui ont au moins un exercice
-    function afficherChips() {
+    function afficherChipsMuscle() {
       const zone = document.getElementById("chips-muscle");
       zone.innerHTML = "";
       const muscles = MUSCLES.filter(function (m) {
@@ -128,7 +179,7 @@
         bouton.setAttribute("aria-pressed", m === rechercheMuscle ? "true" : "false");
         bouton.addEventListener("click", function () {
           rechercheMuscle = m;
-          afficherChips();
+          afficherChipsMuscle();
           afficherResultats();
         });
         zone.appendChild(bouton);
@@ -297,35 +348,123 @@
       });
     }
 
-    /* ---------- Historique ---------- */
+    /* ---------- Bilan et filtres ---------- */
 
-    async function afficherHistorique() {
-      const seances = await chargerSeances();
+    function afficherBilan() {
+      const zone = document.getElementById("bilan");
+      zone.innerHTML = "";
+
+      const lundi = new Date();
+      lundi.setHours(12, 0, 0, 0);
+      lundi.setDate(lundi.getDate() - ((lundi.getDay() + 6) % 7));
+      const lundiTexte = versTexte(lundi);
+      const aujourdhuiTexte = aujourdhui();
+      const mois = aujourdhuiTexte.slice(0, 7);
+
+      const semaine = seances.filter(function (s) {
+        return s.date >= lundiTexte && s.date <= aujourdhuiTexte;
+      }).length;
+      const ceMois = seances.filter(function (s) { return s.date.slice(0, 7) === mois; }).length;
+
+      [["Cette semaine", semaine], ["Ce mois-ci", ceMois], ["Au total", seances.length]].forEach(function (b) {
+        const carte = el("div", "mini-bilan");
+        carte.appendChild(el("div", "t", b[0]));
+        carte.appendChild(el("div", "v", String(b[1])));
+        zone.appendChild(carte);
+      });
+    }
+
+    function afficherFiltres() {
+      const zone = document.getElementById("filtres-historique");
+      zone.innerHTML = "";
+      FILTRES.forEach(function (f) {
+        const nb = f === "Tous"
+          ? seances.length
+          : seances.filter(function (s) { return categorie(s.type) === f; }).length;
+        const bouton = el("button", "chip", f + " · " + nb);
+        bouton.type = "button";
+        bouton.setAttribute("aria-pressed", f === filtre ? "true" : "false");
+        bouton.addEventListener("click", function () {
+          filtre = f;
+          limite = 30;
+          afficherFiltres();
+          afficherHistorique(false);
+        });
+        zone.appendChild(bouton);
+      });
+    }
+
+    /* ---------- Historique rangé par mois ---------- */
+
+    // recharger = false : on réutilise les séances déjà chargées (simple changement de filtre)
+    async function afficherHistorique(recharger) {
+      if (recharger !== false) {
+        seances = await chargerSeances();
+        afficherBilan();
+        afficherFiltres();
+      }
+
       const zone = document.getElementById("historique");
       zone.innerHTML = "";
 
-      if (seances.length === 0) {
-        zone.appendChild(el("div", "vide",
-          "Aucune séance enregistrée. Remplis le formulaire après ton entraînement."));
+      const filtrees = seances.filter(function (s) {
+        return filtre === "Tous" || categorie(s.type) === filtre;
+      });
+
+      if (filtrees.length === 0) {
+        zone.appendChild(el("div", "vide", seances.length
+          ? "Aucune séance dans cette catégorie."
+          : "Aucune séance enregistrée. Touche « Nouvelle séance » après ton entraînement."));
         return;
       }
 
-      const visibles = seances.slice(0, limite);
+      const visibles = filtrees.slice(0, limite);
       const parSeance = grouperSeries(await chargerSeries(visibles.map(function (s) { return s.id; })));
 
+      let moisCourant = null;
       visibles.forEach(function (s) {
-        const carte = el("div", "card seance");
-        const corps = el("div", "seance-corps");
+        const cle = s.date.slice(0, 7);
+        const d = new Date(s.date + "T12:00:00");
 
-        corps.appendChild(el("span", "tag " + s.type.toLowerCase(), s.type));
-        corps.appendChild(el("div", "mut", dateLongue(s.date)));
-        (parSeance[s.id] || []).forEach(function (ex) {
-          corps.appendChild(creerLigneExercice(ex));
-        });
-        if (s.notes) corps.appendChild(el("div", "notes-seance", s.notes));
+        // Titre du mois
+        if (cle !== moisCourant) {
+          moisCourant = cle;
+          const nomMois = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+          const titre = el("h3", "mois", nomMois.charAt(0).toUpperCase() + nomMois.slice(1));
+          const nb = filtrees.filter(function (x) { return x.date.slice(0, 7) === cle; }).length;
+          titre.appendChild(el("span", "compte", String(nb)));
+          zone.appendChild(titre);
+        }
 
-        const bouton = el("button", "btn-suppr", "Supprimer");
-        bouton.addEventListener("click", async function () {
+        // Ligne compacte qui s'ouvre au clic
+        const exos = parSeance[s.id] || [];
+        const nbSeries = exos.reduce(function (a, e) { return a + e.series.length; }, 0);
+
+        const ligne = el("details", "seance-ligne");
+        const resume = el("summary");
+
+        const bloc = el("span", "date-bloc");
+        bloc.appendChild(el("strong", null, String(d.getDate())));
+        bloc.appendChild(el("small", null, d.toLocaleDateString("fr-FR", { weekday: "short" })));
+        resume.appendChild(bloc);
+
+        const infos = el("span", "seance-infos");
+        infos.appendChild(el("span", "tag " + categorie(s.type).toLowerCase(), s.type));
+        infos.appendChild(el("span", "mut", exos.length
+          ? exos.length + " exercice" + (exos.length > 1 ? "s" : "") + " · " + nbSeries + " série" + (nbSeries > 1 ? "s" : "")
+          : (s.notes ? "Notes uniquement" : "Aucun détail")));
+        resume.appendChild(infos);
+        resume.appendChild(el("span", "chevron", "›"));
+        ligne.appendChild(resume);
+
+        // Détail
+        const detail = el("div", "seance-detail");
+        exos.forEach(function (ex) { detail.appendChild(creerLigneExercice(ex)); });
+        if (s.notes) detail.appendChild(el("div", "notes-seance", s.notes));
+
+        const supprimer = el("button", "btn-suppr", "Supprimer la séance");
+        supprimer.addEventListener("click", async function () {
+          if (!confirm("Supprimer cette séance ?")) return;
           try {
             await supprimerSeance(s.id);
             await afficherHistorique();
@@ -333,17 +472,17 @@
             alert("Erreur : " + e.message);
           }
         });
+        detail.appendChild(supprimer);
 
-        carte.appendChild(corps);
-        carte.appendChild(bouton);
-        zone.appendChild(carte);
+        ligne.appendChild(detail);
+        zone.appendChild(ligne);
       });
 
-      if (seances.length > limite) {
+      if (filtrees.length > limite) {
         const plus = el("button", "btn-suppr plus", "Afficher plus de séances");
-        plus.addEventListener("click", async function () {
+        plus.addEventListener("click", function () {
           limite += 30;
-          await afficherHistorique();
+          afficherHistorique(false);
         });
         zone.appendChild(plus);
       }
@@ -351,7 +490,8 @@
 
     /* ---------- Enregistrement ---------- */
 
-    
+    document.getElementById("btn-nouvelle").addEventListener("click", ouvrirFormulaire);
+    document.getElementById("btn-annuler").addEventListener("click", fermerFormulaire);
 
     document.getElementById("btn-ajouter").addEventListener("click", async function () {
       const bouton = this;
@@ -392,13 +532,9 @@
           throw e;
         }
 
-        document.getElementById("type").value = "";
-        document.getElementById("notes").value = "";
-        document.getElementById("date").value = aujourdhui();
-        blocs = [];
-        afficherBlocs();
-        afficherResultats();
-        document.getElementById("message").textContent = "Séance enregistrée";
+        fermerFormulaire();
+        confirmer("Séance enregistrée");
+        window.scrollTo({ top: 0, behavior: "smooth" });
         await afficherHistorique();
       } catch (e) {
         alert("Erreur : " + e.message);
@@ -412,7 +548,6 @@
     (async function () {
       const user = await exigerConnexion();
       if (!user) return;
-      document.getElementById("date").value = aujourdhui();
       try {
         exercices = await chargerExercices();
         afficherChoix();
