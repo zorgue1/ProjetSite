@@ -414,3 +414,85 @@ textarea {
   background: color-mix(in srgb, var(--pull) 12%, transparent);
   border-radius: 12px;
 }
+
+/* ---------- Barre de navigation du bas ---------- */
+html {
+  scroll-padding-bottom: 96px;
+}
+
+body.avec-barre {
+  padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+}
+
+.barre-bas {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  gap: 2px;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: var(--bandeau-fond);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--bordure);
+}
+
+.barre-bas a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 2px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--bandeau-texte);
+  border-radius: 14px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.barre-bas svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.barre-bas a:hover {
+  color: var(--bandeau-actif);
+}
+
+.barre-bas a[aria-current="page"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.barre-bas a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Sur grand écran : une pastille flottante centrée plutôt qu'une barre sur toute la largeur */
+@media (min-width: 900px) {
+  .barre-bas {
+    left: 50%;
+    right: auto;
+    bottom: 16px;
+    width: 560px;
+    transform: translateX(-50%);
+    padding-bottom: 6px;
+    border: 1px solid var(--bordure);
+    border-radius: 22px;
+    box-shadow: var(--ombre);
+  }
+
+  body.avec-barre {
+    padding-bottom: 100px;
+  }
+}

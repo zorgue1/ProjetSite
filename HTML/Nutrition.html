@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SportApp – Nutrition</title>
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#090d13">
+  <link rel="apple-touch-icon" href="../Image/icon-180.png">
+  <script src="../JS/theme.js"></script>
+  <link rel="stylesheet" href="../CSS/Couleur.css">
+  <link rel="stylesheet" href="../CSS/Commun.css">
+  <link rel="stylesheet" href="../CSS/Nutrition.css">
+</head>
+<body>
+  <header class="bandeau" id="entete"></header>
+  <script src="../JS/entete.js"></script>
+
+  <main>
+
+    <div class="entete-page">
+      <h2>Nutrition</h2>
+    </div>
+
+    <section class="card vide-nutrition">
+      <div class="nutri-icone">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 11h16a8 8 0 0 1-16 0z"/>
+          <path d="M9 7c0-1.500 1.200-1.500 1.200-3"/>
+          <path d="M14 7c0-1.500 1.200-1.500 1.200-3"/>
+        </svg>
+      </div>
+      <h3>Bientôt disponible</h3>
+      <p class="mut">Cette section accueillera le suivi de ton alimentation. Elle sera complétée prochainement.</p>
+    </section>
+
+    <ul class="a-venir">
+      <li><strong>Repas du jour</strong><span>Ce que tu manges, repas par repas</span></li>
+      <li><strong>Objectifs</strong><span>Calories, protéines, glucides, lipides</span></li>
+      <li><strong>Historique</strong><span>Ton suivi jour après jour</span></li>
+    </ul>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../JS/supabase.js"></script>
+  <script src="../JS/donnees.js"></script>
+  <script>
+    (async function () {
+      await exigerConnexion();
+    })();
+  </script>
+</body>
+</html>
