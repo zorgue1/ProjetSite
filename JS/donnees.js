@@ -362,6 +362,15 @@ function classeSeance(nom) {
   return ["push", "pull", "leg", "repos"].indexOf(n) !== -1 ? n : "autre";
 }
 
+/* ---------- Records ---------- */
+
+// Records de chaque exercice, calculés par la base (vue records_exercices)
+async function chargerRecords() {
+  const { data, error } = await client.from("records_exercices").select("*");
+  if (error) throw error;
+  return data;
+}
+
 /* ---------- Protection du bouton « Retour » ---------- */
 
 // La page reste masquée tant que la connexion n'est pas vérifiée

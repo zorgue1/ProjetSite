@@ -2,95 +2,97 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>SportApp – Rapport</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SportApp – Progression</title>
+  <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#090d13">
+  <link rel="apple-touch-icon" href="../Image/icon-180.png">
   <script src="../JS/theme.js"></script>
   <link rel="stylesheet" href="../CSS/Couleur.css">
   <link rel="stylesheet" href="../CSS/Commun.css">
-  <link rel="stylesheet" href="../CSS/Rapport.css">
-  <link rel="manifest" href="../manifest.json">
-  <link rel="apple-touch-icon" href="../Image/icon-180.png">
+  <link rel="stylesheet" href="../CSS/Progression.css">
 </head>
 <body>
-    <header class="bandeau" id="entete"></header>
+  <header class="bandeau" id="entete"></header>
   <script src="../JS/entete.js"></script>
 
   <main>
 
-    <h2>Rapport</h2>
-
-    <!-- Chiffres clés -->
-    <section class="stats">
-      <div class="card">
-        <div class="mut">Cette semaine</div>
-        <div class="chiffre" id="stat-semaine">0</div>
-      </div>
-      <div class="card">
-        <div class="mut">Moyenne / semaine</div>
-        <div class="chiffre" id="stat-moyenne">0</div>
-      </div>
-      <div class="card">
-        <div class="mut">Total sur la période</div>
-        <div class="chiffre" id="stat-total">0</div>
-      </div>
-    </section>
-
-    <!-- Courbe des séances -->
-    <section class="card">
+    <!-- Période : utile pour les vues Séances et Poids -->
+    <section class="card zone-periode" id="zone-periode">
       <label for="periode">Période</label>
       <select id="periode">
-        <option value="4" selected>4 semaines</option>
-        <option value="8">8 semaines</option>
+        <option value="4">4 semaines</option>
+        <option value="8" selected>8 semaines</option>
         <option value="12">12 semaines</option>
         <option value="26">6 mois</option>
       </select>
-
-      <p class="mut legende">
-        Nombre de séances par semaine (les semaines commencent le lundi).
-        Ligne pointillée : ta moyenne.
-      </p>
-
-      <div class="graphique" id="graphique"></div>
     </section>
 
-    <!-- Courbe de poids -->
-    <section class="card">
-      <h2>Poids</h2>
-      <div class="stats-poids">
-        <div>
-          <div class="mut">Poids actuel</div>
-          <div class="chiffre-poids" id="poids-actuel">—</div>
+    <!-- Vue : Séances -->
+    <div id="vue-seances">
+      <section class="stats">
+        <div class="card">
+          <div class="mut">Cette semaine</div>
+          <div class="chiffre" id="stat-semaine">0</div>
         </div>
-        <div>
-          <div class="mut">Évolution sur la période</div>
-          <div class="chiffre-poids" id="poids-evolution">—</div>
+        <div class="card">
+          <div class="mut">Moyenne / semaine</div>
+          <div class="chiffre" id="stat-moyenne">0</div>
         </div>
-      </div>
-      <div class="graphique" id="graphique-poids"></div>
-    </section>
+        <div class="card">
+          <div class="mut">Total sur la période</div>
+          <div class="chiffre" id="stat-total">0</div>
+        </div>
+      </section>
 
-    <!-- Progression par exercice -->
-    <section class="card">
-      <h2>Progression par exercice</h2>
+      <section class="card">
+        <p class="mut legende">
+          Nombre de séances par semaine (les semaines commencent le lundi).
+          Ligne pointillée : ta moyenne.
+        </p>
+        <div class="graphique" id="graphique"></div>
+      </section>
+    </div>
 
-      <div id="prog-selection">
-        <label for="recherche-prog">Exercice</label>
-        <input id="recherche-prog" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
-        <select id="choix-prog"></select>
-      </div>
+    <!-- Vue : Poids -->
+    <div id="vue-poids" hidden>
+      <section class="card">
+        <div class="stats-poids">
+          <div>
+            <div class="mut">Poids actuel</div>
+            <div class="chiffre-poids" id="poids-actuel">—</div>
+          </div>
+          <div>
+            <div class="mut">Évolution sur la période</div>
+            <div class="chiffre-poids" id="poids-evolution">—</div>
+          </div>
+        </div>
+        <div class="graphique" id="graphique-poids"></div>
+      </section>
+    </div>
 
-      <div class="vide" id="prog-aucune" hidden></div>
+    <!-- Vue : Exercices -->
+    <div id="vue-exercices" hidden>
+      <section class="card">
+        <div id="prog-selection">
+          <label for="recherche-prog">Exercice</label>
+          <input id="recherche-prog" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
+          <select id="choix-prog"></select>
+        </div>
 
-      <div id="prog-contenu" hidden>
-        <div class="records" id="records"></div>
+        <div class="vide" id="prog-aucune" hidden></div>
 
-        <label for="metrique">Courbe</label>
-        <select id="metrique"></select>
-        <div class="graphique" id="graphique-prog"></div>
-        <p class="mut" id="prog-note"></p>
-      </div>
-    </section>
+        <div id="prog-contenu" hidden>
+          <div class="records" id="records"></div>
+
+          <label for="metrique">Courbe</label>
+          <select id="metrique"></select>
+          <div class="graphique" id="graphique-prog"></div>
+          <p class="mut" id="prog-note"></p>
+        </div>
+      </section>
+    </div>
 
   </main>
 
@@ -122,6 +124,22 @@
       d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
       return versTexte(d);
     }
+
+    /* ---------- Vues (Séances / Poids / Exercices) ---------- */
+
+    const VUES = ["seances", "poids", "exercices"];
+
+    function afficherVue() {
+      const hash = location.hash.slice(1);
+      const vue = VUES.indexOf(hash) !== -1 ? hash : "seances";
+      VUES.forEach(function (v) {
+        document.getElementById("vue-" + v).hidden = v !== vue;
+      });
+      // La période ne sert pas pour la progression d'un exercice
+      document.getElementById("zone-periode").hidden = vue === "exercices";
+    }
+
+    window.addEventListener("hashchange", afficherVue);
 
     /* ---------- Séances par semaine ---------- */
 
@@ -383,7 +401,7 @@
 
       if (liste.length === 0) {
         contenu.hidden = true;
-        aucune.textContent = "Aucune donnée pour cet exercice. Ajoute-le à une séance dans l’onglet Activité.";
+        aucune.textContent = "Aucune donnée pour cet exercice. Ajoute-le à une séance dans Sport → Séances.";
         aucune.hidden = false;
         return;
       }
@@ -548,6 +566,7 @@
     /* ---------- Démarrage ---------- */
 
     document.getElementById("periode").addEventListener("change", afficher);
+    afficherVue();
 
     (async function () {
       const user = await exigerConnexion();

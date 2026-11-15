@@ -1,7 +1,53 @@
 // Navigation commune à toutes les pages :
-// bandeau du haut (logo + Paramètres) et barre du bas (onglets principaux)
+// bandeau du haut (logo + Paramètres), sous-onglets de la section et barre du bas
 (function () {
   const page = location.pathname.split("/").pop();
+
+  /* ---------- Icônes ---------- */
+  const ICONES = {
+    accueil:
+      '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
+    sport:
+      '<rect x="2" y="9" width="3" height="6" rx="1"/><rect x="5" y="6" width="3" height="12" rx="1"/>' +
+      '<line x1="8" y1="12" x2="16" y2="12"/><rect x="16" y="6" width="3" height="12" rx="1"/>' +
+      '<rect x="19" y="9" width="3" height="6" rx="1"/>',
+    nutrition:
+      '<path d="M4 11h16a8 8 0 0 1-16 0z"/><path d="M9 7c0-1.500 1.200-1.500 1.200-3"/>' +
+      '<path d="M14 7c0-1.500 1.200-1.500 1.200-3"/>',
+    progression:
+      '<line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="12" width="3" height="8"/>' +
+      '<rect x="11" y="7" width="3" height="13"/><rect x="16" y="3" width="3" height="17"/>'
+  };
+
+  /* ---------- Sections de la barre du bas ---------- */
+  // « lien » : page ouverte par le bouton ; « pages » : fichiers qui appartiennent à la section
+  const SECTIONS = [
+    { nom: "Accueil", lien: "Accueil.html", icone: ICONES.accueil,
+      pages: ["Accueil.html"] },
+    { nom: "Sport", lien: "Activite.html", icone: ICONES.sport,
+      pages: ["Activite.html", "Exercices.html", "Records.html"] },
+    { nom: "Nutrition", lien: "Nutrition.html", icone: ICONES.nutrition,
+      pages: ["Nutrition.html"] },
+    { nom: "Progression", lien: "Progression.html", icone: ICONES.progression,
+      pages: ["Progression.html"] }
+  ];
+
+  /* ---------- Sous-onglets de chaque section ---------- */
+  // Une adresse avec # change de vue dans la même page (ex. Progression.html#poids)
+  const SOUS_ONGLETS = {
+    "Sport": [
+      ["Activite.html", "Séances"],
+      ["Exercices.html", "Exercices"],
+      ["Records.html", "Records"]
+    ],
+    "Progression": [
+      ["Progression.html#seances", "Séances"],
+      ["Progression.html#poids", "Poids"],
+      ["Progression.html#exercices", "Exercices"]
+    ]
+  };
+
+  const section = SECTIONS.find(function (s) { return s.pages.indexOf(page) !== -1; });
 
   /* ---------- Bandeau du haut ---------- */
   const zone = document.getElementById("entete");
@@ -28,33 +74,46 @@
       '</a>';
   }
 
-  /* ---------- Barre du bas ---------- */
-  const ONGLETS = [
-    ["Accueil.html", "Accueil",
-      '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>'],
-    ["Activite.html", "Activité",
-      '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9z"/>' +
-      '<line x1="8.5" y1="12" x2="15.5" y2="12"/><line x1="8.5" y1="16" x2="13" y2="16"/>'],
-    ["Exercices.html", "Exercices",
-      '<rect x="2" y="9" width="3" height="6" rx="1"/><rect x="5" y="6" width="3" height="12" rx="1"/>' +
-      '<line x1="8" y1="12" x2="16" y2="12"/><rect x="16" y="6" width="3" height="12" rx="1"/>' +
-      '<rect x="19" y="9" width="3" height="6" rx="1"/>'],
-    ["Rapport.html", "Rapport",
-      '<line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="12" width="3" height="8"/>' +
-      '<rect x="11" y="7" width="3" height="13"/><rect x="16" y="3" width="3" height="17"/>'],
-    ["Nutrition.html", "Nutrition",
-      '<path d="M4 11h16a8 8 0 0 1-16 0z"/><path d="M9 7c0-1.500 1.200-1.500 1.200-3"/>' +
-      '<path d="M14 7c0-1.500 1.200-1.500 1.200-3"/>']
-  ];
+  /* ---------- Sous-onglets (sous le bandeau) ---------- */
+  function majSousOnglets() {
+    const liens = document.querySelectorAll(".sous-onglets a");
+    const hash = location.hash.slice(1);
+    const vues = Array.prototype.map.call(liens, function (l) {
+      return l.getAttribute("href").split("#")[1];
+    }).filter(Boolean);
+    const vueCourante = vues.indexOf(hash) !== -1 ? hash : vues[0];
 
+    liens.forEach(function (l) {
+      const morceaux = l.getAttribute("href").split("#");
+      const actif = morceaux[0] === page && (!morceaux[1] || morceaux[1] === vueCourante);
+      if (actif) l.setAttribute("aria-current", "page");
+      else l.removeAttribute("aria-current");
+    });
+  }
+
+  const sous = section && SOUS_ONGLETS[section.nom];
+  if (sous && zone) {
+    const nav = document.createElement("nav");
+    nav.className = "sous-onglets";
+    nav.setAttribute("aria-label", "Sous-menu " + section.nom);
+    nav.innerHTML = '<div class="sous-onglets-piste">' +
+      sous.map(function (o) { return '<a href="' + o[0] + '">' + o[1] + '</a>'; }).join("") +
+      '</div>';
+    zone.insertAdjacentElement("afterend", nav);
+    majSousOnglets();
+    window.addEventListener("hashchange", majSousOnglets);
+  }
+
+  /* ---------- Barre du bas ---------- */
   function creerBarre() {
     const barre = document.createElement("nav");
     barre.className = "barre-bas";
     barre.setAttribute("aria-label", "Navigation principale");
-    barre.innerHTML = ONGLETS.map(function (o) {
-      return '<a href="' + o[0] + '"' + (o[0] === page ? ' aria-current="page"' : "") + '>' +
-        '<svg viewBox="0 0 24 24" aria-hidden="true">' + o[2] + '</svg>' +
-        '<span>' + o[1] + '</span></a>';
+    barre.innerHTML = SECTIONS.map(function (s) {
+      const actif = section && s.nom === section.nom;
+      return '<a href="' + s.lien + '"' + (actif ? ' aria-current="page"' : "") + '>' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true">' + s.icone + '</svg>' +
+        '<span>' + s.nom + '</span></a>';
     }).join("");
     document.body.appendChild(barre);
     document.body.classList.add("avec-barre");

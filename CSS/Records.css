@@ -1,0 +1,91 @@
+#recherche {
+  margin-bottom: 12px;
+}
+
+/* ---------- Pastilles de muscles ---------- */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.chip {
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gris);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+  color: var(--texte-bouton);
+  background: var(--degrade);
+  border-color: transparent;
+}
+
+/* ---------- Cartes de records ---------- */
+.record-carte {
+  padding: 16px;
+}
+
+.record-haut {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.record-titre-bloc {
+  min-width: 0;
+}
+
+.record-grille {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.rec-bloc {
+  padding: 12px;
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 14px;
+}
+
+.rec-bloc .t {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.rec-bloc .v {
+  margin: 2px 0;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.rec-bloc:first-child .v {
+  color: var(--accent);
+}
+
+.rec-bloc .d {
+  font-size: 13px;
+  color: var(--gris);
+}
+
+.vide {
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--gris);
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon);
+}

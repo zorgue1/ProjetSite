@@ -181,3 +181,12 @@ select {
   font-size: 13px;
   color: var(--gris);
 }
+
+/* ---------- Carte de la période ---------- */
+.zone-periode {
+  padding: 14px 16px;
+}
+
+.zone-periode select {
+  max-width: none;
+}

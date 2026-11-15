@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SportApp – Records</title>
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#090d13">
+  <link rel="apple-touch-icon" href="../Image/icon-180.png">
+  <script src="../JS/theme.js"></script>
+  <link rel="stylesheet" href="../CSS/Couleur.css">
+  <link rel="stylesheet" href="../CSS/Commun.css">
+  <link rel="stylesheet" href="../CSS/Records.css">
+</head>
+<body>
+  <header class="bandeau" id="entete"></header>
+  <script src="../JS/entete.js"></script>
+
+  <main>
+
+    <input id="recherche" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
+    <div class="chips" id="chips"></div>
+    <section id="liste"></section>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../JS/supabase.js"></script>
+  <script src="../JS/donnees.js"></script>
+  <script>
+    let exercices = [];
+    let records = {};          // records indexés par identifiant d'exercice
+    let muscleChoisi = "Tous";
+
+    // Crée un élément HTML (le texte est inséré en toute sécurité)
+    function el(balise, classe, texte) {
+      const e = document.createElement(balise);
+      if (classe) e.className = classe;
+      if (texte) e.textContent = texte;
+      return e;
+    }
+
+    // 62.5 -> "62,5" ; 60 -> "60"
+    function nb(v) {
+      return String(Math.round(Number(v) * 10) / 10).replace(".", ",");
+    }
+
+    function dateFr(texte) {
+      return new Date(texte + "T12:00:00").toLocaleDateString("fr-FR", {
+        day: "2-digit", month: "2-digit", year: "2-digit"
+      });
+    }
+
+    function bloc(titre, valeur, date) {
+      const b = el("div", "rec-bloc");
+      b.appendChild(el("div", "t", titre));
+      b.appendChild(el("div", "v", valeur));
+      b.appendChild(el("div", "d", date));
+      return b;
+    }
+
+    // Pastilles : seulement les muscles qui ont au moins un record
+    function afficherChips() {
+      const zone = document.getElementById("chips");
+      zone.innerHTML = "";
+      const avecRecord = exercices.filter(function (e) { return records[e.id]; });
+      const muscles = MUSCLES.filter(function (m) {
+        return avecRecord.some(function (e) { return e.muscle === m; });
+      });
+      ["Tous"].concat(muscles).forEach(function (m) {
+        const bouton = el("button", "chip", m);
+        bouton.type = "button";
+        bouton.setAttribute("aria-pressed", m === muscleChoisi ? "true" : "false");
+        bouton.addEventListener("click", function () {
+          muscleChoisi = m;
+          afficherChips();
+          afficherListe();
+        });
+        zone.appendChild(bouton);
+      });
+    }
+
+    function afficherListe() {
+      const zone = document.getElementById("liste");
+      zone.innerHTML = "";
+
+      const mots = normaliser(document.getElementById("recherche").value)
+        .split(" ").filter(Boolean);
+
+      const visibles = exercices.filter(function (e) {
+        if (!records[e.id]) return false;
+        if (muscleChoisi !== "Tous" && e.muscle !== muscleChoisi) return false;
+        const texte = normaliser(e.nom + " " + e.muscle);
+        return mots.every(function (m) { return texte.indexOf(m) !== -1; });
+      }).sort(function (a, b) {
+        return MUSCLES.indexOf(a.muscle) - MUSCLES.indexOf(b.muscle) ||
+               a.nom.localeCompare(b.nom, "fr");
+      });
+
+      if (visibles.length === 0) {
+        zone.appendChild(el("div", "vide", Object.keys(records).length
+          ? "Aucun record ne correspond."
+          : "Aucun record pour l’instant. Enregistre des séances avec des exercices, et tes meilleures performances apparaîtront ici."));
+        return;
+      }
+
+      visibles.forEach(function (ex) {
+        const r = records[ex.id];
+        const carte = el("article", "card record-carte");
+
+        const haut = el("div", "record-haut");
+        haut.appendChild(creerVignette(ex));
+        const titre = el("div", "record-titre-bloc");
+        titre.appendChild(el("div", "exo-nom-ligne", ex.nom));
+        titre.appendChild(el("div", "mut", ex.muscle + " · " + r.nb_seances +
+          " séance" + (r.nb_seances > 1 ? "s" : "")));
+        haut.appendChild(titre);
+        carte.appendChild(haut);
+
+        const grille = el("div", "record-grille");
+        if (Number(r.charge_max) > 0) {
+          grille.appendChild(bloc("Charge max", nb(r.charge_max) + " kg × " + r.charge_reps, dateFr(r.charge_date)));
+          grille.appendChild(bloc("1RM estimé", nb(r.rm_max) + " kg", dateFr(r.rm_date)));
+        } else {
+          grille.appendChild(bloc("Répétitions max", r.reps_max + " reps", dateFr(r.reps_date)));
+          grille.appendChild(bloc("Dernière séance", dateFr(r.derniere_date), ""));
+        }
+        carte.appendChild(grille);
+
+        zone.appendChild(carte);
+      });
+    }
+
+    document.getElementById("recherche").addEventListener("input", afficherListe);
+
+    (async function () {
+      const user = await exigerConnexion();
+      if (!user) return;
+      try {
+        const resultats = await Promise.all([chargerExercices(), chargerRecords()]);
+        exercices = resultats[0];
+        resultats[1].forEach(function (r) { records[r.exercice_id] = r; });
+        afficherChips();
+        afficherListe();
+      } catch (e) {
+        alert("Erreur de chargement : " + e.message);
+      }
+    })();
+  </script>
+</body>
+</html>
