@@ -33,7 +33,8 @@
       <input id="date" type="date">
 
       <label for="type">Type de séance</label>
-      <input id="type" list="suggestions" placeholder="Push, Pull, Leg, bras et triceps…">
+      <div class="chips" id="chips-type"></div>
+      <input id="type" list="suggestions" placeholder="Ou écris ta séance (hand, natation…)">
       <datalist id="suggestions">
         <option value="Push">
         <option value="Pull">
@@ -84,6 +85,7 @@
     let filtre = "Tous";         // filtre de l'historique
     let limite = 30;             // nombre de séances affichées
     let rechercheMuscle = "Tous";
+    let programme = PROGRAMME_DEFAUT;   // programme de la semaine (pour proposer la séance du jour)
     const FILTRES = ["Tous", "Push", "Pull", "Leg", "Autres"];
 
     function dateCourte(texte) {
@@ -135,12 +137,64 @@
       setTimeout(function () { c.hidden = true; }, 3500);
     }
 
+        /* ---------- Pastilles du type de séance ---------- */
+
+    // Push, Pull, Leg et ce qui est écrit dans ton programme (hand, natation…)
+    function typesProposes() {
+      const liste = ["Push", "Pull", "Leg"];
+      programme.forEach(function (p) {
+        const dejaLa = liste.some(function (t) { return normaliser(t) === normaliser(p); });
+        if (!estRepos(p) && !dejaLa) liste.push(p);
+      });
+      return liste;
+    }
+
+    function afficherChipsType() {
+      const zone = document.getElementById("chips-type");
+      const champ = document.getElementById("type");
+      zone.innerHTML = "";
+
+      const actuel = normaliser(champ.value);
+      const types = typesProposes();
+      const connu = types.some(function (t) { return normaliser(t) === actuel; });
+
+      types.forEach(function (t) {
+        const bouton = el("button", "chip", t);
+        bouton.type = "button";
+        bouton.setAttribute("aria-pressed", normaliser(t) === actuel ? "true" : "false");
+        bouton.addEventListener("click", function () {
+          champ.value = t;
+          afficherChipsType();
+        });
+        zone.appendChild(bouton);
+      });
+
+      // « Autre… » : on écrit sa propre séance dans le champ
+      const autre = el("button", "chip", "Autre…");
+      autre.type = "button";
+      autre.setAttribute("aria-pressed", actuel !== "" && !connu ? "true" : "false");
+      autre.addEventListener("click", function () {
+        champ.value = "";
+        afficherChipsType();
+        champ.focus();
+      });
+      zone.appendChild(autre);
+    }
+
+    document.getElementById("type").addEventListener("input", afficherChipsType);
+
     /* ---------- Formulaire : ouverture et fermeture ---------- */
 
     function ouvrirFormulaire() {
       document.getElementById("formulaire").hidden = false;
       document.getElementById("btn-nouvelle").hidden = true;
       document.getElementById("date").value = aujourdhui();
+
+      // La séance prévue aujourd'hui est proposée d'office (tu peux la changer)
+      const prevu = programme[(new Date().getDay() + 6) % 7];
+      document.getElementById("type").value = estRepos(prevu) ? "" : prevu;
+      afficherChipsType();
+
       document.getElementById("formulaire").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
@@ -549,9 +603,10 @@
       const user = await exigerConnexion();
       if (!user) return;
       try {
-        exercices = await chargerExercices();
-        afficherChoix();
-        await afficherHistorique();
+      exercices = await chargerExercices();
+      try { programme = (await chargerProfil()).programme; } catch (e) {}
+      afficherChoix();
+      await afficherHistorique();
       } catch (e) {
         alert("Erreur de chargement : " + e.message);
       }

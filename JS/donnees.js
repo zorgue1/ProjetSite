@@ -34,6 +34,7 @@ async function chargerProfil() {
     nom: (data && data.nom) || "",
     naissance: (data && data.naissance) || "",
     poids: data && data.poids !== null ? String(data.poids) : "",
+    sexe: (data && data.sexe) || "",
     programme: (data && data.programme) || PROGRAMME_DEFAUT
   };
 }
@@ -46,6 +47,7 @@ async function sauverProfil(profil) {
     nom: profil.nom,
     naissance: profil.naissance || null,
     poids: profil.poids === "" ? null : parseFloat(profil.poids),
+    sexe: profil.sexe || null,
     programme: profil.programme
   });
   if (error) throw error;

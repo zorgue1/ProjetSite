@@ -43,6 +43,14 @@
           <input id="poids" type="number" step="0.1" min="0" inputmode="decimal">
         </div>
       </div>
+
+      <label for="sexe">Sexe</label>
+      <select id="sexe">
+        <option value="">Non renseigné</option>
+        <option value="homme">Homme</option>
+        <option value="femme">Femme</option>
+      </select>
+      <p class="mut aide-theme">Utilisé pour calculer tes besoins en calories (section Nutrition).</p>
     </section>
 
     <!-- Programme de la semaine -->
@@ -161,6 +169,7 @@
       document.getElementById("nom").value = profilCharge.nom;
       document.getElementById("naissance").value = profilCharge.naissance;
       document.getElementById("poids").value = profilCharge.poids;
+      document.getElementById("sexe").value = profilCharge.sexe;
       construireProgramme(profilCharge.programme);
     }
 
@@ -171,6 +180,7 @@
         nom: document.getElementById("nom").value.trim(),
         naissance: document.getElementById("naissance").value,
         poids: poidsSaisi,
+        sexe: document.getElementById("sexe").value,
         programme: lireProgramme()
       };
 

@@ -2,12 +2,12 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Connexion</title>
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#090d13">
-  <script src="../JS/theme.js"></script>
   <link rel="apple-touch-icon" href="../Image/icon-180.png">
+  <script src="../JS/theme.js"></script>
   <link rel="stylesheet" href="../CSS/Couleur.css">
   <link rel="stylesheet" href="../CSS/Commun.css">
   <link rel="stylesheet" href="../CSS/Connexion.css">
@@ -63,12 +63,26 @@
           </div>
         </div>
 
+        <label id="label-sexe">Sexe</label>
+        <div class="onglets" id="choix-sexe" role="group" aria-labelledby="label-sexe">
+          <button type="button" class="onglet" data-sexe="homme" aria-pressed="false">Homme</button>
+          <button type="button" class="onglet" data-sexe="femme" aria-pressed="false">Femme</button>
+        </div>
+        <p class="mut aide">Nécessaire pour calculer tes besoins en calories.</p>
+
         <label for="programme">Programme de la semaine</label>
         <select id="programme">
           <option value="ppl5">Push / Pull / Leg · 5 jours (lun → ven)</option>
           <option value="ppl6">Push / Pull / Leg · 6 jours (lun → sam)</option>
           <option value="ppl3">Push / Pull / Leg · 3 jours (lun, mer, ven)</option>
+          <option value="perso">Personnalisé (je choisis chaque jour)…</option>
         </select>
+
+        <div id="programme-perso" hidden>
+          <p class="mut aide">Choisis la séance de chaque jour, ou écris la tienne avec « Autre » (hand, natation…).</p>
+          <div class="row" id="jours-perso"></div>
+        </div>
+
         <p class="mut aide">Tu pourras tout modifier ensuite dans Paramètres.</p>
       </div>
 
@@ -83,6 +97,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../JS/supabase.js"></script>
   <script>
+    const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+    const TYPES = ["Push", "Pull", "Leg", "Repos"];
+    const AUTRE = "__autre";
+
     const PROGRAMMES = {
       ppl5: ["Push", "Pull", "Leg", "Push", "Pull", "Repos", "Repos"],
       ppl6: ["Push", "Pull", "Leg", "Push", "Pull", "Leg", "Repos"],
@@ -91,11 +109,113 @@
 
     const message = document.getElementById("message");
     let mode = "connexion";
+    let sexe = "";
+    let dernierPreset = "ppl5";
+
+    // Minuscules sans accents
+    function normaliser(texte) {
+      return String(texte).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    }
 
     function afficherMessage(texte, erreur) {
       message.textContent = texte;
       message.className = erreur ? "erreur" : "ok";
     }
+
+    /* ---------- Planning personnalisé ---------- */
+
+    // Un menu par jour, avec un champ de texte qui s'ouvre si on choisit « Autre »
+    function construireJoursPerso() {
+      const zone = document.getElementById("jours-perso");
+      zone.innerHTML = "";
+
+      JOURS.forEach(function (jour, i) {
+        const bloc = document.createElement("div");
+        bloc.className = "jour-programme";
+
+        const label = document.createElement("label");
+        label.setAttribute("for", "jour" + i);
+        label.textContent = jour;
+
+        const select = document.createElement("select");
+        select.id = "jour" + i;
+        TYPES.forEach(function (type) {
+          const option = document.createElement("option");
+          option.textContent = type;
+          select.appendChild(option);
+        });
+        const autre = document.createElement("option");
+        autre.value = AUTRE;
+        autre.textContent = "Autre (écrire)…";
+        select.appendChild(autre);
+
+        const texte = document.createElement("input");
+        texte.type = "text";
+        texte.id = "jour" + i + "-texte";
+        texte.maxLength = 30;
+        texte.placeholder = "Ex. : Hand, natation…";
+        texte.setAttribute("aria-label", "Séance du " + jour.toLowerCase());
+        texte.hidden = true;
+
+        select.addEventListener("change", function () {
+          texte.hidden = select.value !== AUTRE;
+          if (!texte.hidden) texte.focus();
+        });
+
+        bloc.appendChild(label);
+        bloc.appendChild(select);
+        bloc.appendChild(texte);
+        zone.appendChild(bloc);
+      });
+    }
+
+    function remplirJoursPerso(programme) {
+      programme.forEach(function (valeur, i) {
+        const connu = TYPES.indexOf(valeur) !== -1;
+        document.getElementById("jour" + i).value = connu ? valeur : AUTRE;
+        const texte = document.getElementById("jour" + i + "-texte");
+        texte.value = connu ? "" : valeur;
+        texte.hidden = connu;
+      });
+    }
+
+    // Programme choisi : un des trois programmes prêts, ou le planning personnalisé
+    function lireProgramme() {
+      const choix = document.getElementById("programme").value;
+      if (choix !== "perso") return PROGRAMMES[choix];
+
+      return JOURS.map(function (_, i) {
+        const valeur = document.getElementById("jour" + i).value;
+        if (valeur !== AUTRE) return valeur;
+
+        const texte = document.getElementById("jour" + i + "-texte").value.trim();
+        if (!texte) return "Repos";   // champ laissé vide : on le compte comme un repos
+
+        // Si le texte écrit est un type habituel (« push », « REPOS »…), on le range proprement
+        const connu = TYPES.find(function (t) { return normaliser(t) === normaliser(texte); });
+        return connu || texte;
+      });
+    }
+
+    document.getElementById("programme").addEventListener("change", function () {
+      const perso = this.value === "perso";
+      document.getElementById("programme-perso").hidden = !perso;
+      if (perso) remplirJoursPerso(PROGRAMMES[dernierPreset]);   // on part du dernier programme choisi
+      else dernierPreset = this.value;
+    });
+
+    /* ---------- Sexe ---------- */
+
+    document.querySelectorAll("#choix-sexe .onglet").forEach(function (b) {
+      b.addEventListener("click", function () {
+        sexe = b.dataset.sexe;
+        document.querySelectorAll("#choix-sexe .onglet").forEach(function (x) {
+          x.setAttribute("aria-pressed", String(x === b));
+        });
+      });
+    });
+
+    /* ---------- Connexion et création de compte ---------- */
 
     function choisirMode(nouveau) {
       mode = nouveau;
@@ -133,6 +253,9 @@
         document.getElementById("prenom").focus();
         return afficherMessage("Indique ton prénom pour créer le compte.", true);
       }
+      if (!sexe) {
+        return afficherMessage("Indique ton sexe pour créer le compte (il sert au calcul des calories).", true);
+      }
 
       const { data, error } = await client.auth.signUp(identifiants());
       if (error) return afficherMessage("Création impossible : " + error.message, true);
@@ -151,7 +274,8 @@
         nom: document.getElementById("nom").value.trim(),
         naissance: document.getElementById("naissance").value || null,
         poids: poids,
-        programme: PROGRAMMES[document.getElementById("programme").value]
+        sexe: sexe,
+        programme: lireProgramme()
       });
 
       if (poids) {
@@ -184,6 +308,9 @@
         if (e.key === "Enter") document.getElementById("btn-valider").click();
       });
     });
+
+    construireJoursPerso();
+    remplirJoursPerso(PROGRAMMES.ppl5);
 
     // Déjà connecté : on va directement à l'accueil
     client.auth.getSession().then(function (r) {
