@@ -18,80 +18,151 @@
 
   <main>
 
-    <!-- Période : utile pour les vues Séances et Poids -->
-    <section class="card zone-periode" id="zone-periode">
-      <label for="periode">Période</label>
-      <select id="periode">
-        <option value="4">4 semaines</option>
-        <option value="8" selected>8 semaines</option>
-        <option value="12">12 semaines</option>
-        <option value="26">6 mois</option>
-      </select>
-    </section>
+    <!-- Période (vues Séances et Poids) -->
+    <div class="periode" id="zone-periode" role="group" aria-label="Période affichée">
+      <button type="button" data-semaines="4">4 sem.</button>
+      <button type="button" data-semaines="8">8 sem.</button>
+      <button type="button" data-semaines="13">3 mois</button>
+      <button type="button" data-semaines="26">6 mois</button>
+    </div>
 
-    <!-- Vue : Séances -->
+    <!-- ===================== Vue : Séances ===================== -->
     <div id="vue-seances">
-      <section class="stats">
-        <div class="card">
-          <div class="mut">Cette semaine</div>
-          <div class="chiffre" id="stat-semaine">0</div>
+
+      <section class="tuiles">
+        <div class="tuile tuile-objectif">
+          <svg class="mini-anneau" viewBox="0 0 44 44" aria-hidden="true">
+            <circle class="fond" cx="22" cy="22" r="18"/>
+            <circle class="plein" id="anneau-semaine" cx="22" cy="22" r="18"/>
+          </svg>
+          <div>
+            <span class="tuile-titre">Cette semaine</span>
+            <span class="tuile-valeur" id="stat-semaine">0</span>
+          </div>
         </div>
-        <div class="card">
-          <div class="mut">Moyenne / semaine</div>
-          <div class="chiffre" id="stat-moyenne">0</div>
+        <div class="tuile">
+          <span class="tuile-titre">Moyenne / sem.</span>
+          <span class="tuile-valeur" id="stat-moyenne">0</span>
         </div>
-        <div class="card">
-          <div class="mut">Total sur la période</div>
-          <div class="chiffre" id="stat-total">0</div>
+        <div class="tuile">
+          <span class="tuile-titre">Séances</span>
+          <span class="tuile-valeur" id="stat-total">0</span>
+        </div>
+        <div class="tuile">
+          <span class="tuile-titre">Soulevé</span>
+          <span class="tuile-valeur" id="stat-tonnage">–</span>
         </div>
       </section>
 
       <section class="card">
-        <p class="mut legende">
-          Nombre de séances par semaine (les semaines commencent le lundi).
-          Ligne pointillée : ta moyenne.
-        </p>
-        <div class="graphique" id="graphique"></div>
+        <div class="carte-tete">
+          <h3>Séances par semaine</h3>
+          <span class="legende-ligne">Moyenne</span>
+        </div>
+        <div class="graphique" id="g-semaines"></div>
       </section>
+
+      <section class="card">
+        <div class="carte-tete">
+          <h3>Régularité</h3>
+          <div class="legende-types">
+            <span class="push">Push</span><span class="pull">Pull</span><span class="leg">Leg</span><span class="autre">Autre</span>
+          </div>
+        </div>
+        <div class="calendrier-zone">
+          <div class="calendrier-jours" aria-hidden="true"><span>L</span><span></span><span>M</span><span></span><span>V</span><span></span><span>D</span></div>
+          <div class="calendrier-droite">
+            <div class="calendrier-mois" id="calendrier-mois" aria-hidden="true"></div>
+            <div class="calendrier" id="calendrier"></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="duo">
+        <section class="card">
+          <div class="carte-tete"><h3>Types de séance</h3></div>
+          <div class="repartition" id="repartition"></div>
+        </section>
+        <section class="card">
+          <div class="carte-tete">
+            <h3>Muscles travaillés</h3>
+            <span class="mut petit">Nombre de séries</span>
+          </div>
+          <div class="muscles" id="muscles"></div>
+        </section>
+      </div>
     </div>
 
-    <!-- Vue : Poids -->
+    <!-- ===================== Vue : Poids ===================== -->
     <div id="vue-poids" hidden>
-      <section class="card">
-        <div class="stats-poids">
-          <div>
-            <div class="mut">Poids actuel</div>
-            <div class="chiffre-poids" id="poids-actuel">—</div>
-          </div>
-          <div>
-            <div class="mut">Évolution sur la période</div>
-            <div class="chiffre-poids" id="poids-evolution">—</div>
-          </div>
+
+      <section class="tuiles">
+        <div class="tuile">
+          <span class="tuile-titre">Poids actuel</span>
+          <span class="tuile-valeur" id="poids-actuel">–</span>
         </div>
-        <div class="graphique" id="graphique-poids"></div>
+        <div class="tuile">
+          <span class="tuile-titre">Sur la période</span>
+          <span class="tuile-valeur" id="poids-evolution">–</span>
+        </div>
+        <div class="tuile">
+          <span class="tuile-titre">Tendance</span>
+          <span class="tuile-valeur" id="poids-tendance">–</span>
+        </div>
+        <div class="tuile">
+          <span class="tuile-titre">Min – max</span>
+          <span class="tuile-valeur petit" id="poids-bornes">–</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="carte-tete"><h3>Courbe de poids</h3></div>
+        <div class="graphique" id="g-poids"></div>
+      </section>
+
+      <section class="card">
+        <div class="carte-tete"><h3>Pesées</h3></div>
+        <div class="ajout-pesee">
+          <div class="champ-unite">
+            <input id="nouveau-poids" type="number" step="0.1" min="0" inputmode="decimal" placeholder="Nouveau poids" aria-label="Nouveau poids en kg">
+            <span>kg</span>
+          </div>
+          <button class="btn" id="btn-pesee" type="button">Ajouter</button>
+        </div>
+        <div class="pesees" id="pesees"></div>
       </section>
     </div>
 
-    <!-- Vue : Exercices -->
+    <!-- ===================== Vue : Exercices ===================== -->
     <div id="vue-exercices" hidden>
-      <section class="card">
-        <div id="prog-selection">
-          <label for="recherche-prog">Exercice</label>
-          <input id="recherche-prog" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
-          <select id="choix-prog"></select>
-        </div>
 
-        <div class="vide" id="prog-aucune" hidden></div>
-
-        <div id="prog-contenu" hidden>
-          <div class="records" id="records"></div>
-
-          <label for="metrique">Courbe</label>
-          <select id="metrique"></select>
-          <div class="graphique" id="graphique-prog"></div>
-          <p class="mut" id="prog-note"></p>
-        </div>
+      <section class="card selection" id="prog-selection">
+        <input id="recherche-prog" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
+        <select id="choix-prog" aria-label="Exercice"></select>
       </section>
+
+      <div class="vide" id="prog-aucune" hidden></div>
+
+      <div id="prog-contenu" hidden>
+        <section class="exo-hero" id="exo-hero"></section>
+
+        <section class="tuiles" id="records"></section>
+
+        <section class="card">
+          <div class="carte-tete">
+            <h3>Évolution</h3>
+            <span class="legende-record">Record</span>
+          </div>
+          <div class="chips" id="metriques"></div>
+          <div class="graphique" id="g-exercice"></div>
+          <p class="mut petit" id="prog-note"></p>
+        </section>
+
+        <section class="card">
+          <div class="carte-tete"><h3>Dernières séances</h3></div>
+          <div class="historique-exo" id="historique-exo"></div>
+        </section>
+      </div>
     </div>
 
   </main>
@@ -100,263 +171,515 @@
   <script src="../JS/supabase.js"></script>
   <script src="../JS/donnees.js"></script>
   <script>
+    const $ = function (id) { return document.getElementById(id); };
+
+    let semainesPeriode = 8;
     let seances = [];
     let poids = [];
-    let exercicesProg = [];   // bibliothèque d'exercices
-    let idProg = null;        // exercice choisi
-    let idCharge = null;      // exercice dont les séries sont chargées
-    let donneesProg = [];     // séries de l'exercice choisi
+    let programme = PROGRAMME_DEFAUT;
+    let exercicesProg = [];
+    let seriesPeriode = null;   // séries des 6 derniers mois (pour muscles et tonnage)
+    let prsParExo = {};         // meilleur PR à 1 rep par exercice
+    let idProg = null;
+    let idCharge = null;
+    let donneesProg = [];
+    let metrique = null;
 
-    // Renvoie le lundi de la semaine d'une date (texte AAAA-MM-JJ)
+    const TYPES = [
+      { cle: "push", nom: "Push" }, { cle: "pull", nom: "Pull" },
+      { cle: "leg", nom: "Leg" }, { cle: "autre", nom: "Autre" }
+    ];
+
+    /* ===================== Outils ===================== */
+
     function lundiDe(texte) {
       const d = enDate(texte);
       d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
       return versTexte(d);
     }
 
-    /* ---------- Vues (Séances / Poids / Exercices) ---------- */
+    function debutPeriode() {
+      const d = enDate(lundiDe(aujourdhui()));
+      d.setDate(d.getDate() - 7 * (semainesPeriode - 1));
+      return versTexte(d);
+    }
+
+    const kg1 = function (v) { return Number(v).toFixed(1).replace(".", ","); };
+    const signe = function (v) { return v > 0 ? "+" : v < 0 ? "−" : ""; };
+    const jourMois = function (t) {
+      return new Date(t).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+    };
+
+    // Courbe lissée passant par tous les points (Catmull-Rom)
+    function cheminLisse(pts) {
+      if (pts.length === 1) return "M" + pts[0][0] + "," + pts[0][1];
+      let d = "M" + pts[0][0] + "," + pts[0][1];
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+        d += " C" + (p1[0] + (p2[0] - p0[0]) / 6) + "," + (p1[1] + (p2[1] - p0[1]) / 6) + " " +
+             (p2[0] - (p3[0] - p1[0]) / 6) + "," + (p2[1] - (p3[1] - p1[1]) / 6) + " " +
+             p2[0] + "," + p2[1];
+      }
+      return d;
+    }
+
+    // Graphique en courbe : points [{ t, v, record }], options { id, format, ref: { v, label } }
+    function dessinerCourbe(zone, points, o) {
+      const L = 600, H = 250, G = 44, D = 18, Hh = 30, B = 34;
+      const vals = points.map(function (p) { return p.v; });
+      if (o.ref) vals.push(o.ref.v);
+      const mini = Math.min.apply(null, vals), maxi = Math.max.apply(null, vals);
+      const marge = Math.max(o.margeMin || 1, (maxi - mini) * 0.18);
+      const vmin = Math.max(0, mini - marge), vmax = maxi + marge;
+      const t0 = points[0].t, t1 = points[points.length - 1].t;
+      const X = function (t) { return t1 === t0 ? (G + L - D) / 2 : G + (t - t0) / (t1 - t0) * (L - G - D); };
+      const Y = function (v) { return Hh + (H - Hh - B) * (1 - (v - vmin) / (vmax - vmin)); };
+
+      let s = '<defs><linearGradient id="deg-' + o.id + '" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0" class="aire-haut"/><stop offset="1" class="aire-bas"/></linearGradient></defs>';
+
+      for (let i = 0; i <= 4; i++) {
+        const v = vmin + i * (vmax - vmin) / 4;
+        s += '<line class="grille" x1="' + G + '" x2="' + (L - D) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>';
+        s += '<text class="axe" x="' + (G - 8) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + o.axe(v) + '</text>';
+      }
+
+      if (o.ref) {
+        s += '<line class="ref" x1="' + G + '" x2="' + (L - D) + '" y1="' + Y(o.ref.v) + '" y2="' + Y(o.ref.v) + '"/>';
+        s += '<text class="ref-texte" x="' + (G + 6) + '" y="' + (Y(o.ref.v) - 7) + '">' + o.ref.label + '</text>';
+      }
+
+      const pts = points.map(function (p) { return [X(p.t), Y(p.v)]; });
+      const chemin = cheminLisse(pts);
+      const bas = H - B;
+      if (pts.length > 1) {
+        s += '<path class="aire" fill="url(#deg-' + o.id + ')" d="' + chemin +
+             ' L' + pts[pts.length - 1][0] + ',' + bas + ' L' + pts[0][0] + ',' + bas + ' Z"/>';
+        s += '<path class="courbe" d="' + chemin + '"/>';
+      }
+
+      const montrerPoints = points.length <= 24;
+      points.forEach(function (p, i) {
+        const titre = '<title>' + dateFr(versTexte(new Date(p.t))) + ' : ' + o.format(p.v) + '</title>';
+        if (p.record) {
+          s += '<g class="etoile" transform="translate(' + pts[i][0] + ',' + pts[i][1] + ')">' + titre +
+               '<path d="M0,-8 2.4,-2.6 8,-2.5 3.6,1.2 5,7 0,3.8 -5,7 -3.6,1.2 -8,-2.5 -2.4,-2.6Z"/></g>';
+        } else if (montrerPoints) {
+          s += '<circle class="point" cx="' + pts[i][0] + '" cy="' + pts[i][1] + '" r="4">' + titre + '</circle>';
+        }
+      });
+
+      // Bulle sur la dernière valeur
+      const der = pts[pts.length - 1];
+      const texte = o.format(points[points.length - 1].v);
+      const largeur = texte.length * 8.4 + 18;
+      const bx = Math.min(L - D - largeur, Math.max(G, der[0] - largeur / 2));
+      const by = Math.max(2, der[1] - 36);
+      s += '<rect class="bulle" x="' + bx + '" y="' + by + '" width="' + largeur + '" height="24" rx="12"/>';
+      s += '<text class="bulle-texte" x="' + (bx + largeur / 2) + '" y="' + (by + 16.5) + '" text-anchor="middle">' + texte + '</text>';
+
+      // Dates
+      const nbDates = t1 === t0 ? 1 : 4;
+      for (let i = 0; i <= nbDates; i++) {
+        const t = nbDates === 1 ? t0 : t0 + i * (t1 - t0) / nbDates;
+        const ancre = nbDates === 1 ? "middle" : (i === 0 ? "start" : (i === nbDates ? "end" : "middle"));
+        s += '<text class="axe" x="' + X(t) + '" y="' + (H - 10) + '" text-anchor="' + ancre + '">' + jourMois(t) + '</text>';
+        if (nbDates === 1) break;
+      }
+
+      zone.innerHTML = '<svg viewBox="0 0 ' + L + ' ' + H + '" role="img" aria-label="' + o.aria + '">' + s + '</svg>';
+    }
+
+    /* ===================== Vues ===================== */
 
     const VUES = ["seances", "poids", "exercices"];
 
     function afficherVue() {
       const hash = location.hash.slice(1);
       const vue = VUES.indexOf(hash) !== -1 ? hash : "seances";
-      VUES.forEach(function (v) {
-        document.getElementById("vue-" + v).hidden = v !== vue;
-      });
-      // La période ne sert pas pour la progression d'un exercice
-      document.getElementById("zone-periode").hidden = vue === "exercices";
+      VUES.forEach(function (v) { $("vue-" + v).hidden = v !== vue; });
+      $("zone-periode").hidden = vue === "exercices";
     }
-
     window.addEventListener("hashchange", afficherVue);
 
-    /* ---------- Séances par semaine ---------- */
+    document.querySelectorAll("#zone-periode button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        semainesPeriode = Number(b.dataset.semaines);
+        marquerPeriode();
+        afficherTout();
+      });
+    });
 
-    function afficher() {
-      const N = parseInt(document.getElementById("periode").value, 10);
-      const lundiActuel = lundiDe(versTexte(new Date()));
+    function marquerPeriode() {
+      document.querySelectorAll("#zone-periode button").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(Number(b.dataset.semaines) === semainesPeriode));
+      });
+    }
 
-      // Une entrée par semaine, de la plus ancienne à la plus récente
+    function afficherTout() {
+      afficherSeances();
+      afficherPoids();
+    }
+
+    /* ===================== Séances ===================== */
+
+    function afficherSeances() {
+      const N = semainesPeriode;
+      const debut = debutPeriode();
+      const lundi = lundiDe(aujourdhui());
+
       const semaines = [];
       for (let k = N - 1; k >= 0; k--) {
-        const d = enDate(lundiActuel);
+        const d = enDate(lundi);
         d.setDate(d.getDate() - 7 * k);
         semaines.push({ debut: versTexte(d), n: 0 });
       }
-
-      // Compter les séances de chaque semaine
-      seances.forEach(function (s) {
-        const semaine = semaines.find(function (w) { return w.debut === lundiDe(s.date); });
-        if (semaine) semaine.n++;
+      const dansPeriode = seances.filter(function (s) { return s.date >= debut && s.date <= aujourdhui(); });
+      dansPeriode.forEach(function (s) {
+        const w = semaines.find(function (x) { return x.debut === lundiDe(s.date); });
+        if (w) w.n++;
       });
 
-      const total = semaines.reduce(function (somme, w) { return somme + w.n; }, 0);
+      const total = dansPeriode.length;
       const moyenne = total / N;
+      const cetteSemaine = semaines[N - 1].n;
+      const objectif = programme.filter(function (j) { return !estRepos(j); }).length || 1;
 
-      document.getElementById("stat-semaine").textContent = semaines[N - 1].n;
-      document.getElementById("stat-moyenne").textContent =
-        moyenne.toFixed(1).replace(".", ",");
-      document.getElementById("stat-total").textContent = total;
+      $("stat-semaine").innerHTML = "";
+      $("stat-semaine").append(String(cetteSemaine));
+      $("stat-semaine").appendChild(el("small", "", " / " + objectif));
+      const tour = 2 * Math.PI * 18;
+      $("anneau-semaine").style.strokeDasharray = tour;
+      $("anneau-semaine").style.strokeDashoffset = tour * (1 - Math.min(1, cetteSemaine / objectif));
+      $("stat-moyenne").textContent = moyenne.toFixed(1).replace(".", ",");
+      $("stat-total").textContent = total;
 
-      dessiner(semaines, moyenne);
-      dessinerPoids();
+      dessinerBarres(semaines, moyenne);
+      dessinerCalendrier(debut);
+      dessinerRepartition(dansPeriode);
+      afficherMuscles(debut);
     }
 
-    function dessiner(semaines, moyenne) {
+    function dessinerBarres(semaines, moyenne) {
       const N = semaines.length;
-      const L = 600, H = 230;
-      const gauche = 34, droite = 14, haut = 16, bas = 34;
-      const max = Math.max(5, Math.max.apply(null, semaines.map(function (w) { return w.n; })));
+      const L = 600, H = 220, G = 30, D = 10, Hh = 22, B = 30;
+      const max = Math.max(4, Math.max.apply(null, semaines.map(function (w) { return w.n; })));
+      const pasX = (L - G - D) / N;
+      const largeur = Math.min(34, pasX * 0.62);
+      const Y = function (v) { return Hh + (H - Hh - B) * (1 - v / max); };
 
-      const X = function (i) { return gauche + i * (L - gauche - droite) / (N - 1); };
-      const Y = function (v) { return haut + (H - haut - bas) * (1 - v / max); };
-
-      let svg = "";
-
-      // Grille horizontale et valeurs de l'axe vertical
-      for (let v = 0; v <= max; v++) {
-        svg += '<line class="grille" x1="' + gauche + '" x2="' + (L - droite) +
-               '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>';
-        svg += '<text class="axe" x="' + (gauche - 8) + '" y="' + (Y(v) + 4) +
-               '" text-anchor="end">' + v + '</text>';
+      let s = '<defs><linearGradient id="deg-barre" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0" class="barre-haut"/><stop offset="1" class="barre-bas"/></linearGradient></defs>';
+      for (let v = 0; v <= max; v += max > 6 ? 2 : 1) {
+        s += '<line class="grille" x1="' + G + '" x2="' + (L - D) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>';
+        s += '<text class="axe" x="' + (G - 8) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + v + '</text>';
       }
 
-      // Ligne de moyenne
-      svg += '<line class="moyenne" x1="' + gauche + '" x2="' + (L - droite) +
-             '" y1="' + Y(moyenne) + '" y2="' + Y(moyenne) + '"/>';
-
-      // Courbe
-      const points = semaines.map(function (w, i) { return X(i) + "," + Y(w.n); }).join(" ");
-      svg += '<polyline class="courbe" points="' + points + '"/>';
-
-      // Points et dates (moins de dates si la période est longue)
-      const pas = Math.ceil(N / 8);
+      const pasDate = Math.ceil(N / 7);
       semaines.forEach(function (w, i) {
-        svg += '<circle class="point" cx="' + X(i) + '" cy="' + Y(w.n) + '" r="4.5"/>';
-        if (i % pas === 0 || i === N - 1) {
-          const label = enDate(w.debut).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
-          svg += '<text class="axe" x="' + X(i) + '" y="' + (H - 10) +
-                 '" text-anchor="middle">' + label + '</text>';
+        const x = G + i * pasX + (pasX - largeur) / 2;
+        const actuelle = i === N - 1;
+        const h = Math.max(w.n ? 4 : 0, Y(0) - Y(w.n));
+        s += '<rect class="barre' + (actuelle ? " actuelle" : "") + '" x="' + x + '" y="' + (Y(0) - h) +
+             '" width="' + largeur + '" height="' + h + '" rx="' + Math.min(8, largeur / 3) + '" style="animation-delay:' + (i * 25) + 'ms">' +
+             '<title>Semaine du ' + dateFr(w.debut) + ' : ' + w.n + ' séance' + (w.n > 1 ? "s" : "") + '</title></rect>';
+        if (w.n && N <= 13) {
+          s += '<text class="barre-valeur" x="' + (x + largeur / 2) + '" y="' + (Y(0) - h - 6) + '" text-anchor="middle">' + w.n + '</text>';
+        }
+        if ((i % pasDate === 0 && N - 1 - i >= pasDate) || actuelle) {
+          const label = actuelle ? "Cette sem." : enDate(w.debut).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+          s += '<text class="axe' + (actuelle ? " fort" : "") + '" x="' + (x + largeur / 2) + '" y="' + (H - 9) + '" text-anchor="middle">' + label + '</text>';
         }
       });
 
-      document.getElementById("graphique").innerHTML =
-        '<svg viewBox="0 0 ' + L + ' ' + H + '" role="img" ' +
-        'aria-label="Courbe du nombre de séances par semaine">' + svg + '</svg>';
+      s += '<line class="moyenne" x1="' + G + '" x2="' + (L - D) + '" y1="' + Y(moyenne) + '" y2="' + Y(moyenne) + '"/>';
+
+      $("g-semaines").innerHTML = '<svg viewBox="0 0 ' + L + ' ' + H + '" role="img" aria-label="Nombre de séances par semaine">' + s + '</svg>';
     }
 
-    /* ---------- Poids ---------- */
-
-    function formaterPoids(v) {
-      return Number(v).toFixed(1).replace(".", ",");
-    }
-
-    function dessinerPoids() {
-      const N = parseInt(document.getElementById("periode").value, 10);
-      const zone = document.getElementById("graphique-poids");
-      const actuel = document.getElementById("poids-actuel");
-      const evolution = document.getElementById("poids-evolution");
-
-      // Poids actuel : la dernière valeur enregistrée
-      actuel.textContent = poids.length
-        ? formaterPoids(poids[poids.length - 1].valeur) + " kg"
-        : "—";
-
-      // Valeurs de la période, une seule par jour (la dernière saisie)
-      const limite = enDate(versTexte(new Date()));
-      limite.setDate(limite.getDate() - N * 7);
-      const limiteTexte = versTexte(limite);
+    // Calendrier façon « contributions » : une colonne par semaine, une case par jour
+    function dessinerCalendrier(debut) {
       const parJour = {};
-      poids.forEach(function (p) {
-        if (p.date >= limiteTexte) parJour[p.date] = Number(p.valeur);
+      seances.forEach(function (s) { if (!parJour[s.date]) parJour[s.date] = s.type; });
+
+      const zone = $("calendrier");
+      const mois = $("calendrier-mois");
+      zone.innerHTML = "";
+      mois.innerHTML = "";
+      zone.style.setProperty("--colonnes", semainesPeriode);
+      mois.style.setProperty("--colonnes", semainesPeriode);
+      // Cases de 40 px maximum : le calendrier ne s'étire pas sur grand écran
+      zone.style.maxWidth = mois.style.maxWidth = (semainesPeriode * 43) + "px";
+
+      const auj = aujourdhui();
+      const d = enDate(debut);
+      let moisPrecedent = -1;
+      let derniereEtiquette = -9;
+      for (let semaine = 0; semaine < semainesPeriode; semaine++) {
+        // Nom du mois au-dessus de la première semaine de chaque mois
+        // (au moins 3 colonnes entre deux noms, sinon ils se chevauchent)
+        const m = d.getMonth();
+        const nomMois = d.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "");
+        const etiquette = el("span", "", "");
+        if (m !== moisPrecedent) {
+          if (semaine - derniereEtiquette >= 3) {
+            etiquette.textContent = nomMois;
+            derniereEtiquette = semaine;
+          } else if (derniereEtiquette === 0) {
+            // Le mois du début n'avait qu'une ou deux semaines : on affiche plutôt le suivant
+            mois.firstChild.textContent = "";
+            etiquette.textContent = nomMois;
+            derniereEtiquette = semaine;
+          }
+        }
+        mois.appendChild(etiquette);
+        moisPrecedent = m;
+
+        for (let jour = 0; jour < 7; jour++) {
+          const texte = versTexte(d);
+          const c = el("span", "case");
+          if (texte > auj) c.classList.add("futur");
+          else if (parJour[texte]) {
+            c.classList.add(classeSeance(parJour[texte]));
+            c.title = dateFr(texte) + " : " + parJour[texte];
+          } else c.title = dateFr(texte);
+          if (texte === auj) c.classList.add("aujourdhui");
+          zone.appendChild(c);
+          d.setDate(d.getDate() + 1);
+        }
+      }
+    }
+
+    // Anneau découpé en parts : Push / Pull / Leg / Autre
+    function dessinerRepartition(liste) {
+      const zone = $("repartition");
+      zone.innerHTML = "";
+      const compte = { push: 0, pull: 0, leg: 0, autre: 0 };
+      liste.forEach(function (s) {
+        const c = classeSeance(s.type);
+        if (c !== "repos") compte[c]++;
       });
+      const total = compte.push + compte.pull + compte.leg + compte.autre;
+      if (!total) {
+        zone.appendChild(el("div", "vide", "Aucune séance sur la période."));
+        return;
+      }
+
+      const R = 46, tour = 2 * Math.PI * R;
+      let decalage = 0;
+      let s = '<circle class="donut-fond" cx="60" cy="60" r="' + R + '"/>';
+      TYPES.forEach(function (t) {
+        if (!compte[t.cle]) return;
+        const part = compte[t.cle] / total * tour;
+        s += '<circle class="donut ' + t.cle + '" cx="60" cy="60" r="' + R + '" stroke-dasharray="' +
+             Math.max(0, part - 3) + ' ' + tour + '" stroke-dashoffset="' + (-decalage) + '"/>';
+        decalage += part;
+      });
+      const donut = el("div", "donut-zone");
+      donut.innerHTML = '<svg viewBox="0 0 120 120" aria-hidden="true">' + s + '</svg>';
+      const centre = el("div", "donut-centre");
+      centre.appendChild(el("strong", "", String(total)));
+      centre.appendChild(el("span", "", "séances"));
+      donut.appendChild(centre);
+      zone.appendChild(donut);
+
+      const legende = el("div", "donut-legende");
+      TYPES.forEach(function (t) {
+        if (!compte[t.cle]) return;
+        const ligne = el("div", "donut-ligne " + t.cle);
+        ligne.appendChild(el("span", "nom", t.nom));
+        ligne.appendChild(el("span", "pct", Math.round(compte[t.cle] / total * 100) + " %"));
+        ligne.appendChild(el("span", "nb", String(compte[t.cle])));
+        legende.appendChild(ligne);
+      });
+      zone.appendChild(legende);
+    }
+
+    // Séries par muscle et tonnage total sur la période
+    async function afficherMuscles(debut) {
+      const zone = $("muscles");
+      if (seriesPeriode === null) {
+        zone.innerHTML = '<div class="mut petit">Chargement…</div>';
+        try {
+          const limite = enDate(lundiDe(aujourdhui()));
+          limite.setDate(limite.getDate() - 7 * 25);
+          const ids = seances.filter(function (s) { return s.date >= versTexte(limite); }).map(function (s) { return s.id; });
+          seriesPeriode = await chargerSeries(ids);
+        } catch (e) {
+          seriesPeriode = [];
+        }
+      }
+      const dateDe = {};
+      seances.forEach(function (s) { dateDe[s.id] = s.date; });
+      const muscleDe = {};
+      exercicesProg.forEach(function (e) { muscleDe[e.id] = e.muscle; });
+
+      const compte = {};
+      let tonnage = 0;
+      seriesPeriode.forEach(function (l) {
+        if ((dateDe[l.seance_id] || "") < debut) return;
+        const m = muscleDe[l.exercice_id] || "Autre";
+        compte[m] = (compte[m] || 0) + 1;
+        tonnage += (Number(l.repetitions) || 0) * (Number(l.charge) || 0);
+      });
+
+      $("stat-tonnage").innerHTML = "";
+      if (tonnage >= 1000) {
+        $("stat-tonnage").append(nb(tonnage / 1000));
+        $("stat-tonnage").appendChild(el("small", "", " t"));
+      } else {
+        $("stat-tonnage").append(String(Math.round(tonnage)));
+        $("stat-tonnage").appendChild(el("small", "", " kg"));
+      }
+
+      zone.innerHTML = "";
+      const muscles = Object.keys(compte).sort(function (a, b) { return compte[b] - compte[a]; });
+      if (!muscles.length) {
+        zone.appendChild(el("div", "vide", "Ajoute des exercices à tes séances pour voir les muscles travaillés."));
+        return;
+      }
+      const max = compte[muscles[0]];
+      muscles.forEach(function (m, i) {
+        const ligne = el("div", "muscle-ligne");
+        ligne.appendChild(el("span", "muscle-nom", m));
+        const barre = el("span", "muscle-barre");
+        const rempli = el("span", "muscle-rempli");
+        barre.appendChild(rempli);
+        ligne.appendChild(barre);
+        ligne.appendChild(el("span", "muscle-nb", String(compte[m])));
+        zone.appendChild(ligne);
+        setTimeout(function () { rempli.style.width = (compte[m] / max * 100) + "%"; }, 60 + i * 40);
+      });
+    }
+
+    /* ===================== Poids ===================== */
+
+    function afficherPoids() {
+      const zone = $("g-poids");
+      $("poids-actuel").innerHTML = "";
+      if (poids.length) {
+        $("poids-actuel").append(kg1(poids[poids.length - 1].valeur));
+        $("poids-actuel").appendChild(el("small", "", " kg"));
+      } else $("poids-actuel").textContent = "–";
+
+      const debut = debutPeriode();
+      const parJour = {};
+      poids.forEach(function (p) { if (p.date >= debut) parJour[p.date] = Number(p.valeur); });
       const jours = Object.keys(parJour).sort();
+      afficherPesees();
 
       if (jours.length < 2) {
-        evolution.textContent = "—";
+        ["poids-evolution", "poids-tendance", "poids-bornes"].forEach(function (id) { $(id).textContent = "–"; });
         zone.innerHTML = '<div class="vide">Enregistre ton poids sur au moins deux jours différents pour voir la courbe.</div>';
         return;
       }
 
-      // Évolution entre la première et la dernière valeur de la période
-      const delta = Math.round((parJour[jours[jours.length - 1]] - parJour[jours[0]]) * 10) / 10;
-      evolution.textContent =
-        (delta > 0 ? "+" : delta < 0 ? "−" : "") + formaterPoids(Math.abs(delta)) + " kg";
-
-      // Dimensions du graphique
-      const L = 600, H = 230;
-      const gauche = 44, droite = 16, haut = 22, bas = 34;
       const valeurs = jours.map(function (j) { return parJour[j]; });
-      const vmin = Math.floor(Math.min.apply(null, valeurs) - 0.5);
-      const vmax = Math.ceil(Math.max.apply(null, valeurs) + 0.5);
-      const t0 = enDate(jours[0]).getTime();
-      const t1 = enDate(jours[jours.length - 1]).getTime();
+      const delta = valeurs[valeurs.length - 1] - valeurs[0];
+      const evo = $("poids-evolution");
+      evo.textContent = signe(Math.round(delta * 10)) + kg1(Math.abs(delta));
+      evo.appendChild(el("small", "", " kg"));
 
-      // Les points sont placés selon la vraie date, pas à intervalles réguliers
-      const X = function (t) { return gauche + (t - t0) / (t1 - t0) * (L - gauche - droite); };
-      const Y = function (v) { return haut + (H - haut - bas) * (1 - (v - vmin) / (vmax - vmin)); };
+      // Tendance : droite de régression, ramenée à une semaine
+      const ts = jours.map(function (j) { return enDate(j).getTime() / 86400000; });
+      const mt = ts.reduce(function (a, b) { return a + b; }, 0) / ts.length;
+      const mv = valeurs.reduce(function (a, b) { return a + b; }, 0) / valeurs.length;
+      let num = 0, den = 0;
+      ts.forEach(function (t, i) { num += (t - mt) * (valeurs[i] - mv); den += (t - mt) * (t - mt); });
+      const parSemaine = den ? num / den * 7 : 0;
+      const tend = $("poids-tendance");
+      tend.textContent = signe(Math.round(parSemaine * 10)) + kg1(Math.abs(parSemaine));
+      tend.appendChild(el("small", "", " kg/sem"));
 
-      let svg = "";
+      $("poids-bornes").textContent = kg1(Math.min.apply(null, valeurs)) + " – " + kg1(Math.max.apply(null, valeurs));
 
-      // Grille et valeurs de l'axe vertical
-      for (let i = 0; i <= 4; i++) {
-        const v = vmin + i * (vmax - vmin) / 4;
-        svg += '<line class="grille" x1="' + gauche + '" x2="' + (L - droite) +
-               '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>';
-        svg += '<text class="axe" x="' + (gauche - 8) + '" y="' + (Y(v) + 4) +
-               '" text-anchor="end">' + formaterPoids(v) + '</text>';
-      }
-
-      // Aire sous la courbe, puis courbe
-      const pts = jours.map(function (j) {
-        return X(enDate(j).getTime()) + "," + Y(parJour[j]);
+      dessinerCourbe(zone, jours.map(function (j) { return { t: enDate(j).getTime(), v: parJour[j] }; }), {
+        id: "poids", margeMin: 0.6, aria: "Courbe du poids",
+        axe: function (v) { return kg1(v); },
+        format: function (v) { return kg1(v) + " kg"; }
       });
-      const bord = H - bas;
-      svg += '<polygon class="aire" points="' + X(t0) + ',' + bord + ' ' +
-             pts.join(" ") + ' ' + X(t1) + ',' + bord + '"/>';
-      svg += '<polyline class="courbe" points="' + pts.join(" ") + '"/>';
-
-      // Points (si pas trop nombreux) et valeur finale
-      if (jours.length <= 40) {
-        jours.forEach(function (j) {
-          svg += '<circle class="point" cx="' + X(enDate(j).getTime()) +
-                 '" cy="' + Y(parJour[j]) + '" r="4.5"/>';
-        });
-      }
-      const dernier = jours[jours.length - 1];
-      svg += '<text class="valeur-fin" x="' + (X(t1) - 6) + '" y="' + (Y(parJour[dernier]) - 12) +
-             '" text-anchor="end">' + formaterPoids(parJour[dernier]) + ' kg</text>';
-
-      // Dates sous la courbe (5 repères répartis dans le temps)
-      for (let i = 0; i <= 4; i++) {
-        const t = t0 + i * (t1 - t0) / 4;
-        const ancre = i === 0 ? "start" : (i === 4 ? "end" : "middle");
-        const label = new Date(t).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
-        svg += '<text class="axe" x="' + X(t) + '" y="' + (H - 10) +
-               '" text-anchor="' + ancre + '">' + label + '</text>';
-      }
-
-      zone.innerHTML =
-        '<svg viewBox="0 0 ' + L + ' ' + H + '" role="img" ' +
-        'aria-label="Courbe du poids">' + svg + '</svg>';
     }
 
-    /* ---------- Progression par exercice ---------- */
-
-    function carteRecord(titre, valeur, sous) {
-      const c = document.createElement("div");
-      c.className = "record";
-      [["record-titre", titre], ["record-valeur", valeur], ["record-sous", sous]].forEach(function (p) {
-        const d = document.createElement("div");
-        d.className = p[0];
-        d.textContent = p[1];
-        c.appendChild(d);
+    // Les dernières pesées, avec l'écart par rapport à la précédente
+    function afficherPesees() {
+      const zone = $("pesees");
+      zone.innerHTML = "";
+      const liste = poids.slice(-6).reverse();
+      if (!liste.length) return;
+      liste.forEach(function (p, i) {
+        const avant = poids[poids.length - 2 - i];
+        const ligne = el("div", "pesee");
+        ligne.appendChild(el("span", "pesee-date", dateFr(p.date)));
+        ligne.appendChild(el("strong", "", kg1(p.valeur) + " kg"));
+        if (avant) {
+          const d = Number(p.valeur) - Number(avant.valeur);
+          const cls = Math.abs(d) < 0.05 ? "egal" : d > 0 ? "hausse" : "baisse";
+          ligne.appendChild(el("span", "ecart " + cls, Math.abs(d) < 0.05 ? "=" : signe(d) + kg1(Math.abs(d))));
+        }
+        zone.appendChild(ligne);
       });
-      return c;
     }
 
-    // Remplit le menu des exercices selon la recherche
+    $("btn-pesee").addEventListener("click", async function () {
+      const valeur = parseFloat($("nouveau-poids").value.replace(",", "."));
+      if (!(valeur > 0)) { $("nouveau-poids").focus(); return; }
+      const bouton = this;
+      bouton.disabled = true;
+      try {
+        await ajouterPoids(valeur);
+        $("nouveau-poids").value = "";
+        poids = await chargerPoids();
+        afficherPoids();
+      } catch (e) {
+        alert("Erreur : " + e.message);
+      } finally {
+        bouton.disabled = false;
+      }
+    });
+    $("nouveau-poids").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") $("btn-pesee").click();
+    });
+
+    /* ===================== Exercices ===================== */
+
+    function castId(v) {
+      const ex = exercicesProg.find(function (e) { return String(e.id) === String(v); });
+      return ex ? ex.id : null;
+    }
+
     function remplirChoixProg() {
-      const select = document.getElementById("choix-prog");
+      const select = $("choix-prog");
       select.innerHTML = "";
-
-      const mots = normaliser(document.getElementById("recherche-prog").value)
-        .split(" ").filter(Boolean);
+      const mots = normaliser($("recherche-prog").value).split(" ").filter(Boolean);
       const trouves = exercicesProg.filter(function (e) {
         const texte = normaliser(e.nom + " " + e.muscle);
         return mots.every(function (m) { return texte.indexOf(m) !== -1; });
       });
-
       MUSCLES.forEach(function (muscle) {
         const dans = trouves.filter(function (e) { return e.muscle === muscle; });
-        if (dans.length === 0) return;
+        if (!dans.length) return;
         const groupe = document.createElement("optgroup");
         groupe.label = muscle;
         dans.forEach(function (e) {
-          const option = document.createElement("option");
-          option.value = e.id;
-          option.textContent = e.nom;
-          if (e.id === idProg) option.selected = true;
-          groupe.appendChild(option);
+          const o = el("option", "", e.nom);
+          o.value = e.id;
+          if (e.id === idProg) o.selected = true;
+          groupe.appendChild(o);
         });
         select.appendChild(groupe);
       });
     }
 
     async function changerExerciceProg() {
-      const valeur = document.getElementById("choix-prog").value;
-      const contenu = document.getElementById("prog-contenu");
-      const aucune = document.getElementById("prog-aucune");
-
-      if (!valeur) {
-        contenu.hidden = true;
-        aucune.textContent = "Aucun exercice ne correspond à cette recherche.";
-        aucune.hidden = false;
+      const id = castId($("choix-prog").value);
+      if (id === null) {
+        $("prog-contenu").hidden = true;
+        $("prog-aucune").textContent = "Aucun exercice ne correspond à cette recherche.";
+        $("prog-aucune").hidden = false;
         idCharge = null;
         return;
       }
-
-      idProg = Number(valeur);
+      idProg = id;
       if (idProg !== idCharge) {
         donneesProg = await chargerHistoriqueExercice(idProg);
         idCharge = idProg;
@@ -364,195 +687,171 @@
       afficherProg();
     }
 
-    function afficherProg() {
-      const contenu = document.getElementById("prog-contenu");
-      const aucune = document.getElementById("prog-aucune");
+    function tuile(titre, valeur, sous, classe) {
+      const t = el("div", "tuile" + (classe ? " " + classe : ""));
+      t.appendChild(el("span", "tuile-titre", titre));
+      t.appendChild(el("span", "tuile-valeur", valeur));
+      if (sous) t.appendChild(el("span", "tuile-sous", sous));
+      return t;
+    }
 
-      // Regroupe les séries par date de séance
+    function afficherProg() {
+      const ex = exercicesProg.find(function (e) { return e.id === idProg; });
       const parDate = {};
       donneesProg.forEach(function (l) {
-        const d = l.seances.date;
+        const d = l.seances && l.seances.date;
+        if (!d) return;
         if (!parDate[d]) parDate[d] = { date: d, series: [] };
-        parDate[d].series.push({ rep: l.repetitions, charge: Number(l.charge) });
+        parDate[d].series.push({ repetitions: Number(l.repetitions), charge: Number(l.charge) });
       });
       const liste = Object.keys(parDate).sort().map(function (d) { return parDate[d]; });
 
-      if (liste.length === 0) {
-        contenu.hidden = true;
-        aucune.textContent = "Aucune donnée pour cet exercice. Ajoute-le à une séance dans Sport → Séances.";
-        aucune.hidden = false;
+      if (!liste.length) {
+        $("prog-contenu").hidden = true;
+        $("prog-aucune").textContent = "Aucune donnée pour " + (ex ? ex.nom : "cet exercice") + ". Ajoute-le à une séance dans Sport → Séances.";
+        $("prog-aucune").hidden = false;
         return;
       }
-      aucune.hidden = true;
-      contenu.hidden = false;
+      $("prog-aucune").hidden = true;
+      $("prog-contenu").hidden = false;
 
-      // Chiffres de chaque séance
       liste.forEach(function (s) {
-        const charges = s.series.map(function (x) { return x.charge; });
-        const reps = s.series.map(function (x) { return x.rep; });
-        s.chargeMax = Math.max.apply(null, charges);
-        s.rm = Math.max.apply(null, s.series.map(function (x) { return x.charge * (1 + x.rep / 30); }));
-        s.volume = s.series.reduce(function (a, x) { return a + x.rep * x.charge; }, 0);
-        s.repsMax = Math.max.apply(null, reps);
-        s.repsTotal = reps.reduce(function (a, r) { return a + r; }, 0);
+        s.chargeMax = Math.max.apply(null, s.series.map(function (x) { return x.charge; }));
+        s.rm = Math.max.apply(null, s.series.map(function (x) { return x.charge * (1 + x.repetitions / 30); }));
+        s.volume = s.series.reduce(function (a, x) { return a + x.repetitions * x.charge; }, 0);
+        s.repsMax = Math.max.apply(null, s.series.map(function (x) { return x.repetitions; }));
+        s.repsTotal = s.series.reduce(function (a, x) { return a + x.repetitions; }, 0);
       });
-
-      // En cas d'égalité, le record reste à la première séance qui l'a atteint
-      function meilleur(cle) {
+      const meilleur = function (cle) {
         return liste.reduce(function (m, s) { return s[cle] > m[cle] ? s : m; }, liste[0]);
+      };
+      const avecCharge = liste.some(function (s) { return s.chargeMax > 0; });
+      const pr = prsParExo[idProg];
+
+      // En-tête : exercice + progression depuis la première séance
+      const hero = $("exo-hero");
+      hero.innerHTML = "";
+      hero.appendChild(creerVignette(ex));
+      const titre = el("div", "exo-hero-titre");
+      titre.appendChild(el("div", "exo-hero-nom", ex.nom));
+      titre.appendChild(el("div", "mut", ex.muscle + " · depuis le " + dateFr(liste[0].date)));
+      hero.appendChild(titre);
+      const cle = avecCharge ? "rm" : "repsMax";
+      const premier = liste[0][cle], dernier = liste[liste.length - 1][cle];
+      if (liste.length > 1 && premier > 0) {
+        const pct = Math.round((dernier - premier) / premier * 100);
+        const badge = el("div", "progres " + (pct > 0 ? "hausse" : pct < 0 ? "baisse" : "egal"));
+        badge.appendChild(el("strong", "", signe(pct) + Math.abs(pct) + " %"));
+        badge.appendChild(el("span", "", avecCharge ? "1RM estimé" : "reps max"));
+        hero.appendChild(badge);
       }
 
-      const avecCharge = liste.some(function (s) { return s.chargeMax > 0; });
-
-      // Cartes de records
-      const records = document.getElementById("records");
-      records.innerHTML = "";
+      // Records
+      const zoneRec = $("records");
+      zoneRec.innerHTML = "";
       if (avecCharge) {
         const rc = meilleur("chargeMax");
-        const repsAuRecord = Math.max.apply(null, rc.series
-          .filter(function (x) { return x.charge === rc.chargeMax; })
-          .map(function (x) { return x.rep; }));
-        records.appendChild(carteRecord("Charge max", nb(rc.chargeMax) + " kg × " + repsAuRecord, dateFr(rc.date)));
-
+        const reps = Math.max.apply(null, rc.series.filter(function (x) { return x.charge === rc.chargeMax; }).map(function (x) { return x.repetitions; }));
+        zoneRec.appendChild(tuile("Charge max", nb(rc.chargeMax) + " kg", "× " + reps + " · " + dateFr(rc.date), "accent"));
         const rr = meilleur("rm");
-        records.appendChild(carteRecord("1RM estimé", nb(rr.rm) + " kg", dateFr(rr.date)));
-
-        const rv = meilleur("volume");
-        records.appendChild(carteRecord("Volume max", Math.round(rv.volume).toLocaleString("fr-FR") + " kg", dateFr(rv.date)));
+        zoneRec.appendChild(tuile("1RM estimé", nb(rr.rm) + " kg", dateFr(rr.date)));
+        if (pr) zoneRec.appendChild(tuile("PR 1 rep", nb(pr.charge) + " kg", dateFr(pr.date), "or"));
+        else {
+          const rv = meilleur("volume");
+          zoneRec.appendChild(tuile("Volume max", Math.round(rv.volume).toLocaleString("fr-FR") + " kg", dateFr(rv.date)));
+        }
       } else {
         const rm = meilleur("repsMax");
-        records.appendChild(carteRecord("Répétitions max", rm.repsMax + " reps", dateFr(rm.date)));
-
+        zoneRec.appendChild(tuile("Reps max", rm.repsMax + " reps", dateFr(rm.date), "accent"));
         const rt = meilleur("repsTotal");
-        records.appendChild(carteRecord("Total sur une séance", rt.repsTotal + " reps", dateFr(rt.date)));
+        zoneRec.appendChild(tuile("Total / séance", rt.repsTotal + " reps", dateFr(rt.date)));
       }
-      records.appendChild(carteRecord("Séances", String(liste.length),
-        "Dernière : " + dateFr(liste[liste.length - 1].date)));
+      zoneRec.appendChild(tuile("Séances", String(liste.length), "dernière " + dateFr(liste[liste.length - 1].date)));
 
-      // Courbe : mesures disponibles selon l'exercice
+      // Choix de la courbe
       const metriques = avecCharge
-        ? [["chargeMax", "Charge max (kg)", 1], ["rm", "1RM estimé (kg)", 1], ["volume", "Volume de la séance (kg)", 0]]
-        : [["repsMax", "Répétitions max (une série)", 0], ["repsTotal", "Total de répétitions", 0]];
-
-      const selM = document.getElementById("metrique");
-      const actuelle = selM.value;
-      selM.innerHTML = "";
+        ? [["rm", "1RM estimé", 1, " kg"], ["chargeMax", "Charge max", 1, " kg"], ["volume", "Volume", 0, " kg"]]
+        : [["repsMax", "Reps max", 0, " reps"], ["repsTotal", "Total reps", 0, " reps"]];
+      if (!metriques.some(function (m) { return m[0] === metrique; })) metrique = metriques[0][0];
+      const zoneM = $("metriques");
+      zoneM.innerHTML = "";
       metriques.forEach(function (m) {
-        const option = document.createElement("option");
-        option.value = m[0];
-        option.textContent = m[1];
-        selM.appendChild(option);
+        const b = el("button", "chip", m[1]);
+        b.type = "button";
+        b.setAttribute("aria-pressed", String(m[0] === metrique));
+        b.addEventListener("click", function () { metrique = m[0]; afficherProg(); });
+        zoneM.appendChild(b);
       });
-      if (metriques.some(function (m) { return m[0] === actuelle; })) selM.value = actuelle;
+      const choix = metriques.find(function (m) { return m[0] === metrique; });
 
-      const choix = metriques.find(function (m) { return m[0] === selM.value; });
-      dessinerProg(liste.map(function (s) {
-        return { t: enDate(s.date).getTime(), v: s[choix[0]] };
-      }), choix[2]);
-
-      document.getElementById("prog-note").textContent = avecCharge
-        ? "1RM estimé : charge maximale théorique sur une répétition (formule d’Epley), à prendre comme une estimation."
+      // Étoile chaque fois qu'un record est battu
+      let record = -Infinity;
+      const points = liste.map(function (s, i) {
+        const v = s[choix[0]];
+        const estRecord = i > 0 && v > record;
+        record = Math.max(record, v);
+        return { t: enDate(s.date).getTime(), v: v, record: estRecord };
+      });
+      const montrerPR = pr && (metrique === "rm" || metrique === "chargeMax");
+      dessinerCourbe($("g-exercice"), points, {
+        id: "exo", aria: "Progression de " + ex.nom,
+        ref: montrerPR ? { v: Number(pr.charge), label: "PR 1 rep · " + nb(pr.charge) + " kg" } : null,
+        axe: function (v) { return choix[0] === "volume" && v >= 1000 ? nb(v / 1000) + "k" : String(Math.round(v)); },
+        format: function (v) { return (choix[2] ? nb(v) : Math.round(v).toLocaleString("fr-FR")) + choix[3]; }
+      });
+      $("prog-note").textContent = avecCharge && metrique === "rm"
+        ? "1RM estimé : charge théorique sur une répétition (formule d’Epley), calculée depuis ta meilleure série."
         : "";
-    }
 
-    function dessinerProg(points, decimales) {
-      const zone = document.getElementById("graphique-prog");
-      if (points.length < 2) {
-        zone.innerHTML = '<div class="vide">Il faut au moins deux séances avec cet exercice pour voir la courbe.</div>';
-        return;
-      }
-
-      const L = 600, H = 230;
-      const gauche = 46, droite = 16, haut = 26, bas = 34;
-      const vals = points.map(function (p) { return p.v; });
-      const mini = Math.min.apply(null, vals);
-      const maxi = Math.max.apply(null, vals);
-
-      // Axe vertical : bornes entières, graduations régulières
-      const marge = Math.max(1, (maxi - mini) * 0.15);
-      const vmin = Math.max(0, Math.floor(mini - marge));
-      let vmax = Math.ceil(maxi + marge);
-      vmax = vmin + Math.ceil((vmax - vmin) / 4) * 4;
-
-      const t0 = points[0].t;
-      const t1 = points[points.length - 1].t;
-      const X = function (t) { return gauche + (t - t0) / (t1 - t0) * (L - gauche - droite); };
-      const Y = function (v) { return haut + (H - haut - bas) * (1 - (v - vmin) / (vmax - vmin)); };
-
-      let svg = "";
-
-      for (let i = 0; i <= 4; i++) {
-        const v = vmin + i * (vmax - vmin) / 4;
-        svg += '<line class="grille" x1="' + gauche + '" x2="' + (L - droite) +
-               '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>';
-        svg += '<text class="axe" x="' + (gauche - 8) + '" y="' + (Y(v) + 4) +
-               '" text-anchor="end">' + Math.round(v) + '</text>';
-      }
-
-      const pts = points.map(function (p) { return X(p.t) + "," + Y(p.v); });
-      const bord = H - bas;
-      svg += '<polygon class="aire" points="' + X(t0) + ',' + bord + ' ' +
-             pts.join(" ") + ' ' + X(t1) + ',' + bord + '"/>';
-      svg += '<polyline class="courbe" points="' + pts.join(" ") + '"/>';
-
-      if (points.length <= 40) {
-        points.forEach(function (p) {
-          svg += '<circle class="point" cx="' + X(p.t) + '" cy="' + Y(p.v) + '" r="4.5"/>';
-        });
-      }
-
-      const dernier = points[points.length - 1];
-      svg += '<text class="valeur-fin" x="' + (X(t1) - 6) + '" y="' + (Y(dernier.v) - 12) +
-             '" text-anchor="end">' + dernier.v.toFixed(decimales).replace(".", ",") + '</text>';
-
-      for (let i = 0; i <= 4; i++) {
-        const t = t0 + i * (t1 - t0) / 4;
-        const ancre = i === 0 ? "start" : (i === 4 ? "end" : "middle");
-        const label = new Date(t).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
-        svg += '<text class="axe" x="' + X(t) + '" y="' + (H - 10) +
-               '" text-anchor="' + ancre + '">' + label + '</text>';
-      }
-
-      zone.innerHTML =
-        '<svg viewBox="0 0 ' + L + ' ' + H + '" role="img" ' +
-        'aria-label="Courbe de progression de l\'exercice">' + svg + '</svg>';
+      // Dernières séances
+      const histo = $("historique-exo");
+      histo.innerHTML = "";
+      liste.slice(-5).reverse().forEach(function (s) {
+        const ligne = el("div", "histo-seance");
+        ligne.appendChild(el("span", "histo-date", dateFr(s.date)));
+        const puces = el("div", "puces");
+        s.series.forEach(function (x) { puces.appendChild(el("span", "puce", texteSerie(x))); });
+        ligne.appendChild(puces);
+        histo.appendChild(ligne);
+      });
     }
 
     async function initialiserProg() {
-      exercicesProg = await chargerExercices();
-
-      if (exercicesProg.length === 0) {
-        document.getElementById("prog-selection").hidden = true;
-        const aucune = document.getElementById("prog-aucune");
-        aucune.textContent = "Ta bibliothèque est vide. Ajoute des exercices, puis saisis-les dans tes séances.";
-        aucune.hidden = false;
+      if (!exercicesProg.length) {
+        $("prog-selection").hidden = true;
+        $("prog-aucune").textContent = "Ta bibliothèque est vide. Ajoute des exercices, puis saisis-les dans tes séances.";
+        $("prog-aucune").hidden = false;
         return;
       }
-
-      idProg = await chargerDernierExerciceUtilise();
+      try {
+        resumerPRs(await chargerPRs()).forEach(function (p) { prsParExo[p.exercice_id] = p.meilleur; });
+      } catch (e) {}
+      idProg = castId(await chargerDernierExerciceUtilise());
       remplirChoixProg();
       await changerExerciceProg();
     }
 
-    document.getElementById("choix-prog").addEventListener("change", changerExerciceProg);
-    document.getElementById("metrique").addEventListener("change", afficherProg);
-    document.getElementById("recherche-prog").addEventListener("input", function () {
+    $("choix-prog").addEventListener("change", changerExerciceProg);
+    $("recherche-prog").addEventListener("input", function () {
       remplirChoixProg();
       changerExerciceProg();
     });
 
-    /* ---------- Démarrage ---------- */
+    /* ===================== Démarrage ===================== */
 
-    document.getElementById("periode").addEventListener("change", afficher);
+    marquerPeriode();
     afficherVue();
 
     (async function () {
       const user = await exigerConnexion();
       if (!user) return;
       try {
-        seances = await chargerSeances();
-        poids = await chargerPoids();
-        afficher();
+        const r = await Promise.all([chargerSeances(), chargerPoids(), chargerExercices()]);
+        seances = r[0];
+        poids = r[1];
+        exercicesProg = r[2];
+        try { programme = (await chargerProfil()).programme; } catch (e) {}
+        afficherTout();
         await initialiserProg();
       } catch (e) {
         alert("Erreur de chargement : " + e.message);

@@ -1,188 +1,685 @@
-/* ---------- Chiffres clés ---------- */
-.stats {
+/* ---------- Choix de la période ---------- */
+.periode {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
   margin-bottom: 16px;
-}
-
-.stats .card {
-  margin: 0;
-  padding: 16px;
-}
-
-.stats .mut {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.chiffre {
-  margin-top: 6px;
-  font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 54px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.stats .card:first-child .chiffre {
-  color: var(--accent);
-}
-
-@media (max-width: 480px) {
-  .stats { gap: 8px; }
-  .stats .card { padding: 12px; }
-  .chiffre { font-size: 40px; }
-}
-
-/* ---------- Sélecteur de période ---------- */
-select {
-  max-width: 240px;
-}
-
-.legende {
-  margin: 14px 0 8px;
-}
-
-/* ---------- Graphique ---------- */
-.graphique {
-  overflow-x: auto;
-}
-
-.graphique svg {
-  display: block;
-  width: 100%;
-  min-width: 440px;
-  height: auto;
-}
-
-.grille {
-  stroke: var(--bordure);
-}
-
-.axe {
-  font-size: 12px;
-  fill: var(--gris);
-}
-
-.moyenne {
-  stroke: var(--pull);
-  stroke-width: 2;
-  stroke-dasharray: 6 5;
-}
-
-.courbe {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 3.5;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  filter: drop-shadow(0 4px 8px var(--accent-halo));
-}
-
-.point {
-  fill: var(--accent);
-  stroke: var(--carte);
-  stroke-width: 2;
-}
-
-/* ---------- Carte de poids ---------- */
-.stats-poids {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-
-.stats-poids .mut {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.chiffre-poids {
-  margin-top: 4px;
-  font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 46px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.aire {
-  fill: color-mix(in srgb, var(--accent) 14%, transparent);
-  stroke: none;
-}
-
-.valeur-fin {
-  font-size: 13px;
-  font-weight: 700;
-  fill: var(--texte);
-}
-
-/* ---------- Message quand il n'y a rien à afficher ---------- */
-.vide {
-  padding: 24px 12px;
-}
-
-/* ---------- Progression par exercice ---------- */
-#prog-selection label {
-  margin-top: 0;
-}
-
-#recherche-prog {
-  margin-bottom: 8px;
-}
-
-#choix-prog {
-  max-width: none;
-}
-
-.records {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  margin: 18px 0 4px;
-}
-
-.record {
-  padding: 14px;
+  padding: 4px;
   background: var(--carte-douce);
   border: 1px solid var(--bordure);
   border-radius: 14px;
 }
 
-.record-titre {
-  font-size: 12px;
+.periode button {
+  padding: 9px 4px;
+  font: inherit;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  color: var(--gris);
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.periode button[aria-pressed="true"] {
+  color: var(--texte);
+  background: var(--carte);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+.petit {
+  font-size: 13px;
+}
+
+/* ---------- Tuiles de chiffres ---------- */
+.tuiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+  .tuiles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.tuile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 14px 16px;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: 16px;
+  box-shadow: var(--ombre);
+  animation: monter 0.4s ease both;
+}
+
+.tuile-titre {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--gris);
 }
 
-.record-valeur {
-  margin: 4px 0 2px;
+.tuile-valeur {
+  margin-top: 4px;
   font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 32px;
+  font-size: 34px;
   font-weight: 900;
-  line-height: 1.05;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.records .record:first-child .record-valeur {
-  color: var(--accent);
+.tuile-valeur.petit {
+  font-size: 24px;
 }
 
-.record-sous {
-  font-size: 13px;
+.tuile-valeur small {
+  font-size: 15px;
+  font-weight: 800;
   color: var(--gris);
 }
 
-/* ---------- Carte de la période ---------- */
-.zone-periode {
-  padding: 14px 16px;
+.tuile-sous {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--gris);
 }
 
-.zone-periode select {
-  max-width: none;
+.tuile.accent .tuile-valeur {
+  color: var(--accent);
+}
+
+.tuile.or {
+  border-color: color-mix(in srgb, #ffb020 45%, var(--bordure));
+}
+
+.tuile.or .tuile-valeur {
+  color: #ffb020;
+}
+
+/* Tuile « Cette semaine » avec son petit anneau */
+.tuile-objectif {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.tuile-objectif > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.mini-anneau {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  transform: rotate(-90deg);
+}
+
+.mini-anneau circle {
+  fill: none;
+  stroke-width: 5;
+}
+
+.mini-anneau .fond {
+  stroke: var(--carte-douce);
+}
+
+.mini-anneau .plein {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-dasharray: 113.1;
+  stroke-dashoffset: 113.1;
+  transition: stroke-dashoffset 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------- En-tête des cartes ---------- */
+.carte-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 12px;
+}
+
+.carte-tete h3 {
+  margin: 0;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.legende-ligne,
+.legende-record {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gris);
+}
+
+.legende-ligne::before {
+  content: "";
+  width: 18px;
+  border-top: 2px dashed var(--gris);
+}
+
+.legende-record::before {
+  content: "★";
+  font-size: 15px;
+  color: #ffb020;
+}
+
+/* ---------- Graphiques SVG ---------- */
+.graphique svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.grille {
+  stroke: var(--bordure);
+  stroke-width: 1;
+}
+
+.axe {
+  font-size: 12px;
+  font-family: Manrope, "Segoe UI", sans-serif;
+  fill: var(--gris);
+}
+
+.axe.fort {
+  font-weight: 800;
+  fill: var(--accent);
+}
+
+.moyenne {
+  stroke: var(--gris);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+}
+
+/* Barres */
+.barre-haut { stop-color: var(--accent); stop-opacity: 0.9; }
+.barre-bas  { stop-color: var(--accent); stop-opacity: 0.35; }
+
+.barre {
+  fill: url(#deg-barre);
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: pousser 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.barre.actuelle {
+  fill: var(--accent);
+  filter: drop-shadow(0 4px 10px var(--accent-halo));
+}
+
+@keyframes pousser {
+  from { transform: scaleY(0); }
+}
+
+.barre-valeur {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  fill: var(--texte);
+}
+
+/* Courbes */
+.aire-haut { stop-color: var(--accent); stop-opacity: 0.32; }
+.aire-bas  { stop-color: var(--accent); stop-opacity: 0; }
+
+.courbe {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 4px 8px var(--accent-halo));
+}
+
+.point {
+  fill: var(--carte);
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.etoile path {
+  fill: #ffb020;
+  stroke: var(--carte);
+  stroke-width: 1.5;
+}
+
+.ref {
+  stroke: #ffb020;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 5;
+}
+
+.ref-texte {
+  font-size: 12px;
+  font-weight: 800;
+  font-family: Manrope, "Segoe UI", sans-serif;
+  fill: #ffb020;
+}
+
+.bulle {
+  fill: var(--accent);
+}
+
+.bulle-texte {
+  font-size: 13px;
+  font-weight: 800;
+  font-family: Manrope, "Segoe UI", sans-serif;
+  fill: var(--texte-bouton);
+}
+
+/* ---------- Calendrier de régularité ---------- */
+.calendrier-zone {
+  display: flex;
+  gap: 6px;
+}
+
+.calendrier-jours {
+  display: grid;
+  grid-template-rows: repeat(7, 1fr);
+  gap: 3px;
+  margin-top: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gris);
+}
+
+.calendrier-jours span {
+  display: flex;
+  align-items: center;
+}
+
+.calendrier-droite {
+  flex: 1;
+  min-width: 0;
+}
+
+.calendrier-mois {
+  display: grid;
+  grid-template-columns: repeat(var(--colonnes, 8), minmax(0, 1fr));
+  gap: 3px;
+  height: 18px;
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gris);
+  text-transform: capitalize;
+}
+
+.calendrier-mois span {
+  white-space: nowrap;
+  overflow: visible;
+}
+
+.calendrier {
+  display: grid;
+  grid-template-columns: repeat(var(--colonnes, 8), minmax(0, 1fr));
+  grid-template-rows: repeat(7, auto);
+  grid-auto-flow: column;
+  gap: 3px;
+}
+
+.case {
+  aspect-ratio: 1;
+  background: var(--carte-douce);
+  border-radius: 4px;
+}
+
+.case.push  { background: var(--push); }
+.case.pull  { background: var(--pull); }
+.case.leg   { background: var(--leg); }
+.case.autre { background: #ffb020; }
+.case.repos { background: var(--repos); }
+
+.case.futur {
+  background: none;
+  border: 1px dashed var(--bordure);
+}
+
+.case.aujourdhui {
+  outline: 2px solid var(--texte);
+  outline-offset: 1px;
+}
+
+.legende-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gris);
+}
+
+.legende-types span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legende-types span::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.legende-types .push::before  { background: var(--push); }
+.legende-types .pull::before  { background: var(--pull); }
+.legende-types .leg::before   { background: var(--leg); }
+.legende-types .autre::before { background: #ffb020; }
+
+/* ---------- Deux cartes côte à côte ---------- */
+.duo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0 16px;
+}
+
+/* Répartition des types (anneau) */
+.repartition {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.donut-zone {
+  position: relative;
+  flex: 0 0 auto;
+  width: 130px;
+  height: 130px;
+}
+
+.donut-zone svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.donut-fond,
+.donut {
+  fill: none;
+  stroke-width: 16;
+}
+
+.donut-fond { stroke: var(--carte-douce); }
+.donut      { stroke-linecap: round; }
+.donut.push  { stroke: var(--push); }
+.donut.pull  { stroke: var(--pull); }
+.donut.leg   { stroke: var(--leg); }
+.donut.autre { stroke: #ffb020; }
+
+.donut-centre {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.donut-centre strong {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.donut-centre span {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.donut-legende {
+  flex: 1;
+  display: grid;
+  gap: 8px;
+}
+
+.donut-ligne {
+  display: grid;
+  grid-template-columns: 1fr auto 26px;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.donut-ligne .nom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.donut-ligne .nom::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.donut-ligne.push .nom::before  { background: var(--push); }
+.donut-ligne.pull .nom::before  { background: var(--pull); }
+.donut-ligne.leg .nom::before   { background: var(--leg); }
+.donut-ligne.autre .nom::before { background: #ffb020; }
+
+.donut-ligne .pct {
+  font-weight: 800;
+}
+
+.donut-ligne .nb {
+  text-align: right;
+  color: var(--gris);
+}
+
+/* Muscles travaillés */
+.muscles {
+  display: grid;
+  gap: 10px;
+}
+
+.muscle-ligne {
+  display: grid;
+  grid-template-columns: 68px 1fr 30px;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.muscle-nom {
+  font-weight: 700;
+}
+
+.muscle-barre {
+  height: 10px;
+  overflow: hidden;
+  background: var(--carte-douce);
+  border-radius: 999px;
+}
+
+.muscle-rempli {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--degrade);
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.muscle-nb {
+  text-align: right;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Poids ---------- */
+.ajout-pesee {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.ajout-pesee .champ-unite {
+  flex: 1;
+}
+
+.pesees {
+  display: grid;
+}
+
+.pesee {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--bordure);
+}
+
+.pesee-date {
+  font-size: 14px;
+  color: var(--gris);
+}
+
+.ecart {
+  padding: 2px 10px;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 999px;
+}
+
+.ecart.hausse { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.ecart.baisse { color: var(--pull);   background: color-mix(in srgb, var(--pull) 14%, transparent); }
+.ecart.egal   { color: var(--gris);   background: var(--carte-douce); }
+
+/* ---------- Exercices ---------- */
+.selection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 14px;
+}
+
+@media (max-width: 520px) {
+  .selection {
+    grid-template-columns: 1fr;
+  }
+}
+
+.exo-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 18px;
+  background:
+    radial-gradient(400px 200px at 100% 0%, var(--accent-halo), transparent 70%),
+    var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+  animation: monter 0.4s ease both;
+}
+
+.exo-hero .miniature {
+  width: 62px;
+  height: 62px;
+  border-radius: 16px;
+}
+
+.exo-hero-titre {
+  flex: 1;
+  min-width: 0;
+}
+
+.exo-hero-nom {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.exo-hero-titre .mut {
+  font-size: 13px;
+}
+
+.progres {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.progres strong {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.progres span {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.progres.hausse strong { color: var(--pull); }
+.progres.baisse strong { color: var(--danger); }
+
+#metriques {
+  margin-bottom: 10px;
+}
+
+#prog-note {
+  margin: 10px 0 0;
+}
+
+.histo-seance {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.histo-seance + .histo-seance {
+  border-top: 1px solid var(--bordure);
+}
+
+.histo-date {
+  flex: 0 0 72px;
+  padding-top: 3px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gris);
+}
+
+.histo-seance .puces {
+  margin: 0;
+}
+
+/* Records d'un exercice : autant de colonnes que possible */
+#records {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
