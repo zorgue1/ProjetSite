@@ -42,6 +42,7 @@ body::before {
   z-index: -1;
   background:
     linear-gradient(rgba(9, 13, 19, 0.35), rgba(9, 13, 19, 0.35)),
+    /* Photo : Victor Freitas sur Unsplash (licence libre) – unsplash.com/photos/WvDYdXDzkhs */
     url("../Image/Muscu.jpg") center / cover no-repeat;
   clip-path: polygon(0 0, 60% 0, 40% 100%, 0 100%);
 }
@@ -57,7 +58,10 @@ body::before {
 /* Petit écran : l'image devient une bande diagonale en haut */
 @media (max-width: 899px) {
   body::before {
-    clip-path: polygon(0 0, 100% 0, 100% 22%, 0 38%);
+    /* L'image n'occupe que le haut de l'écran : on voit toute la photo (barre comprise) */
+    bottom: auto;
+    height: 40vh;
+    clip-path: polygon(0 0, 100% 0, 100% 55%, 0 95%);
   }
   main {
     padding-top: 36vh;
