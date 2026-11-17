@@ -80,6 +80,22 @@
       </details>
     </section>
 
+    <!-- Raccourci vers les PR -->
+    <a class="carte-menu carte-pr" id="carte-pr" href="Records.html">
+      <span class="carte-icone" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/>
+          <path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/>
+        </svg>
+      </span>
+      <span class="carte-texte">
+        <strong>Mes PR</strong>
+        <small id="pr-resume">Tes records sur 1 répétition</small>
+      </span>
+      <span class="pr-max" id="pr-max"></span>
+      <span class="carte-fleche" aria-hidden="true">›</span>
+    </a>
+
     <!-- Profil -->
     <section class="card profil">
       <div class="profil-tete">
@@ -317,6 +333,44 @@
       document.getElementById("total-seances").textContent = seances.length;
     }
 
+    /* ---------- Raccourci « Mes PR » ---------- */
+
+    async function afficherCartePR() {
+      let resume = [];
+      let exos = [];
+      try {
+        const r = await Promise.all([chargerPRs(), chargerExercices()]);
+        resume = resumerPRs(r[0]);
+        exos = r[1];
+      } catch (e) {
+        return;   // table pas encore créée : la carte garde son texte par défaut
+      }
+      const nomDe = function (id) {
+        const ex = exos.find(function (e) { return e.id === id; });
+        return ex ? ex.nom : "";
+      };
+      if (!resume.length) {
+        document.getElementById("pr-resume").textContent = "Note ton premier record à 1 rep";
+        document.getElementById("carte-pr").href = "Records.html#nouveau";
+        return;
+      }
+      // Le PR le plus récent en résumé, la plus grosse charge en gros à droite
+      const dernier = resume.slice().sort(function (a, b) {
+        return b.meilleur.date.localeCompare(a.meilleur.date);
+      })[0];
+      const plusLourd = resume.slice().sort(function (a, b) {
+        return Number(b.meilleur.charge) - Number(a.meilleur.charge);
+      })[0];
+      document.getElementById("pr-resume").textContent =
+        resume.length + " exercice" + (resume.length > 1 ? "s" : "") +
+        " · dernier : " + nomDe(dernier.exercice_id) + " " + nb(dernier.meilleur.charge) + " kg";
+      const max = document.getElementById("pr-max");
+      max.innerHTML = "";
+      max.appendChild(document.createTextNode(nb(plusLourd.meilleur.charge)));
+      max.appendChild(el("small", "", "kg"));
+      max.title = nomDe(plusLourd.exercice_id);
+    }
+
     /* ---------- Chargement ---------- */
 
     async function afficher() {
@@ -345,6 +399,7 @@
       document.getElementById("cta-seance").textContent =
         (await seanceEnCours()) ? "Reprendre ma séance en cours" : "Commencer la séance";
       afficherProfil(p, seances, poids);
+      await afficherCartePR();
     }
 
     document.getElementById("mois-prec").addEventListener("click", function () {

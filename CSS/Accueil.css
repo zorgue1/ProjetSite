@@ -399,6 +399,28 @@
   color: var(--gris);
 }
 
+/* Raccourci « Mes PR » */
+.carte-pr {
+  margin-bottom: 16px;
+  animation: monter 0.4s ease both;
+}
+
+.pr-max {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--accent);
+}
+
+.pr-max small {
+  margin-left: 3px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--gris);
+}
+
 /* ---------- Profil ---------- */
 .profil-tete {
   display: flex;

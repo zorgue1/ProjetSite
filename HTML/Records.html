@@ -18,6 +18,56 @@
 
   <main>
 
+    <div class="entete-page">
+      <h2>Mes PR</h2>
+      <button class="btn" id="btn-nouveau" type="button">+ Nouveau PR</button>
+    </div>
+
+    <p class="confirmation" id="confirmation" role="status" hidden></p>
+    <p class="vide alerte" id="alerte" hidden></p>
+
+    <!-- Formulaire : nouveau PR à 1 rep -->
+    <section class="card" id="formulaire" hidden>
+      <h2>Nouveau PR</h2>
+
+      <label for="pr-exo">Exercice</label>
+      <select id="pr-exo"></select>
+      <p class="mut pr-indice" id="pr-indice"></p>
+
+      <div class="row">
+        <div>
+          <label for="pr-charge">Charge sur 1 rep</label>
+          <div class="champ-unite grand">
+            <input id="pr-charge" type="number" min="0" step="0.5" inputmode="decimal" placeholder="100">
+            <span>kg</span>
+          </div>
+        </div>
+        <div>
+          <label for="pr-date">Date</label>
+          <input id="pr-date" type="date">
+        </div>
+      </div>
+
+      <label for="pr-note">Note <span class="facultatif">(facultatif)</span></label>
+      <input id="pr-note" type="text" maxlength="80" placeholder="Avec ceinture, pause en bas…">
+
+      <div class="actions">
+        <button class="btn" id="btn-enregistrer" type="button">Enregistrer le PR</button>
+        <button class="btn secondaire" id="btn-annuler" type="button">Annuler</button>
+      </div>
+    </section>
+
+    <!-- Dernier PR battu -->
+    <section class="vedette" id="vedette" hidden></section>
+
+    <!-- PR à 1 rep, un par exercice -->
+    <section class="pr-grille" id="pr-grille"></section>
+
+    <!-- Records calculés à partir des séances -->
+    <div class="section-tete">
+      <h3>Records en séries</h3>
+      <span class="mut">Calculés depuis tes séances</span>
+    </div>
     <input id="recherche" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
     <div class="chips" id="chips"></div>
     <section id="liste"></section>
@@ -29,20 +79,231 @@
   <script src="../JS/donnees.js"></script>
   <script>
     let exercices = [];
-    let records = {};          // records indexés par identifiant d'exercice
+    let records = {};          // records en séries, indexés par identifiant d'exercice
+    let prs = [];              // résumé des PR à 1 rep (un par exercice)
     let muscleChoisi = "Tous";
 
-    function bloc(titre, valeur, date) {
-      const b = el("div", "rec-bloc");
-      b.appendChild(el("div", "t", titre));
-      b.appendChild(el("div", "v", valeur));
-      b.appendChild(el("div", "d", date));
-      return b;
+    const $ = function (id) { return document.getElementById(id); };
+    const exoDe = function (id) { return exercices.find(function (e) { return e.id === id; }); };
+
+    function erreurLisible(e) {
+      const m = (e && e.message) || String(e);
+      if (/prs|42P01|PGRST205/.test(m + " " + (e && e.code))) {
+        return "La table des PR n’existe pas encore : exécute le script SQL « prs » dans Supabase (SQL Editor), puis recharge la page.";
+      }
+      return "Erreur : " + m;
     }
+
+    // « aujourd'hui », « hier », « il y a 5 jours », sinon la date
+    function ilYa(texte) {
+      const jours = Math.round((enDate(aujourdhui()) - enDate(texte)) / 86400000);
+      if (jours <= 0) return "aujourd’hui";
+      if (jours === 1) return "hier";
+      if (jours < 30) return "il y a " + jours + " jours";
+      return "le " + dateFr(texte);
+    }
+
+    /* ---------- Dernier PR en vedette ---------- */
+
+    function afficherVedette() {
+      const zone = $("vedette");
+      const dernier = prs.slice().sort(function (a, b) {
+        return b.meilleur.date.localeCompare(a.meilleur.date) || b.meilleur.id - a.meilleur.id;
+      })[0];
+      const ex = dernier && exoDe(dernier.exercice_id);
+      if (!ex) { zone.hidden = true; return; }
+
+      zone.innerHTML = "";
+      zone.hidden = false;
+      zone.appendChild(el("span", "vedette-etiquette", "Dernier PR · " + ilYa(dernier.meilleur.date)));
+      zone.appendChild(el("div", "vedette-exo", ex.nom));
+      const valeur = el("div", "vedette-valeur");
+      valeur.appendChild(document.createTextNode(nb(dernier.meilleur.charge)));
+      valeur.appendChild(el("small", "", "kg"));
+      zone.appendChild(valeur);
+      if (dernier.gain > 0) zone.appendChild(el("span", "gain", "+" + nb(dernier.gain) + " kg"));
+    }
+
+    /* ---------- Cartes des PR à 1 rep ---------- */
+
+    function afficherPRs() {
+      const zone = $("pr-grille");
+      zone.innerHTML = "";
+
+      const visibles = prs.filter(function (p) { return exoDe(p.exercice_id); })
+        .sort(function (a, b) { return Number(b.meilleur.charge) - Number(a.meilleur.charge); });
+
+      if (!visibles.length) {
+        const vide = el("div", "vide pr-vide");
+        vide.appendChild(el("strong", "", "Aucun PR pour l’instant"));
+        vide.appendChild(el("span", "", "Note ta meilleure charge sur 1 répétition (squat, développé couché, soulevé de terre…) pour suivre ta force."));
+        zone.appendChild(vide);
+        return;
+      }
+
+      visibles.forEach(function (p) {
+        const ex = exoDe(p.exercice_id);
+        const carte = el("details", "card pr-carte");
+        const resume = el("summary", "pr-resume");
+
+        const tete = el("div", "pr-tete");
+        tete.appendChild(creerVignette(ex));
+        const titre = el("div", "pr-titre");
+        titre.appendChild(el("div", "exo-nom-ligne", ex.nom));
+        titre.appendChild(el("div", "mut", ex.muscle));
+        tete.appendChild(titre);
+        resume.appendChild(tete);
+
+        const valeur = el("div", "pr-valeur");
+        valeur.appendChild(document.createTextNode(nb(p.meilleur.charge)));
+        valeur.appendChild(el("small", "", "kg"));
+        resume.appendChild(valeur);
+
+        const pied = el("div", "pr-pied");
+        pied.appendChild(el("span", "mut", dateFr(p.meilleur.date)));
+        if (p.gain > 0) pied.appendChild(el("span", "gain", "+" + nb(p.gain) + " kg"));
+        resume.appendChild(pied);
+        carte.appendChild(resume);
+
+        // Historique (du plus récent au plus ancien)
+        const histo = el("div", "pr-histo");
+        p.historique.slice().reverse().forEach(function (h) {
+          const ligne = el("div", "histo-ligne" + (h.id === p.meilleur.id ? " record" : ""));
+          ligne.appendChild(el("span", "histo-date", dateFr(h.date)));
+          const centre = el("span", "histo-centre");
+          centre.appendChild(el("strong", "", nb(h.charge) + " kg"));
+          if (h.note) centre.appendChild(el("span", "mut", h.note));
+          ligne.appendChild(centre);
+          const suppr = el("button", "histo-suppr", "×");
+          suppr.type = "button";
+          suppr.setAttribute("aria-label", "Supprimer ce PR du " + dateFr(h.date));
+          suppr.addEventListener("click", async function () {
+            if (!confirm("Supprimer le PR de " + nb(h.charge) + " kg du " + dateFr(h.date) + " ?")) return;
+            try {
+              await supprimerPR(h.id);
+              await chargerPRsEtAfficher();
+            } catch (e) {
+              alert(erreurLisible(e));
+            }
+          });
+          ligne.appendChild(suppr);
+          histo.appendChild(ligne);
+        });
+        carte.appendChild(histo);
+        zone.appendChild(carte);
+      });
+    }
+
+    async function chargerPRsEtAfficher() {
+      try {
+        prs = resumerPRs(await chargerPRs());
+        $("alerte").hidden = true;
+      } catch (e) {
+        prs = [];
+        $("alerte").textContent = erreurLisible(e);
+        $("alerte").hidden = false;
+      }
+      afficherVedette();
+      afficherPRs();
+    }
+
+    /* ---------- Formulaire ---------- */
+
+    function remplirExercices() {
+      const select = $("pr-exo");
+      select.innerHTML = "";
+      MUSCLES.forEach(function (m) {
+        const liste = exercices.filter(function (e) { return e.muscle === m; });
+        if (!liste.length) return;
+        const groupe = document.createElement("optgroup");
+        groupe.label = m;
+        liste.forEach(function (e) {
+          const o = el("option", "", e.nom);
+          o.value = e.id;
+          groupe.appendChild(o);
+        });
+        select.appendChild(groupe);
+      });
+    }
+
+    // Rappelle le PR actuel et le 1RM estimé pour l'exercice choisi
+    function indice() {
+      const id = exercices.length ? exoDe(castId($("pr-exo").value)) : null;
+      const p = id && prs.find(function (x) { return x.exercice_id === id.id; });
+      const r = id && records[id.id];
+      const morceaux = [];
+      if (p) morceaux.push("PR actuel : " + nb(p.meilleur.charge) + " kg (" + dateFr(p.meilleur.date) + ")");
+      if (r && Number(r.rm_max) > 0) morceaux.push("1RM estimé d’après tes séances : " + nb(r.rm_max) + " kg");
+      $("pr-indice").textContent = morceaux.join(" · ");
+      $("pr-indice").hidden = !morceaux.length;
+    }
+
+    // Les identifiants d'exercice peuvent être des nombres ou des textes (uuid)
+    function castId(v) {
+      const ex = exercices.find(function (e) { return String(e.id) === String(v); });
+      return ex ? ex.id : v;
+    }
+
+    function ouvrirFormulaire() {
+      if (!exercices.length) {
+        alert("Ta bibliothèque d’exercices est vide : ajoute d’abord des exercices dans Sport → Exercices.");
+        return;
+      }
+      $("formulaire").hidden = false;
+      $("btn-nouveau").hidden = true;
+      $("pr-date").value = aujourdhui();
+      indice();
+      $("pr-charge").focus();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function fermerFormulaire() {
+      $("formulaire").hidden = true;
+      $("btn-nouveau").hidden = false;
+      $("pr-charge").value = "";
+      $("pr-note").value = "";
+    }
+
+    $("btn-nouveau").addEventListener("click", ouvrirFormulaire);
+    $("btn-annuler").addEventListener("click", fermerFormulaire);
+    $("pr-exo").addEventListener("change", indice);
+    $("pr-charge").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") $("btn-enregistrer").click();
+    });
+
+    $("btn-enregistrer").addEventListener("click", async function () {
+      const exoId = castId($("pr-exo").value);
+      const charge = parseFloat($("pr-charge").value.replace(",", "."));
+      if (!(charge > 0)) { $("pr-charge").focus(); return alert("Indique la charge soulevée sur 1 répétition."); }
+
+      const avant = prs.find(function (p) { return p.exercice_id === exoId; });
+      const bouton = this;
+      bouton.disabled = true;
+      try {
+        await ajouterPR({
+          exercice_id: exoId,
+          charge: charge,
+          date: $("pr-date").value || aujourdhui(),
+          note: $("pr-note").value.trim() || null
+        });
+        fermerFormulaire();
+        const nom = exoDe(exoId).nom;
+        if (!avant) confirmer("Premier PR enregistré : " + nom + " " + nb(charge) + " kg");
+        else if (charge > Number(avant.meilleur.charge)) confirmer("Nouveau record ! " + nom + " : +" + nb(charge - avant.meilleur.charge) + " kg");
+        else confirmer("PR ajouté à l’historique de " + nom);
+        await chargerPRsEtAfficher();
+      } catch (e) {
+        alert(erreurLisible(e));
+      } finally {
+        bouton.disabled = false;
+      }
+    });
+
+    /* ---------- Records en séries ---------- */
 
     // Pastilles : seulement les muscles qui ont au moins un record
     function afficherChips() {
-      const zone = document.getElementById("chips");
+      const zone = $("chips");
       zone.innerHTML = "";
       const avecRecord = exercices.filter(function (e) { return records[e.id]; });
       const muscles = MUSCLES.filter(function (m) {
@@ -62,11 +323,10 @@
     }
 
     function afficherListe() {
-      const zone = document.getElementById("liste");
+      const zone = $("liste");
       zone.innerHTML = "";
 
-      const mots = normaliser(document.getElementById("recherche").value)
-        .split(" ").filter(Boolean);
+      const mots = normaliser($("recherche").value).split(" ").filter(Boolean);
 
       const visibles = exercices.filter(function (e) {
         if (!records[e.id]) return false;
@@ -81,38 +341,38 @@
       if (visibles.length === 0) {
         zone.appendChild(el("div", "vide", Object.keys(records).length
           ? "Aucun record ne correspond."
-          : "Aucun record pour l’instant. Enregistre des séances avec des exercices, et tes meilleures performances apparaîtront ici."));
+          : "Enregistre des séances avec des exercices : tes meilleures séries apparaîtront ici."));
         return;
       }
 
+      const carte = el("div", "card serie-liste");
       visibles.forEach(function (ex) {
         const r = records[ex.id];
-        const carte = el("article", "card record-carte");
+        const ligne = el("div", "serie-ligne");
+        ligne.appendChild(creerVignette(ex));
 
-        const haut = el("div", "record-haut");
-        haut.appendChild(creerVignette(ex));
-        const titre = el("div", "record-titre-bloc");
-        titre.appendChild(el("div", "exo-nom-ligne", ex.nom));
-        titre.appendChild(el("div", "mut", ex.muscle + " · " + r.nb_seances +
-          " séance" + (r.nb_seances > 1 ? "s" : "")));
-        haut.appendChild(titre);
-        carte.appendChild(haut);
+        const infos = el("div", "serie-infos");
+        infos.appendChild(el("div", "exo-nom-ligne", ex.nom));
+        infos.appendChild(el("div", "mut", ex.muscle + " · " + r.nb_seances + " séance" + (r.nb_seances > 1 ? "s" : "")));
+        ligne.appendChild(infos);
 
-        const grille = el("div", "record-grille");
+        const chiffres = el("div", "serie-chiffres");
         if (Number(r.charge_max) > 0) {
-          grille.appendChild(bloc("Charge max", nb(r.charge_max) + " kg × " + r.charge_reps, dateFr(r.charge_date)));
-          grille.appendChild(bloc("1RM estimé", nb(r.rm_max) + " kg", dateFr(r.rm_date)));
+          chiffres.appendChild(el("strong", "", nb(r.charge_max) + " kg × " + r.charge_reps));
+          chiffres.appendChild(el("span", "", "1RM est. " + nb(r.rm_max) + " kg"));
         } else {
-          grille.appendChild(bloc("Répétitions max", r.reps_max + " reps", dateFr(r.reps_date)));
-          grille.appendChild(bloc("Dernière séance", dateFr(r.derniere_date), ""));
+          chiffres.appendChild(el("strong", "", r.reps_max + " reps"));
+          chiffres.appendChild(el("span", "", dateFr(r.reps_date)));
         }
-        carte.appendChild(grille);
-
-        zone.appendChild(carte);
+        ligne.appendChild(chiffres);
+        carte.appendChild(ligne);
       });
+      zone.appendChild(carte);
     }
 
-    document.getElementById("recherche").addEventListener("input", afficherListe);
+    $("recherche").addEventListener("input", afficherListe);
+
+    /* ---------- Démarrage ---------- */
 
     (async function () {
       const user = await exigerConnexion();
@@ -121,11 +381,14 @@
         const resultats = await Promise.all([chargerExercices(), chargerRecords()]);
         exercices = resultats[0];
         resultats[1].forEach(function (r) { records[r.exercice_id] = r; });
+        remplirExercices();
         afficherChips();
         afficherListe();
       } catch (e) {
         alert("Erreur de chargement : " + e.message);
       }
+      await chargerPRsEtAfficher();
+      if (location.hash === "#nouveau") ouvrirFormulaire();
     })();
   </script>
 </body>

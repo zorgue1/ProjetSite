@@ -250,33 +250,6 @@
   }
 }
 
-.champ-unite {
-  position: relative;
-}
-
-.champ-unite input {
-  padding-right: 48px;
-}
-
-.champ-unite span {
-  position: absolute;
-  top: 50%;
-  right: 14px;
-  transform: translateY(-50%);
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--gris);
-  pointer-events: none;
-}
-
-.champ-unite.grand input {
-  padding-top: 14px;
-  padding-bottom: 14px;
-  font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 30px;
-  font-weight: 800;
-}
-
 .detail-macros {
   margin-top: 16px;
 }

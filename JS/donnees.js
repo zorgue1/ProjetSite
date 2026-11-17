@@ -530,6 +530,52 @@ async function chargerRecords() {
   return data;
 }
 
+/* ---------- PR à 1 répétition (saisis à la main) ---------- */
+
+async function chargerPRs() {
+  const { data, error } = await client
+    .from("prs").select("*")
+    .order("date", { ascending: true })
+    .order("id", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+async function ajouterPR(pr) {
+  const { error } = await client.from("prs").insert(pr);
+  if (error) throw error;
+}
+
+async function supprimerPR(id) {
+  const { error } = await client.from("prs").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// Regroupe les PR par exercice : meilleur PR, gain par rapport au précédent, historique
+function resumerPRs(liste) {
+  const parExo = {};
+  liste.forEach(function (p) {
+    (parExo[p.exercice_id] = parExo[p.exercice_id] || []).push(p);
+  });
+  return Object.keys(parExo).map(function (id) {
+    const historique = parExo[id];            // du plus ancien au plus récent
+    let meilleur = null;
+    let precedent = null;                     // meilleur PR battu par le record actuel
+    historique.forEach(function (p) {
+      if (!meilleur || Number(p.charge) >= Number(meilleur.charge)) {
+        if (meilleur && Number(p.charge) > Number(meilleur.charge)) precedent = meilleur;
+        meilleur = p;
+      }
+    });
+    return {
+      exercice_id: historique[0].exercice_id,
+      meilleur: meilleur,
+      gain: precedent ? Number(meilleur.charge) - Number(precedent.charge) : 0,
+      historique: historique
+    };
+  });
+}
+
 /* ---------- Modification d'une séance ---------- */
 
 async function modifierSeance(id, champs) {
