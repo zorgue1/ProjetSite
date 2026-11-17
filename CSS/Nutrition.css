@@ -1,66 +1,467 @@
-.vide-nutrition {
-  padding: 32px 20px;
+/* ---------- Navigation entre les jours ---------- */
+.nav-jour {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+}
+
+.nav-jour button {
+  font: inherit;
+  color: var(--texte);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.nav-fleche {
+  width: 34px;
+  height: 34px;
+  font-size: 22px !important;
+  line-height: 1;
+}
+
+.nav-libelle {
+  min-width: 92px;
+  padding: 6px 8px;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+.nav-jour button:hover:not(:disabled) {
+  background: var(--bandeau-survol);
+}
+
+.nav-jour button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.alerte {
+  margin-bottom: 16px;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ---------- Le cercle ---------- */
+.bilan-jour {
+  padding-top: 26px;
+}
+
+.anneau-zone {
+  position: relative;
+  width: min(240px, 70vw);
+  aspect-ratio: 1;
+  margin: 0 auto 18px;
+}
+
+.anneau {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);   /* le cercle commence en haut */
+  overflow: visible;
+}
+
+.anneau circle {
+  fill: none;
+  stroke-width: 15;
+}
+
+.anneau-fond {
+  stroke: var(--carte-douce);
+}
+
+.anneau-plein {
+  /* 540.35 = longueur du cercle (2 × π × 86) : au départ le cercle est vide */
+  stroke-dasharray: 540.35;
+  stroke-dashoffset: 540.35;
+  stroke: url(#degrade-anneau);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.9s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.3s;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--anneau-1) 45%, transparent));
+}
+
+.stop-1 { stop-color: var(--anneau-1); }
+.stop-2 { stop-color: var(--anneau-2); }
+
+/* Bientôt à l'objectif : le cercle vire à l'orange */
+.presque .stop-1 { stop-color: #ffb020; }
+.presque .stop-2 { stop-color: var(--accent); }
+
+/* Objectif dépassé : tout passe au rouge */
+.depasse .anneau-plein {
+  stroke: var(--danger);
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--danger) 60%, transparent));
+  animation: pulsation 1.8s ease-in-out infinite;
+}
+
+@keyframes pulsation {
+  50% { opacity: 0.65; }
+}
+
+.anneau-centre {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
-.nutri-icone {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 14px;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  border-radius: 20px;
-}
-
-.nutri-icone svg {
-  width: 34px;
-  height: 34px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.vide-nutrition h3 {
-  margin: 0 0 6px;
+.anneau-chiffre {
   font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 28px;
+  font-size: clamp(44px, 14vw, 58px);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.anneau-legende {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.depasse .anneau-chiffre,
+.depasse .anneau-legende {
+  color: var(--danger);
+}
+
+.depasse .anneau-chiffre::before {
+  content: "+";
+}
+
+/* ---------- Objectif / Mangé / Repas ---------- */
+.trio {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.trio > div + div {
+  border-left: 1px solid var(--bordure);
+}
+
+.trio strong {
+  display: block;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 26px;
   font-weight: 800;
   line-height: 1.1;
+}
+
+.trio span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  color: var(--gris);
 }
 
-.vide-nutrition .mut {
-  max-width: 34ch;
-  margin: 0 auto;
+.depasse #v-mange {
+  color: var(--danger);
 }
 
-.a-venir {
+/* ---------- Barres des macros ---------- */
+.macros {
   display: grid;
+  gap: 12px;
+}
+
+.macro { --couleur: var(--accent); }
+.macro.proteines { --couleur: var(--proteines); }
+.macro.glucides  { --couleur: var(--glucides); }
+.macro.lipides   { --couleur: var(--lipides); }
+.macro.depasse   { --couleur: var(--danger); }
+
+.macro-haut {
+  display: flex;
+  justify-content: space-between;
   gap: 8px;
-  margin: 0;
-  padding: 0;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.macro-nom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.macro-nom::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: var(--couleur);
+  border-radius: 50%;
+}
+
+.macro-valeur {
+  font-weight: 600;
+  color: var(--gris);
+  font-variant-numeric: tabular-nums;
+}
+
+.macro.depasse .macro-valeur {
+  color: var(--danger);
+}
+
+.macro-barre {
+  height: 9px;
+  overflow: hidden;
+  background: var(--carte-douce);
+  border-radius: 999px;
+}
+
+.macro-rempli {
+  width: 0;
+  height: 100%;
+  background: var(--couleur);
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------- Bouton et formulaire d'ajout ---------- */
+.ajout-repas {
+  display: block;
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 15px;
+  font-size: 17px;
+}
+
+.onglets.quatre {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 420px) {
+  .onglets.quatre {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.champ-unite {
+  position: relative;
+}
+
+.champ-unite input {
+  padding-right: 48px;
+}
+
+.champ-unite span {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gris);
+  pointer-events: none;
+}
+
+.champ-unite.grand input {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.detail-macros {
+  margin-top: 16px;
+}
+
+.detail-macros summary,
+.besoins summary {
+  cursor: pointer;
+  font-weight: 700;
   list-style: none;
 }
 
-.a-venir li {
+.detail-macros summary::-webkit-details-marker,
+.besoins summary::-webkit-details-marker {
+  display: none;
+}
+
+.detail-macros summary::before {
+  content: "+ ";
+  color: var(--accent);
+}
+
+.detail-macros[open] summary::before {
+  content: "− ";
+}
+
+.detail-macros .aide {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+#recents .chip {
+  font-weight: 600;
+}
+
+/* ---------- Journal des repas ---------- */
+.moment {
+  padding-top: 16px;
+  padding-bottom: 10px;
+}
+
+.moment-tete {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 14px 16px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.moment h3 {
+  margin: 0;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.moment-total {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.repas-ligne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.repas-ligne + .repas-ligne {
+  border-top: 1px solid var(--bordure);
+}
+
+.repas-infos {
+  flex: 1;
+  min-width: 0;
+}
+
+.repas-nom {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.repas-kcal {
+  font-weight: 800;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.repas-kcal::after {
+  content: " kcal";
+  font-size: 12px;
+  font-weight: 600;
   color: var(--gris);
-  border: 1px dashed var(--bordure);
+}
+
+.repas-suppr {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--gris);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.repas-suppr:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+#journal {
+  margin-bottom: 16px;
+}
+
+/* ---------- Mes besoins ---------- */
+.besoins summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.besoins-titre {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.besoins-resume {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.besoins-resume::after {
+  content: "  ▾";
+  color: var(--gris);
+}
+
+.besoins[open] .besoins-resume::after {
+  content: "  ▴";
+}
+
+#besoins-profil {
+  margin: 14px 0 0;
+}
+
+.calcul {
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: var(--carte-douce);
   border-radius: 14px;
 }
 
-.a-venir strong {
-  font-size: 15px;
-  color: var(--texte);
+.calcul-ligne {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 14px;
 }
 
-.a-venir span {
+.calcul-ligne span {
+  color: var(--gris);
+}
+
+.calcul-ligne.total {
+  margin-top: 6px;
+  padding-top: 10px;
+  font-size: 16px;
+  border-top: 1px solid var(--bordure);
+}
+
+.calcul-ligne.total span {
+  color: var(--texte);
+  font-weight: 700;
+}
+
+.calcul-ligne.total strong {
+  color: var(--accent);
+}
+
+.calcul .mut {
+  margin: 8px 0 0;
   font-size: 13px;
 }

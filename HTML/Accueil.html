@@ -128,15 +128,6 @@
     let moisAffiche = new Date();
     moisAffiche.setDate(1);
 
-    function calculerAge(dateNaissance) {
-      const n = new Date(dateNaissance);
-      const auj = new Date();
-      let age = auj.getFullYear() - n.getFullYear();
-      const anniversaire = new Date(auj.getFullYear(), n.getMonth(), n.getDate());
-      if (auj < anniversaire) age--;
-      return age;
-    }
-
     function joursDepuis(dateTexte) {
       const a = new Date(aujourdhui() + "T12:00:00");
       const b = new Date(dateTexte + "T12:00:00");

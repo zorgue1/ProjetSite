@@ -20,25 +20,116 @@
 
     <div class="entete-page">
       <h2>Nutrition</h2>
+      <div class="nav-jour">
+        <button type="button" class="nav-fleche" id="jour-avant" aria-label="Jour précédent">‹</button>
+        <button type="button" class="nav-libelle" id="jour-libelle" title="Revenir à aujourd’hui">Aujourd’hui</button>
+        <button type="button" class="nav-fleche" id="jour-apres" aria-label="Jour suivant">›</button>
+      </div>
     </div>
 
-    <section class="card vide-nutrition">
-      <div class="nutri-icone">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 11h16a8 8 0 0 1-16 0z"/>
-          <path d="M9 7c0-1.500 1.200-1.500 1.200-3"/>
-          <path d="M14 7c0-1.500 1.200-1.500 1.200-3"/>
+    <p class="confirmation" id="confirmation" role="status" hidden></p>
+    <p class="vide alerte" id="alerte" hidden></p>
+
+    <!-- Bilan du jour : le cercle et les macros -->
+    <section class="card bilan-jour">
+      <div class="anneau-zone">
+        <svg class="anneau" viewBox="0 0 200 200" aria-hidden="true">
+          <defs>
+            <linearGradient id="degrade-anneau" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" class="stop-1"/>
+              <stop offset="1" class="stop-2"/>
+            </linearGradient>
+          </defs>
+          <circle class="anneau-fond" cx="100" cy="100" r="86"/>
+          <circle class="anneau-plein" id="anneau-plein" cx="100" cy="100" r="86"/>
         </svg>
+        <div class="anneau-centre" role="status">
+          <div class="anneau-chiffre" id="anneau-chiffre">–</div>
+          <div class="anneau-legende" id="anneau-legende">kcal restantes</div>
+        </div>
       </div>
-      <h3>Bientôt disponible</h3>
-      <p class="mut">Cette section accueillera le suivi de ton alimentation. Elle sera complétée prochainement.</p>
+
+      <div class="trio">
+        <div><strong id="v-objectif">–</strong><span>Objectif</span></div>
+        <div><strong id="v-mange">0</strong><span>Mangé</span></div>
+        <div><strong id="v-repas">0</strong><span>Repas</span></div>
+      </div>
+
+      <div class="macros" id="macros"></div>
     </section>
 
-    <ul class="a-venir">
-      <li><strong>Repas du jour</strong><span>Ce que tu manges, repas par repas</span></li>
-      <li><strong>Objectifs</strong><span>Calories, protéines, glucides, lipides</span></li>
-      <li><strong>Historique</strong><span>Ton suivi jour après jour</span></li>
-    </ul>
+    <button class="btn ajout-repas" id="btn-ajout" type="button">+ Ajouter un repas</button>
+
+    <!-- Formulaire d'ajout d'un repas -->
+    <section class="card" id="formulaire" hidden>
+      <h2>Ajouter un repas</h2>
+
+      <div id="zone-recents" hidden>
+        <label>Déjà mangé récemment</label>
+        <div class="chips" id="recents"></div>
+      </div>
+
+      <label id="label-moment">Moment</label>
+      <div class="onglets quatre" id="choix-moment" role="group" aria-labelledby="label-moment"></div>
+
+      <label for="repas-nom">Ce que tu as mangé</label>
+      <input id="repas-nom" type="text" maxlength="80" placeholder="Ex. : Riz, poulet, brocolis" autocomplete="off">
+
+      <label for="repas-kcal">Calories</label>
+      <div class="champ-unite grand">
+        <input id="repas-kcal" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex. : 650">
+        <span>kcal</span>
+      </div>
+
+      <details class="detail-macros" id="detail-macros">
+        <summary>Ajouter les macros <span class="mut">(facultatif)</span></summary>
+        <div class="row">
+          <div>
+            <label for="repas-p">Protéines</label>
+            <div class="champ-unite"><input id="repas-p" type="number" min="0" step="0.1" inputmode="decimal"><span>g</span></div>
+          </div>
+          <div>
+            <label for="repas-g">Glucides</label>
+            <div class="champ-unite"><input id="repas-g" type="number" min="0" step="0.1" inputmode="decimal"><span>g</span></div>
+          </div>
+          <div>
+            <label for="repas-l">Lipides</label>
+            <div class="champ-unite"><input id="repas-l" type="number" min="0" step="0.1" inputmode="decimal"><span>g</span></div>
+          </div>
+        </div>
+        <p class="mut aide">Tu as les macros mais pas les calories ? Laisse « Calories » vide, on les calcule pour toi.</p>
+      </details>
+
+      <div class="actions">
+        <button class="btn" id="btn-enregistrer" type="button">Enregistrer le repas</button>
+        <button class="btn secondaire" id="btn-annuler" type="button">Annuler</button>
+      </div>
+    </section>
+
+    <!-- Les repas du jour, rangés par moment -->
+    <section id="journal"></section>
+
+    <!-- Réglage des besoins -->
+    <details class="card besoins" id="besoins">
+      <summary>
+        <span class="besoins-titre">Mes besoins</span>
+        <span class="besoins-resume" id="besoins-resume"></span>
+      </summary>
+
+      <p class="mut" id="besoins-profil"></p>
+
+      <label for="activite">Niveau d’activité</label>
+      <select id="activite"></select>
+
+      <label id="label-objectif">Objectif</label>
+      <div class="onglets trois" id="choix-objectif" role="group" aria-labelledby="label-objectif"></div>
+
+      <div class="calcul" id="calcul"></div>
+
+      <div class="actions">
+        <button class="btn" id="btn-besoins" type="button">Enregistrer mes besoins</button>
+      </div>
+    </details>
 
   </main>
 
@@ -46,8 +137,467 @@
   <script src="../JS/supabase.js"></script>
   <script src="../JS/donnees.js"></script>
   <script>
+    const MOMENTS = ["Petit-déj", "Déjeuner", "Collation", "Dîner"];
+    const MACROS = [
+      { cle: "proteines", nom: "Protéines" },
+      { cle: "glucides",  nom: "Glucides" },
+      { cle: "lipides",   nom: "Lipides" }
+    ];
+    const TOUR = 2 * Math.PI * 86;   // longueur du cercle (rayon 86)
+
+    let profil = null;
+    let besoins = null;            // résultat de calculerBesoins()
+    let jour = aujourdhui();       // jour affiché (AAAA-MM-JJ)
+    let repasDuJour = [];
+    let momentChoisi = "Déjeuner";
+    let objectifChoisi = "maintien";
+    let chiffreAffiche = 0;        // pour animer le nombre au centre du cercle
+
+    const $ = function (id) { return document.getElementById(id); };
+    const entier = function (v) { return Math.round(v).toLocaleString("fr-FR"); };
+
+    // Message clair si le script SQL n'a pas encore été lancé dans Supabase
+    function erreurLisible(e) {
+      const m = (e && (e.message || "")) + " " + (e && e.code || "");
+      if (/repas|taille|activite|objectif|42P01|PGRST20[45]/.test(m)) {
+        return "La base n’est pas encore prête pour la nutrition : exécute le fichier SQL/nutrition.sql dans Supabase (SQL Editor), puis recharge la page.";
+      }
+      return "Erreur : " + (e && e.message ? e.message : e);
+    }
+
+    function alerte(texte) {
+      $("alerte").textContent = texte;
+      $("alerte").hidden = !texte;
+    }
+
+    /* ---------- Navigation entre les jours ---------- */
+
+    function libelleJour(texte) {
+      const auj = aujourdhui();
+      const hier = new Date(enDate(auj));
+      hier.setDate(hier.getDate() - 1);
+      if (texte === auj) return "Aujourd’hui";
+      if (texte === versTexte(hier)) return "Hier";
+      return enDate(texte).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+    }
+
+    async function changerJour(decalage) {
+      const d = enDate(jour);
+      d.setDate(d.getDate() + decalage);
+      const nouveau = versTexte(d);
+      if (nouveau > aujourdhui()) return;
+      jour = nouveau;
+      await chargerJour();
+    }
+
+    $("jour-avant").addEventListener("click", function () { changerJour(-1); });
+    $("jour-apres").addEventListener("click", function () { changerJour(1); });
+    $("jour-libelle").addEventListener("click", async function () {
+      if (jour === aujourdhui()) return;
+      jour = aujourdhui();
+      await chargerJour();
+    });
+
+    async function chargerJour() {
+      $("jour-libelle").textContent = libelleJour(jour);
+      $("jour-apres").disabled = jour >= aujourdhui();
+      try {
+        repasDuJour = await chargerRepas(jour);
+        alerte("");
+      } catch (e) {
+        repasDuJour = [];
+        alerte(erreurLisible(e));
+      }
+      afficherBilan();
+      afficherJournal();
+    }
+
+    /* ---------- Le cercle et les macros ---------- */
+
+    function totaux() {
+      const t = { calories: 0, proteines: 0, glucides: 0, lipides: 0 };
+      repasDuJour.forEach(function (r) {
+        t.calories += Number(r.calories) || 0;
+        MACROS.forEach(function (m) { t[m.cle] += Number(r[m.cle]) || 0; });
+      });
+      return t;
+    }
+
+    // Fait défiler le nombre au centre du cercle jusqu'à sa nouvelle valeur
+    function animerChiffre(cible) {
+      const depart = chiffreAffiche;
+      const debut = performance.now();
+      const duree = 700;
+      function etape(t) {
+        const p = Math.min(1, (t - debut) / duree);
+        const v = depart + (cible - depart) * (1 - Math.pow(1 - p, 3));
+        $("anneau-chiffre").textContent = entier(v);
+        if (p < 1) requestAnimationFrame(etape);
+      }
+      chiffreAffiche = cible;
+      requestAnimationFrame(etape);
+    }
+
+    function afficherBilan() {
+      const t = totaux();
+      const zone = document.querySelector(".bilan-jour");
+      const plein = $("anneau-plein");
+
+      $("v-mange").textContent = entier(t.calories);
+      $("v-repas").textContent = repasDuJour.length;
+
+      if (!besoins || besoins.manque.length) {
+        // Pas d'objectif : le cercle montre seulement ce qui a été mangé
+        $("v-objectif").textContent = "?";
+        zone.classList.remove("depasse", "presque");
+        plein.style.strokeDashoffset = TOUR;
+        animerChiffre(t.calories);
+        $("anneau-legende").textContent = "kcal mangées";
+        afficherMacros(t);
+        return;
+      }
+
+      const objectif = besoins.calories;
+      const ratio = t.calories / objectif;
+      const reste = objectif - t.calories;
+      const depasse = reste < 0;
+
+      $("v-objectif").textContent = entier(objectif);
+      zone.classList.toggle("depasse", depasse);
+      zone.classList.toggle("presque", !depasse && ratio >= 0.9);
+      plein.style.strokeDashoffset = TOUR * (1 - Math.min(ratio, 1));
+
+      animerChiffre(Math.abs(reste));
+      $("anneau-legende").textContent = depasse ? "kcal en trop" : "kcal restantes";
+      afficherMacros(t);
+    }
+
+    function afficherMacros(t) {
+      const zone = $("macros");
+      zone.innerHTML = "";
+      MACROS.forEach(function (m) {
+        const but = besoins && !besoins.manque.length ? besoins[m.cle] : 0;
+        const mange = Math.round(t[m.cle]);
+        const ligne = el("div", "macro " + m.cle);
+
+        const haut = el("div", "macro-haut");
+        haut.appendChild(el("span", "macro-nom", m.nom));
+        const valeur = el("span", "macro-valeur");
+        valeur.textContent = but ? mange + " / " + but + " g" : mange + " g";
+        haut.appendChild(valeur);
+        ligne.appendChild(haut);
+
+        const barre = el("div", "macro-barre");
+        const rempli = el("div", "macro-rempli");
+        barre.appendChild(rempli);
+        ligne.appendChild(barre);
+
+        if (but && mange > but) {
+          ligne.classList.add("depasse");
+          valeur.textContent += "  (+" + (mange - but) + ")";
+        }
+        zone.appendChild(ligne);
+        // Laisse le navigateur dessiner la barre vide avant de la remplir (effet d'animation)
+        requestAnimationFrame(function () {
+          rempli.style.width = (but ? Math.min(100, mange / but * 100) : 0) + "%";
+        });
+      });
+    }
+
+    /* ---------- Journal des repas ---------- */
+
+    function afficherJournal() {
+      const zone = $("journal");
+      zone.innerHTML = "";
+
+      if (!repasDuJour.length) {
+        zone.appendChild(el("div", "vide", jour === aujourdhui()
+          ? "Rien de noté aujourd’hui. Ajoute ton premier repas !"
+          : "Aucun repas noté ce jour-là."));
+        return;
+      }
+
+      MOMENTS.forEach(function (moment) {
+        const liste = repasDuJour.filter(function (r) { return r.moment === moment; });
+        if (!liste.length) return;
+
+        const carte = el("section", "card moment");
+        const tete = el("div", "moment-tete");
+        tete.appendChild(el("h3", "", moment));
+        const total = liste.reduce(function (s, r) { return s + r.calories; }, 0);
+        tete.appendChild(el("span", "moment-total", entier(total) + " kcal"));
+        carte.appendChild(tete);
+
+        liste.forEach(function (r) {
+          const ligne = el("div", "repas-ligne");
+          const infos = el("div", "repas-infos");
+          infos.appendChild(el("div", "repas-nom", r.nom));
+
+          const puces = el("div", "puces");
+          [["P", r.proteines], ["G", r.glucides], ["L", r.lipides]].forEach(function (m) {
+            if (m[1] !== null && m[1] !== undefined) puces.appendChild(el("span", "puce", m[0] + " " + nb(m[1]) + " g"));
+          });
+          if (puces.children.length) infos.appendChild(puces);
+          ligne.appendChild(infos);
+
+          ligne.appendChild(el("span", "repas-kcal", entier(r.calories)));
+
+          const suppr = el("button", "repas-suppr", "×");
+          suppr.type = "button";
+          suppr.setAttribute("aria-label", "Supprimer " + r.nom);
+          suppr.addEventListener("click", async function () {
+            if (!confirm("Supprimer « " + r.nom + " » ?")) return;
+            try {
+              await supprimerRepas(r.id);
+              await chargerJour();
+            } catch (e) {
+              alert(erreurLisible(e));
+            }
+          });
+          ligne.appendChild(suppr);
+          carte.appendChild(ligne);
+        });
+        zone.appendChild(carte);
+      });
+    }
+
+    /* ---------- Formulaire d'ajout ---------- */
+
+    // Moment proposé selon l'heure qu'il est
+    function momentDeLHeure() {
+      if (jour !== aujourdhui()) return "Déjeuner";
+      const h = new Date().getHours() + new Date().getMinutes() / 60;
+      if (h < 10.5) return "Petit-déj";
+      if (h < 15) return "Déjeuner";
+      if (h < 18.5) return "Collation";
+      return "Dîner";
+    }
+
+    function construireMoments() {
+      const zone = $("choix-moment");
+      zone.innerHTML = "";
+      MOMENTS.forEach(function (m) {
+        const b = el("button", "onglet", m);
+        b.type = "button";
+        b.setAttribute("aria-pressed", String(m === momentChoisi));
+        b.addEventListener("click", function () {
+          momentChoisi = m;
+          construireMoments();
+        });
+        zone.appendChild(b);
+      });
+    }
+
+    function lireNombre(id) {
+      const v = $(id).value.replace(",", ".").trim();
+      return v === "" ? null : parseFloat(v);
+    }
+
+    function viderFormulaire() {
+      ["repas-nom", "repas-kcal", "repas-p", "repas-g", "repas-l"].forEach(function (id) { $(id).value = ""; });
+      $("detail-macros").open = false;
+    }
+
+    async function ouvrirFormulaire() {
+      momentChoisi = momentDeLHeure();
+      construireMoments();
+      $("formulaire").hidden = false;
+      $("btn-ajout").hidden = true;
+      $("repas-nom").focus();
+
+      // Repas récents : un clic pour tout remplir
+      try {
+        const recents = await chargerRepasRecents();
+        const zone = $("recents");
+        zone.innerHTML = "";
+        recents.forEach(function (r) {
+          const c = el("button", "chip", r.nom + " · " + entier(r.calories));
+          c.type = "button";
+          c.addEventListener("click", function () {
+            $("repas-nom").value = r.nom;
+            $("repas-kcal").value = r.calories;
+            $("repas-p").value = r.proteines !== null ? r.proteines : "";
+            $("repas-g").value = r.glucides !== null ? r.glucides : "";
+            $("repas-l").value = r.lipides !== null ? r.lipides : "";
+            $("detail-macros").open = r.proteines !== null || r.glucides !== null || r.lipides !== null;
+          });
+          zone.appendChild(c);
+        });
+        $("zone-recents").hidden = recents.length === 0;
+      } catch (e) {
+        $("zone-recents").hidden = true;
+      }
+    }
+
+    function fermerFormulaire() {
+      $("formulaire").hidden = true;
+      $("btn-ajout").hidden = false;
+      viderFormulaire();
+    }
+
+    $("btn-ajout").addEventListener("click", ouvrirFormulaire);
+    $("btn-annuler").addEventListener("click", fermerFormulaire);
+
+    $("btn-enregistrer").addEventListener("click", async function () {
+      const nom = $("repas-nom").value.trim();
+      const p = lireNombre("repas-p");
+      const g = lireNombre("repas-g");
+      const l = lireNombre("repas-l");
+      let kcal = lireNombre("repas-kcal");
+
+      // Calories absentes mais macros remplies : 4 kcal/g (P, G) et 9 kcal/g (L)
+      if (kcal === null && (p || g || l)) kcal = (p || 0) * 4 + (g || 0) * 4 + (l || 0) * 9;
+
+      if (!nom) { $("repas-nom").focus(); return alert("Indique ce que tu as mangé."); }
+      if (kcal === null || isNaN(kcal) || kcal < 0) { $("repas-kcal").focus(); return alert("Indique les calories du repas."); }
+
+      const bouton = this;
+      bouton.disabled = true;
+      try {
+        await ajouterRepas({
+          date: jour, moment: momentChoisi, nom: nom,
+          calories: Math.round(kcal), proteines: p, glucides: g, lipides: l
+        });
+        fermerFormulaire();
+        confirmer("Repas ajouté : " + entier(kcal) + " kcal");
+        await chargerJour();
+      } catch (e) {
+        alert(erreurLisible(e));
+      } finally {
+        bouton.disabled = false;
+      }
+    });
+
+    // Entrée dans un champ = enregistrer
+    ["repas-nom", "repas-kcal", "repas-p", "repas-g", "repas-l"].forEach(function (id) {
+      $(id).addEventListener("keydown", function (e) {
+        if (e.key === "Enter") $("btn-enregistrer").click();
+      });
+    });
+
+    /* ---------- Mes besoins ---------- */
+
+    function construireBesoins() {
+      const select = $("activite");
+      select.innerHTML = "";
+      Object.keys(NIVEAUX_ACTIVITE).forEach(function (cle) {
+        const n = NIVEAUX_ACTIVITE[cle];
+        const o = el("option", "", n.nom + " – " + n.detail);
+        o.value = cle;
+        select.appendChild(o);
+      });
+
+      const zone = $("choix-objectif");
+      zone.innerHTML = "";
+      Object.keys(OBJECTIFS).forEach(function (cle) {
+        const b = el("button", "onglet", OBJECTIFS[cle].nom);
+        b.type = "button";
+        b.dataset.cle = cle;
+        b.addEventListener("click", function () {
+          objectifChoisi = cle;
+          marquerObjectif();
+          apercu();
+        });
+        zone.appendChild(b);
+      });
+    }
+
+    function marquerObjectif() {
+      document.querySelectorAll("#choix-objectif .onglet").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.cle === objectifChoisi));
+      });
+    }
+
+    // Profil + réglages en cours de saisie
+    function profilSaisi() {
+      return Object.assign({}, profil, {
+        activite: $("activite").value,
+        objectif: objectifChoisi
+      });
+    }
+
+    // Montre le calcul en direct pendant qu'on change les réglages
+    function apercu() {
+      const b = calculerBesoins(profilSaisi());
+      const zone = $("calcul");
+      if (b.manque.length) {
+        zone.innerHTML = "";
+        const p = el("p", "mut", "Pour calculer tes besoins, il manque : " + b.manque.join(", ") + ". ");
+        const lien = el("a", "", "Compléter dans Paramètres");
+        lien.href = "Parametres.html";
+        p.appendChild(lien);
+        zone.appendChild(p);
+        return;
+      }
+      const obj = OBJECTIFS[objectifChoisi];
+      zone.innerHTML =
+        '<div class="calcul-ligne"><span>Métabolisme de base</span><strong>' + entier(b.base) + ' kcal</strong></div>' +
+        '<div class="calcul-ligne"><span>Avec ton activité (× ' + nb(NIVEAUX_ACTIVITE[$("activite").value].facteur) + ')</span><strong>' + entier(b.entretien) + ' kcal</strong></div>' +
+        (obj.ajust ? '<div class="calcul-ligne"><span>' + obj.nom + ' (' + (obj.ajust > 0 ? "+" : "−") + Math.abs(obj.ajust * 100) + ' %)</span><strong></strong></div>' : "") +
+        '<div class="calcul-ligne total"><span>Objectif du jour</span><strong>' + entier(b.calories) + ' kcal</strong></div>' +
+        '<p class="mut">Protéines ' + b.proteines + ' g · Glucides ' + b.glucides + ' g · Lipides ' + b.lipides + ' g</p>';
+    }
+
+    function afficherBesoins() {
+      $("activite").value = profil.activite;
+      objectifChoisi = profil.objectif;
+      marquerObjectif();
+
+      const infos = [];
+      if (profil.taille) infos.push(profil.taille + " cm");
+      if (profil.poids) infos.push(nb(profil.poids) + " kg");
+      if (profil.naissance) infos.push(calculerAge(profil.naissance) + " ans");
+      if (profil.sexe) infos.push(profil.sexe === "homme" ? "Homme" : "Femme");
+      $("besoins-profil").innerHTML = "";
+      $("besoins-profil").append(
+        (infos.length ? infos.join(" · ") : "Profil non renseigné") + " — ");
+      const lien = el("a", "", "modifier dans Paramètres");
+      lien.href = "Parametres.html";
+      $("besoins-profil").appendChild(lien);
+
+      besoins = calculerBesoins(profil);
+      if (besoins.manque.length) {
+        $("besoins-resume").textContent = "à compléter";
+        $("besoins").open = true;
+      } else {
+        $("besoins-resume").textContent = entier(besoins.calories) + " kcal / jour";
+      }
+      apercu();
+    }
+
+    $("activite").addEventListener("change", apercu);
+
+    $("btn-besoins").addEventListener("click", async function () {
+      const bouton = this;
+      bouton.disabled = true;
+      try {
+        await sauverBesoins($("activite").value, objectifChoisi);
+        profil = profilSaisi();
+        afficherBesoins();
+        afficherBilan();
+        if (!besoins.manque.length) $("besoins").open = false;
+        confirmer("Besoins enregistrés : " + (besoins.manque.length ? "il manque encore des infos" : entier(besoins.calories) + " kcal / jour"));
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (e) {
+        alert(erreurLisible(e));
+      } finally {
+        bouton.disabled = false;
+      }
+    });
+
+    /* ---------- Démarrage ---------- */
+
     (async function () {
-      await exigerConnexion();
+      const user = await exigerConnexion();
+      if (!user) return;
+      construireBesoins();
+      try {
+        profil = await chargerProfil();
+        afficherBesoins();
+      } catch (e) {
+        alerte(erreurLisible(e));
+      }
+      await chargerJour();
     })();
   </script>
 </body>

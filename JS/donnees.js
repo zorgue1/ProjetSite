@@ -88,7 +88,10 @@ async function chargerProfil() {
     naissance: (data && data.naissance) || "",
     poids: data && data.poids !== null ? String(data.poids) : "",
     sexe: (data && data.sexe) || "",
-    programme: (data && data.programme) || PROGRAMME_DEFAUT
+    programme: (data && data.programme) || PROGRAMME_DEFAUT,
+    taille: data && data.taille ? String(data.taille) : "",
+    activite: (data && data.activite) || "modere",
+    objectif: (data && data.objectif) || "maintien"
   };
 }
 
@@ -101,8 +104,109 @@ async function sauverProfil(profil) {
     naissance: profil.naissance || null,
     poids: profil.poids === "" ? null : parseFloat(profil.poids),
     sexe: profil.sexe || null,
+    taille: parseFloat(profil.taille) > 0 ? parseFloat(profil.taille) : null,
     programme: profil.programme
   });
+  if (error) throw error;
+}
+
+/* ---------- Nutrition ---------- */
+
+const NIVEAUX_ACTIVITE = {
+  sedentaire: { nom: "Sédentaire", detail: "Peu ou pas de sport", facteur: 1.2 },
+  leger:      { nom: "Léger",      detail: "1 à 2 séances / semaine", facteur: 1.375 },
+  modere:     { nom: "Modéré",     detail: "3 à 4 séances / semaine", facteur: 1.55 },
+  actif:      { nom: "Actif",      detail: "5 à 6 séances / semaine", facteur: 1.725 },
+  tres_actif: { nom: "Très actif", detail: "Sport tous les jours + travail physique", facteur: 1.9 }
+};
+
+const OBJECTIFS = {
+  perte:    { nom: "Sèche",     ajust: -0.15, proteinesKg: 2.0 },
+  maintien: { nom: "Maintien",  ajust: 0,     proteinesKg: 1.8 },
+  prise:    { nom: "Prise",     ajust: 0.10,  proteinesKg: 1.8 }
+};
+
+// Âge en années à partir de la date de naissance (AAAA-MM-JJ)
+function calculerAge(naissance) {
+  const n = enDate(naissance);
+  const a = new Date();
+  let age = a.getFullYear() - n.getFullYear();
+  if (a.getMonth() < n.getMonth() || (a.getMonth() === n.getMonth() && a.getDate() < n.getDate())) age--;
+  return age;
+}
+
+// Besoins du jour selon le profil (formule de Mifflin-St Jeor).
+// Renvoie null s'il manque une info, avec la liste de ce qui manque.
+function calculerBesoins(p) {
+  const manque = [];
+  const poids = parseFloat(p.poids);
+  const taille = parseFloat(p.taille);
+  if (!(poids > 0)) manque.push("poids");
+  if (!(taille > 0)) manque.push("taille");
+  if (!p.naissance) manque.push("date de naissance");
+  if (p.sexe !== "homme" && p.sexe !== "femme") manque.push("sexe");
+  if (manque.length) return { manque: manque };
+
+  const age = calculerAge(p.naissance);
+  const base = 10 * poids + 6.25 * taille - 5 * age + (p.sexe === "homme" ? 5 : -161);
+  const niveau = NIVEAUX_ACTIVITE[p.activite] || NIVEAUX_ACTIVITE.modere;
+  const objectif = OBJECTIFS[p.objectif] || OBJECTIFS.maintien;
+  const entretien = base * niveau.facteur;
+  const calories = Math.round(entretien * (1 + objectif.ajust) / 10) * 10;
+
+  // Protéines selon le poids, lipides = 25 % des calories, glucides = le reste
+  const proteines = Math.round(poids * objectif.proteinesKg);
+  const lipides = Math.round(calories * 0.25 / 9);
+  const glucides = Math.max(0, Math.round((calories - proteines * 4 - lipides * 9) / 4));
+
+  return {
+    manque: [], age: age, base: Math.round(base), entretien: Math.round(entretien),
+    calories: calories, proteines: proteines, glucides: glucides, lipides: lipides
+  };
+}
+
+async function sauverBesoins(activite, objectif) {
+  const { data: { user } } = await client.auth.getUser();
+  const { error } = await client.from("profils").upsert({
+    user_id: user.id,
+    activite: activite,
+    objectif: objectif
+  });
+  if (error) throw error;
+}
+
+async function chargerRepas(date) {
+  const { data, error } = await client
+    .from("repas").select("*")
+    .eq("date", date)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+// Les derniers repas différents, pour les rajouter en un clic
+async function chargerRepasRecents() {
+  const { data, error } = await client
+    .from("repas").select("nom, moment, calories, proteines, glucides, lipides")
+    .order("created_at", { ascending: false })
+    .limit(60);
+  if (error) throw error;
+  const vus = new Set();
+  return data.filter(function (r) {
+    const cle = normaliser(r.nom);
+    if (vus.has(cle)) return false;
+    vus.add(cle);
+    return true;
+  }).slice(0, 8);
+}
+
+async function ajouterRepas(repas) {
+  const { error } = await client.from("repas").insert(repas);
+  if (error) throw error;
+}
+
+async function supprimerRepas(id) {
+  const { error } = await client.from("repas").delete().eq("id", id);
   if (error) throw error;
 }
 

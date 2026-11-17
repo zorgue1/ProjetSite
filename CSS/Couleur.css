@@ -26,6 +26,13 @@
   --leg: #a78bfa;
   --repos: #6f7b8a;
 
+  --danger: #ff4d5e;
+  --anneau-1: #2fd9c5;
+  --anneau-2: #7ee081;
+  --proteines: #2fd9c5;
+  --glucides: #ffb020;
+  --lipides: #a78bfa;
+
   --bandeau-fond: rgba(9, 13, 19, 0.78);
   --bandeau-texte: #8c99aa;
   --bandeau-actif: #f1f4f8;
@@ -59,6 +66,13 @@
     --leg: #6d4ce0;
     --repos: #8b8f96;
 
+    --danger: #d92d3a;
+    --anneau-1: #0b8f84;
+    --anneau-2: #3fae5a;
+    --proteines: #0b8f84;
+    --glucides: #c98a00;
+    --lipides: #6d4ce0;
+
     --bandeau-fond: rgba(244, 242, 238, 0.82);
     --bandeau-texte: #66707c;
     --bandeau-actif: #16191f;
@@ -88,6 +102,13 @@
   --pull: #0b8f84;
   --leg: #6d4ce0;
   --repos: #8b8f96;
+
+  --danger: #d92d3a;
+  --anneau-1: #0b8f84;
+  --anneau-2: #3fae5a;
+  --proteines: #0b8f84;
+  --glucides: #c98a00;
+  --lipides: #6d4ce0;
 
   --bandeau-fond: rgba(244, 242, 238, 0.82);
   --bandeau-texte: #66707c;

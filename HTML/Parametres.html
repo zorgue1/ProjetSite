@@ -44,13 +44,21 @@
         </div>
       </div>
 
-      <label for="sexe">Sexe</label>
-      <select id="sexe">
-        <option value="">Non renseigné</option>
-        <option value="homme">Homme</option>
-        <option value="femme">Femme</option>
-      </select>
-      <p class="mut aide-theme">Utilisé pour calculer tes besoins en calories (section Nutrition).</p>
+      <div class="row">
+        <div>
+          <label for="taille">Taille (cm)</label>
+          <input id="taille" type="number" step="1" min="100" max="250" inputmode="numeric">
+        </div>
+        <div>
+          <label for="sexe">Sexe</label>
+          <select id="sexe">
+            <option value="">Non renseigné</option>
+            <option value="homme">Homme</option>
+            <option value="femme">Femme</option>
+          </select>
+        </div>
+      </div>
+      <p class="mut aide-theme">Taille, poids, âge et sexe servent à calculer tes besoins en calories (section Nutrition).</p>
     </section>
 
     <!-- Programme de la semaine -->
@@ -170,6 +178,7 @@
       document.getElementById("naissance").value = profilCharge.naissance;
       document.getElementById("poids").value = profilCharge.poids;
       document.getElementById("sexe").value = profilCharge.sexe;
+      document.getElementById("taille").value = profilCharge.taille;
       construireProgramme(profilCharge.programme);
     }
 
@@ -181,6 +190,7 @@
         naissance: document.getElementById("naissance").value,
         poids: poidsSaisi,
         sexe: document.getElementById("sexe").value,
+        taille: document.getElementById("taille").value,
         programme: lireProgramme()
       };
 

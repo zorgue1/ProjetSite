@@ -52,10 +52,13 @@
           </div>
         </div>
 
+        <label for="naissance">Date de naissance</label>
+        <input id="naissance" type="date">
+
         <div class="row">
           <div>
-            <label for="naissance">Date de naissance</label>
-            <input id="naissance" type="date">
+            <label for="taille">Taille (cm)</label>
+            <input id="taille" type="number" step="1" min="100" max="250" inputmode="numeric" placeholder="Ex. : 178">
           </div>
           <div>
             <label for="poids">Poids (kg)</label>
@@ -267,6 +270,8 @@
       // Le compte est prêt : on enregistre le profil, le poids de départ et le programme
       const poidsNum = parseFloat(document.getElementById("poids").value.replace(",", "."));
       const poids = poidsNum > 0 ? poidsNum : null;
+      const tailleNum = parseFloat(document.getElementById("taille").value);
+      const taille = tailleNum > 0 ? tailleNum : null;
 
       await client.from("profils").upsert({
         user_id: data.session.user.id,
@@ -274,6 +279,7 @@
         nom: document.getElementById("nom").value.trim(),
         naissance: document.getElementById("naissance").value || null,
         poids: poids,
+        taille: taille,
         sexe: sexe,
         programme: lireProgramme()
       });
