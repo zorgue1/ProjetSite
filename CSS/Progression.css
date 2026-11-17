@@ -124,10 +124,6 @@ select {
 /* ---------- Message quand il n'y a rien à afficher ---------- */
 .vide {
   padding: 24px 12px;
-  text-align: center;
-  color: var(--gris);
-  border: 1px dashed var(--bordure);
-  border-radius: var(--rayon);
 }
 
 /* ---------- Progression par exercice ---------- */

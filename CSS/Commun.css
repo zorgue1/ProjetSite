@@ -295,7 +295,45 @@ textarea {
   background: var(--carte-douce);
 }
 
+/* ---------- Message quand il n'y a rien à afficher ---------- */
+.vide {
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--gris);
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon);
+}
+
+/* ---------- Pastilles de filtre (muscles, types de séance) ---------- */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gris);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+  color: var(--texte-bouton);
+  background: var(--degrade);
+  border-color: transparent;
+}
+
+/* Vignette sans photo : pas le cadre pointillé de .vide */
 .miniature.vide {
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   font-family: "Big Shoulders Display", Impact, sans-serif;

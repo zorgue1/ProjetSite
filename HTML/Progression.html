@@ -107,17 +107,6 @@
     let idCharge = null;      // exercice dont les séries sont chargées
     let donneesProg = [];     // séries de l'exercice choisi
 
-    // Date au format AAAA-MM-JJ (heure locale)
-    function versTexte(date) {
-      const d = new Date(date.getTime());
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      return d.toISOString().slice(0, 10);
-    }
-
-    function enDate(texte) {
-      return new Date(texte + "T12:00:00");
-    }
-
     // Renvoie le lundi de la semaine d'une date (texte AAAA-MM-JJ)
     function lundiDe(texte) {
       const d = enDate(texte);
@@ -313,17 +302,6 @@
     }
 
     /* ---------- Progression par exercice ---------- */
-
-    // 62.5 -> "62,5" ; 60 -> "60"
-    function nb(v) {
-      return String(Math.round(v * 10) / 10).replace(".", ",");
-    }
-
-    function dateFr(texte) {
-      return enDate(texte).toLocaleDateString("fr-FR", {
-        day: "2-digit", month: "2-digit", year: "2-digit"
-      });
-    }
 
     function carteRecord(titre, valeur, sous) {
       const c = document.createElement("div");

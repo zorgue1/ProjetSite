@@ -32,25 +32,6 @@
     let records = {};          // records indexés par identifiant d'exercice
     let muscleChoisi = "Tous";
 
-    // Crée un élément HTML (le texte est inséré en toute sécurité)
-    function el(balise, classe, texte) {
-      const e = document.createElement(balise);
-      if (classe) e.className = classe;
-      if (texte) e.textContent = texte;
-      return e;
-    }
-
-    // 62.5 -> "62,5" ; 60 -> "60"
-    function nb(v) {
-      return String(Math.round(Number(v) * 10) / 10).replace(".", ",");
-    }
-
-    function dateFr(texte) {
-      return new Date(texte + "T12:00:00").toLocaleDateString("fr-FR", {
-        day: "2-digit", month: "2-digit", year: "2-digit"
-      });
-    }
-
     function bloc(titre, valeur, date) {
       const b = el("div", "rec-bloc");
       b.appendChild(el("div", "t", titre));

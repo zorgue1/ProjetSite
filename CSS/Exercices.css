@@ -162,14 +162,6 @@ input[type="file"] {
   border-radius: 999px;
 }
 
-.vide {
-  padding: 28px 12px;
-  text-align: center;
-  color: var(--gris);
-  border: 1px dashed var(--bordure);
-  border-radius: var(--rayon);
-}
-
 /* Petits menus de rangement sur chaque carte */
 .exo-corps .mini-select {
   align-self: stretch;

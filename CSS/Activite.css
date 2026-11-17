@@ -49,14 +49,6 @@
   border-color: var(--gris);
 }
 
-.vide {
-  padding: 28px 12px;
-  text-align: center;
-  color: var(--gris);
-  border: 1px dashed var(--bordure);
-  border-radius: var(--rayon);
-}
-
 /* ---------- Choix d'un exercice ---------- */
 .choix-exo {
   display: flex;
@@ -158,28 +150,7 @@
 
 /* ---------- Recherche d'exercices ---------- */
 .chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
   margin: 10px 0;
-}
-
-.chip {
-  padding: 6px 14px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--gris);
-  background: none;
-  border: 1px solid var(--bordure);
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.chip[aria-pressed="true"] {
-  color: var(--texte-bouton);
-  background: var(--degrade);
-  border-color: transparent;
 }
 
 .resultats {

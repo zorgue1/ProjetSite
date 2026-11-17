@@ -1,9 +1,62 @@
 const PROGRAMME_DEFAUT = ["Push", "Pull", "Leg", "Push", "Pull", "Repos", "Repos"];
 
-function aujourdhui() {
-  const d = new Date();
+/* ---------- Outils communs à toutes les pages ---------- */
+
+// Date au format AAAA-MM-JJ (heure locale)
+function versTexte(date) {
+  const d = new Date(date.getTime());
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().slice(0, 10);
+}
+
+function aujourdhui() {
+  return versTexte(new Date());
+}
+
+// Texte AAAA-MM-JJ -> Date (à midi, pour éviter les décalages d'heure)
+function enDate(texte) {
+  return new Date(texte + "T12:00:00");
+}
+
+// Date courte : 17/11/26
+function dateFr(texte) {
+  return enDate(texte).toLocaleDateString("fr-FR", {
+    day: "2-digit", month: "2-digit", year: "2-digit"
+  });
+}
+
+// Nombre arrondi à 1 décimale, avec une virgule : 82,5
+function nb(v) {
+  return String(Math.round(Number(v) * 10) / 10).replace(".", ",");
+}
+
+// Crée un élément HTML (le texte est inséré en toute sécurité)
+function el(balise, classe, texte) {
+  const e = document.createElement(balise);
+  if (classe) e.className = classe;
+  if (texte) e.textContent = texte;
+  return e;
+}
+
+// Affiche un message dans l'encadré #confirmation pendant 3,5 s
+function confirmer(texte) {
+  const c = document.getElementById("confirmation");
+  c.textContent = texte;
+  c.hidden = false;
+  setTimeout(function () { c.hidden = true; }, 3500);
+}
+
+// Vrai si une séance a été commencée sans être enregistrée (brouillon de la page Séances)
+async function seanceEnCours() {
+  try {
+    const r = await client.auth.getSession();
+    if (!r.data.session) return false;
+    const brut = localStorage.getItem("sportapp:brouillon:" + r.data.session.user.id);
+    const b = JSON.parse(brut || "null");
+    return !!(b && ((b.blocs && b.blocs.length) || b.notes));
+  } catch (e) {
+    return false;
+  }
 }
 
 /* ---------- Connexion ---------- */

@@ -72,14 +72,6 @@
     let muscleChoisi = null;   // null = rien d'affiché ; "Tous" = toute la bibliothèque
     let moiId = null;          // identifiant de l'utilisateur connecté
 
-    // Crée un élément HTML (le texte est inséré en toute sécurité)
-    function el(balise, classe, texte) {
-      const e = document.createElement(balise);
-      if (classe) e.className = classe;
-      if (texte) e.textContent = texte;
-      return e;
-    }
-
     function remplirListe(select, valeurs) {
       valeurs.forEach(function (v) {
         const option = document.createElement("option");
@@ -269,7 +261,6 @@
     });
 
     document.getElementById("recherche").addEventListener("input", afficherListe);
-    
 
         document.getElementById("btn-ajouter").addEventListener("click", async function () {
       const bouton = this;
@@ -312,15 +303,7 @@
       }
     });
 
-
         /* ---------- Ouverture et fermeture du formulaire d'ajout ---------- */
-
-    function confirmer(texte) {
-      const c = document.getElementById("confirmation");
-      c.textContent = texte;
-      c.hidden = false;
-      setTimeout(function () { c.hidden = true; }, 3500);
-    }
 
     function fermerFormulaire() {
       document.getElementById("formulaire").hidden = true;

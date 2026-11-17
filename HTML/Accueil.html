@@ -80,7 +80,6 @@
       </details>
     </section>
 
-
     <!-- Profil -->
     <section class="card profil">
       <div class="profil-tete">
@@ -125,36 +124,9 @@
 
     let programme = PROGRAMME_DEFAUT;
 
-    // Vrai si une séance a été commencée sans être enregistrée (brouillon de la page Séances)
-    async function seanceEnCours() {
-      try {
-        const r = await client.auth.getSession();
-        if (!r.data.session) return false;
-        const brut = localStorage.getItem("sportapp:brouillon:" + r.data.session.user.id);
-        const b = JSON.parse(brut || "null");
-        return !!(b && ((b.blocs && b.blocs.length) || b.notes));
-      } catch (e) {
-        return false;
-      }
-    }
     let datesFaites = new Set();      // dates où une séance a été enregistrée
     let moisAffiche = new Date();
     moisAffiche.setDate(1);
-
-    // Crée un élément HTML (le texte est inséré en toute sécurité)
-    function el(balise, classe, texte) {
-      const e = document.createElement(balise);
-      if (classe) e.className = classe;
-      if (texte) e.textContent = texte;
-      return e;
-    }
-
-    // Date au format AAAA-MM-JJ (heure locale)
-    function versTexte(date) {
-      const d = new Date(date.getTime());
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      return d.toISOString().slice(0, 10);
-    }
 
     function calculerAge(dateNaissance) {
       const n = new Date(dateNaissance);
