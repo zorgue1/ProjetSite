@@ -398,3 +398,95 @@
 #chips-type {
   margin: 0 0 10px;
 }
+
+/* ---------- Liste des exercices de la séance : lignes compactes ---------- */
+.bloc-exo {
+  padding: 0;
+  overflow: hidden;
+}
+
+.bloc-exo.ouvert {
+  border-color: var(--accent);
+}
+
+.bloc-tete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 10px 12px;
+}
+
+.bloc-bascule {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: var(--texte);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.bloc-bascule .miniature {
+  width: 44px;
+  height: 44px;
+}
+
+.bloc-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.bloc-resume {
+  font-size: 13px;
+  color: var(--gris);
+}
+
+.bloc-bascule .chevron {
+  transition: transform 0.15s;
+}
+
+.bloc-exo.ouvert .bloc-bascule .chevron {
+  transform: rotate(90deg);
+}
+
+.bloc-bascule:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.bloc-corps {
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--bordure);
+}
+
+.aucun-exo {
+  margin: 4px 0 0;
+}
+
+/* ---------- Ajout d'un exercice sous la liste ---------- */
+.ajout-exo {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.picker-panneau {
+  margin-top: 12px;
+}
+
+/* ---------- Actions d'une séance de l'historique ---------- */
+.seance-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.seance-actions .btn-suppr {
+  margin-top: 0;
+}

@@ -373,6 +373,22 @@ async function chargerRecords() {
   return data;
 }
 
+/* ---------- Modification d'une séance ---------- */
+
+async function modifierSeance(id, champs) {
+  const { error } = await client.from("seances").update(champs).eq("id", id);
+  if (error) throw error;
+}
+
+// Remplace d'un coup toutes les séries d'une séance (opération unique côté base)
+async function remplacerSeries(seanceId, lignes) {
+  const { error } = await client.rpc("remplacer_series", {
+    p_seance_id: seanceId,
+    p_lignes: lignes
+  });
+  if (error) throw error;
+}
+
 /* ---------- Protection du bouton « Retour » ---------- */
 
 // La page reste masquée tant que la connexion n'est pas vérifiée

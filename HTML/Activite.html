@@ -2,8 +2,8 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>SportApp – Activité</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SportApp – Séances</title>
   <link rel="manifest" href="../manifest.json">
   <meta name="theme-color" content="#090d13">
   <link rel="apple-touch-icon" href="../Image/icon-180.png">
@@ -25,9 +25,9 @@
 
     <p class="confirmation" id="confirmation" role="status" hidden></p>
 
-    <!-- Formulaire : n'apparaît qu'après un clic sur « Nouvelle séance » -->
+    <!-- Formulaire : nouvelle séance ou modification d'une séance -->
     <section class="card" id="formulaire" hidden>
-      <h2>Nouvelle séance</h2>
+      <h2 id="titre-formulaire">Nouvelle séance</h2>
 
       <label for="date">Date</label>
       <input id="date" type="date">
@@ -45,8 +45,12 @@
         <option value="Cardio">
       </datalist>
 
-      <label for="recherche-exo">Ajouter un exercice</label>
-      <div class="picker" id="picker">
+      <label id="label-exercices">Exercices</label>
+      <div id="blocs" role="group" aria-labelledby="label-exercices"></div>
+
+      <button class="btn secondaire ajout-exo" id="btn-ajout-exo" type="button">+ Ajouter un exercice</button>
+
+      <div class="picker-panneau" id="picker-panneau" hidden>
         <input id="recherche-exo" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
         <div class="chips" id="chips-muscle"></div>
         <div class="resultats" id="resultats"></div>
@@ -54,8 +58,6 @@
       <p class="mut" id="aide-exo" hidden>
         Ta bibliothèque est vide. <a href="Exercices.html">Ajoute des exercices</a> pour les saisir ici.
       </p>
-
-      <div id="blocs"></div>
 
       <label for="notes">Notes (ressenti, remarques)</label>
       <textarea id="notes" rows="3"></textarea>
@@ -80,12 +82,27 @@
   <script src="../JS/donnees.js"></script>
   <script>
     let exercices = [];          // bibliothèque d'exercices
-    let blocs = [];              // exercices de la séance en cours : { exercice, series: [{ rep, charge }], indice }
+    let blocs = [];              // exercices de la séance : { exercice, series: [{ rep, charge }], indice, ouvert }
     let seances = [];            // toutes les séances
     let filtre = "Tous";         // filtre de l'historique
     let limite = 30;             // nombre de séances affichées
     let rechercheMuscle = "Tous";
-    let programme = PROGRAMME_DEFAUT;   // programme de la semaine (pour proposer la séance du jour)
+    let programme = PROGRAMME_DEFAUT;
+
+    // Vrai si une séance a été commencée sans être enregistrée (brouillon de la page Séances)
+    async function seanceEnCours() {
+      try {
+        const r = await client.auth.getSession();
+        if (!r.data.session) return false;
+        const brut = localStorage.getItem("sportapp:brouillon:" + r.data.session.user.id);
+        const b = JSON.parse(brut || "null");
+        return !!(b && ((b.blocs && b.blocs.length) || b.notes));
+      } catch (e) {
+        return false;
+      }
+    }
+    let moiId = null;            // identifiant de l'utilisateur connecté
+    let editionId = null;        // séance en cours de modification (null = nouvelle séance)
     const FILTRES = ["Tous", "Push", "Pull", "Leg", "Autres"];
 
     function dateCourte(texte) {
@@ -137,7 +154,85 @@
       setTimeout(function () { c.hidden = true; }, 3500);
     }
 
-        /* ---------- Pastilles du type de séance ---------- */
+    /* ---------- Brouillon : la séance en cours est gardée sur cet appareil ---------- */
+
+    function cleBrouillon() {
+      return "sportapp:brouillon:" + moiId;
+    }
+
+    function effacerBrouillon() {
+      try { localStorage.removeItem(cleBrouillon()); } catch (e) {}
+    }
+
+    function lireBrouillon() {
+      try {
+        const brut = localStorage.getItem(cleBrouillon());
+        return brut ? JSON.parse(brut) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Enregistre l'état de la séance à chaque changement (pas pour une modification)
+    function sauverBrouillon() {
+      if (editionId !== null || !moiId) return;
+      const notes = document.getElementById("notes").value;
+
+      if (blocs.length === 0 && notes.trim() === "") {
+        effacerBrouillon();
+        return;
+      }
+
+      const contenu = {
+        date: document.getElementById("date").value,
+        type: document.getElementById("type").value,
+        notes: notes,
+        blocs: blocs.map(function (b) {
+          return {
+            exercice: {
+              id: b.exercice.id, nom: b.exercice.nom, image_url: b.exercice.image_url,
+              muscle: b.exercice.muscle, groupe: b.exercice.groupe
+            },
+            series: b.series,
+            ouvert: b.ouvert
+          };
+        })
+      };
+      try { localStorage.setItem(cleBrouillon(), JSON.stringify(contenu)); } catch (e) {}
+    }
+
+    // Reprend la séance commencée avant de quitter la page
+    function restaurerBrouillon() {
+      const b = lireBrouillon();
+      if (!b || !((b.blocs && b.blocs.length) || b.notes)) return false;
+
+      editionId = null;
+      majTitres();
+      document.getElementById("formulaire").hidden = false;
+      document.getElementById("btn-nouvelle").hidden = true;
+      document.getElementById("date").value = b.date || aujourdhui();
+      document.getElementById("type").value = b.type || "";
+      document.getElementById("notes").value = b.notes || "";
+
+      blocs = (b.blocs || []).map(function (x) {
+        const biblio = exercices.find(function (e) { return e.id === x.exercice.id; }) || x.exercice;
+        return {
+          exercice: biblio,
+          series: x.series && x.series.length ? x.series : [{ rep: "", charge: "" }],
+          indice: null,
+          ouvert: !!x.ouvert
+        };
+      });
+
+      afficherChipsType();
+      afficherBlocs();
+      afficherResultats();
+      blocs.forEach(chargerIndice);
+      confirmer("Séance en cours reprise");
+      return true;
+    }
+
+    /* ---------- Pastilles du type de séance ---------- */
 
     // Push, Pull, Leg et ce qui est écrit dans ton programme (hand, natation…)
     function typesProposes() {
@@ -165,6 +260,7 @@
         bouton.addEventListener("click", function () {
           champ.value = t;
           afficherChipsType();
+          sauverBrouillon();
         });
         zone.appendChild(bouton);
       });
@@ -181,32 +277,89 @@
       zone.appendChild(autre);
     }
 
-    document.getElementById("type").addEventListener("input", afficherChipsType);
+    /* ---------- Formulaire : nouvelle séance, modification, fermeture ---------- */
 
-    /* ---------- Formulaire : ouverture et fermeture ---------- */
+    function majTitres() {
+      const edition = editionId !== null;
+      document.getElementById("titre-formulaire").textContent = edition ? "Modifier la séance" : "Nouvelle séance";
+      document.getElementById("btn-ajouter").textContent = edition ? "Enregistrer les modifications" : "Enregistrer la séance";
+    }
 
-    function ouvrirFormulaire() {
+    function ouvrirNouvelle() {
+      editionId = null;
+      majTitres();
       document.getElementById("formulaire").hidden = false;
       document.getElementById("btn-nouvelle").hidden = true;
       document.getElementById("date").value = aujourdhui();
+      document.getElementById("notes").value = "";
+      blocs = [];
 
       // La séance prévue aujourd'hui est proposée d'office (tu peux la changer)
       const prevu = programme[(new Date().getDay() + 6) % 7];
       document.getElementById("type").value = estRepos(prevu) ? "" : prevu;
-      afficherChipsType();
 
+      fermerPanneau();
+      afficherChipsType();
+      afficherBlocs();
+      afficherResultats();
+      document.getElementById("formulaire").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    // Peut-on ouvrir une modification sans écraser une séance en cours de saisie ?
+    function peutEditer() {
+      if (document.getElementById("formulaire").hidden) return true;
+      if (editionId !== null) return confirm("Abandonner les modifications en cours ?");
+      if (blocs.length > 0 || document.getElementById("notes").value.trim() !== "") {
+        alert("Termine ou annule d’abord la séance en cours.");
+        return false;
+      }
+      return true;
+    }
+
+    // Rouvre une séance enregistrée dans le formulaire, déjà remplie
+    function ouvrirEdition(s, exos) {
+      if (!peutEditer()) return;
+
+      editionId = s.id;
+      majTitres();
+      document.getElementById("formulaire").hidden = false;
+      document.getElementById("btn-nouvelle").hidden = true;
+      document.getElementById("date").value = s.date;
+      document.getElementById("type").value = s.type;
+      document.getElementById("notes").value = s.notes || "";
+
+      blocs = exos.map(function (ex) {
+        const biblio = exercices.find(function (e) { return e.id === ex.exercice_id; }) ||
+          { id: ex.exercice_id, nom: ex.nom, image_url: ex.image_url, muscle: "", groupe: "" };
+        return {
+          exercice: biblio,
+          series: ex.series.map(function (x) {
+            return { rep: String(x.repetitions), charge: x.charge > 0 ? String(x.charge) : "" };
+          }),
+          indice: null,
+          ouvert: false
+        };
+      });
+
+      fermerPanneau();
+      afficherChipsType();
+      afficherBlocs();
+      afficherResultats();
       document.getElementById("formulaire").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function fermerFormulaire() {
+      editionId = null;
       document.getElementById("formulaire").hidden = true;
       document.getElementById("btn-nouvelle").hidden = false;
       document.getElementById("type").value = "";
       document.getElementById("notes").value = "";
       document.getElementById("recherche-exo").value = "";
       blocs = [];
+      fermerPanneau();
       afficherBlocs();
       afficherResultats();
+      effacerBrouillon();
     }
 
     /* ---------- Recherche et choix des exercices ---------- */
@@ -214,11 +367,30 @@
     function afficherChoix() {
       const vide = exercices.length === 0;
       document.getElementById("aide-exo").hidden = !vide;
-      document.getElementById("picker").hidden = vide;
-      if (vide) return;
+      document.getElementById("btn-ajout-exo").hidden = vide;
+      if (vide) {
+        fermerPanneau();
+        return;
+      }
       afficherChipsMuscle();
       afficherResultats();
     }
+
+    function ouvrirPanneau() {
+      document.getElementById("picker-panneau").hidden = false;
+      document.getElementById("btn-ajout-exo").textContent = "Fermer la liste";
+      document.getElementById("recherche-exo").focus();
+    }
+
+    function fermerPanneau() {
+      document.getElementById("picker-panneau").hidden = true;
+      document.getElementById("btn-ajout-exo").textContent = "+ Ajouter un exercice";
+    }
+
+    document.getElementById("btn-ajout-exo").addEventListener("click", function () {
+      if (document.getElementById("picker-panneau").hidden) ouvrirPanneau();
+      else fermerPanneau();
+    });
 
     // Pastilles : seulement les muscles qui ont au moins un exercice
     function afficherChipsMuscle() {
@@ -288,23 +460,34 @@
       zone.scrollTop = haut;
     }
 
-    async function ajouterBloc(exercice) {
+    // Ce qui avait été fait la dernière fois (pas pour une modification de séance)
+    async function chargerIndice(bloc) {
+      if (editionId !== null) return;
+      try {
+        bloc.indice = await chargerDerniereFois(bloc.exercice.id);
+        if (!bloc.indice || blocs.indexOf(bloc) === -1) return;
+        // On ne reconstruit pas la liste si tu es en train de saisir un chiffre
+        if (document.getElementById("blocs").contains(document.activeElement)) return;
+        afficherBlocs();
+      } catch (e) {}
+    }
+
+    function ajouterBloc(exercice) {
       if (blocs.some(function (b) { return b.exercice.id === exercice.id; })) return;
 
-      const bloc = { exercice: exercice, series: [{ rep: "", charge: "" }], indice: null };
+      // Les exercices précédents se replient, le nouveau s'ouvre
+      blocs.forEach(function (b) { b.ouvert = false; });
+      const bloc = { exercice: exercice, series: [{ rep: "", charge: "" }], indice: null, ouvert: true };
       blocs.push(bloc);
+
+      document.getElementById("recherche-exo").value = "";
+      fermerPanneau();
       afficherBlocs();
       afficherResultats();
 
-      // Montre le nouvel exercice dans la séance
       const cartes = document.querySelectorAll(".bloc-exo");
       cartes[cartes.length - 1].scrollIntoView({ behavior: "smooth", block: "nearest" });
-
-      // Charge en arrière-plan ce qui avait été fait la dernière fois
-      try {
-        bloc.indice = await chargerDerniereFois(exercice.id);
-        if (bloc.indice && blocs.indexOf(bloc) !== -1) afficherBlocs();
-      } catch (e) {}
+      chargerIndice(bloc);
     }
 
     document.getElementById("recherche-exo").addEventListener("input", afficherResultats);
@@ -317,22 +500,64 @@
       if (premier) premier.click();
     });
 
-    /* ---------- Exercices de la séance en cours ---------- */
+    /* ---------- Exercices de la séance (liste repliable) ---------- */
+
+    function seriesValides(bloc) {
+      return bloc.series.filter(function (s) { return parseInt(s.rep, 10) > 0; });
+    }
+
+    // Résumé affiché quand l'exercice est replié
+    function resumeBloc(bloc) {
+      const valides = seriesValides(bloc);
+      if (valides.length === 0) return "Aucune série saisie";
+
+      function texte(s) {
+        return texteSerie({
+          repetitions: parseInt(s.rep, 10),
+          charge: parseFloat(String(s.charge).replace(",", ".")) || 0
+        });
+      }
+      const premiere = texte(valides[0]);
+      const derniere = texte(valides[valides.length - 1]);
+      return valides.length + " série" + (valides.length > 1 ? "s" : "") + " · " +
+        (premiere === derniere ? premiere : premiere + " → " + derniere);
+    }
 
     function afficherBlocs() {
       const zone = document.getElementById("blocs");
       zone.innerHTML = "";
 
-      blocs.forEach(function (bloc, i) {
-        const carte = el("div", "bloc-exo");
+      if (blocs.length === 0) {
+        zone.appendChild(el("p", "mut aucun-exo", "Aucun exercice ajouté pour l’instant."));
+      }
 
-        // En-tête : photo, nom, bouton Retirer
+      blocs.forEach(function (bloc, i) {
+        const carte = el("div", "bloc-exo" + (bloc.ouvert ? " ouvert" : ""));
+
+        // Ligne repliable : photo, nom, résumé
         const tete = el("div", "bloc-tete");
-        tete.appendChild(creerVignette(bloc.exercice));
-        tete.appendChild(el("div", "exo-nom-ligne", bloc.exercice.nom));
-        const retirer = el("button", "btn-suppr", "Retirer");
+        const bascule = el("button", "bloc-bascule");
+        bascule.type = "button";
+        bascule.setAttribute("aria-expanded", String(bloc.ouvert));
+        bascule.appendChild(creerVignette(bloc.exercice));
+
+        const texte = el("span", "bloc-texte");
+        texte.appendChild(el("span", "exo-nom-ligne", bloc.exercice.nom));
+        const resume = el("span", "bloc-resume", resumeBloc(bloc));
+        texte.appendChild(resume);
+        bascule.appendChild(texte);
+        bascule.appendChild(el("span", "chevron", "›"));
+        bascule.addEventListener("click", function () {
+          bloc.ouvert = !bloc.ouvert;
+          afficherBlocs();
+        });
+        tete.appendChild(bascule);
+
+        const retirer = el("button", "btn-mini", "✕");
         retirer.type = "button";
+        retirer.setAttribute("aria-label", "Retirer " + bloc.exercice.nom + " de la séance");
         retirer.addEventListener("click", function () {
+          if (seriesValides(bloc).length > 0 && !confirm("Retirer « " + bloc.exercice.nom + " » de la séance ?")) return;
           blocs.splice(i, 1);
           afficherBlocs();
           afficherResultats();
@@ -340,66 +565,81 @@
         tete.appendChild(retirer);
         carte.appendChild(tete);
 
-        // Rappel de la dernière fois
-        if (bloc.indice) {
-          const indice = el("div", "indice");
-          indice.appendChild(el("span", null,
-            "Dernière fois (" + dateCourte(bloc.indice.date) + ") : " +
-            bloc.indice.series.map(texteSerie).join(" · ")));
-          const reprendre = el("button", "btn-suppr", "Reprendre");
-          reprendre.type = "button";
-          reprendre.addEventListener("click", function () {
-            bloc.series = bloc.indice.series.map(function (s) {
-              return { rep: String(s.repetitions), charge: s.charge > 0 ? String(s.charge) : "" };
+        // Détail : visible seulement quand l'exercice est ouvert
+        if (bloc.ouvert) {
+          const corps = el("div", "bloc-corps");
+
+          if (bloc.indice) {
+            const indice = el("div", "indice");
+            indice.appendChild(el("span", null,
+              "Dernière fois (" + dateCourte(bloc.indice.date) + ") : " +
+              bloc.indice.series.map(texteSerie).join(" · ")));
+            const reprendre = el("button", "btn-suppr", "Reprendre");
+            reprendre.type = "button";
+            reprendre.addEventListener("click", function () {
+              bloc.series = bloc.indice.series.map(function (s) {
+                return { rep: String(s.repetitions), charge: s.charge > 0 ? String(s.charge) : "" };
+              });
+              afficherBlocs();
             });
-            afficherBlocs();
+            indice.appendChild(reprendre);
+            corps.appendChild(indice);
+          }
+
+          bloc.series.forEach(function (serie, j) {
+            const ligne = el("div", "ligne-serie");
+            ligne.appendChild(el("span", "num-serie", String(j + 1)));
+
+            const rep = champNombre("Reps", serie.rep, "numeric", "1");
+            rep.addEventListener("input", function () {
+              serie.rep = rep.value;
+              resume.textContent = resumeBloc(bloc);
+              sauverBrouillon();
+            });
+            ligne.appendChild(rep);
+
+            ligne.appendChild(el("span", "croix", "×"));
+
+            const charge = champNombre("kg", serie.charge, "decimal", "0.5");
+            charge.addEventListener("input", function () {
+              serie.charge = charge.value;
+              resume.textContent = resumeBloc(bloc);
+              sauverBrouillon();
+            });
+            ligne.appendChild(charge);
+
+            const supprimer = el("button", "btn-mini", "✕");
+            supprimer.type = "button";
+            supprimer.setAttribute("aria-label", "Supprimer la série " + (j + 1));
+            supprimer.addEventListener("click", function () {
+              bloc.series.splice(j, 1);
+              if (bloc.series.length === 0) bloc.series.push({ rep: "", charge: "" });
+              afficherBlocs();
+            });
+            ligne.appendChild(supprimer);
+
+            corps.appendChild(ligne);
           });
-          indice.appendChild(reprendre);
-          carte.appendChild(indice);
+
+          // Ajouter une série (copie les valeurs de la précédente)
+          const ajout = el("button", "btn-suppr", "+ Série");
+          ajout.type = "button";
+          ajout.addEventListener("click", function () {
+            const derniere = bloc.series[bloc.series.length - 1];
+            bloc.series.push({ rep: derniere.rep, charge: derniere.charge });
+            afficherBlocs();
+            const champs = document.querySelectorAll(".bloc-exo")[i].querySelectorAll(".ligne-serie input");
+            champs[champs.length - 2].focus();
+          });
+          corps.appendChild(ajout);
+
+          carte.appendChild(corps);
         }
-
-        // Séries
-        bloc.series.forEach(function (serie, j) {
-          const ligne = el("div", "ligne-serie");
-          ligne.appendChild(el("span", "num-serie", String(j + 1)));
-
-          const rep = champNombre("Reps", serie.rep, "numeric", "1");
-          rep.addEventListener("input", function () { serie.rep = rep.value; });
-          ligne.appendChild(rep);
-
-          ligne.appendChild(el("span", "croix", "×"));
-
-          const charge = champNombre("kg", serie.charge, "decimal", "0.5");
-          charge.addEventListener("input", function () { serie.charge = charge.value; });
-          ligne.appendChild(charge);
-
-          const supprimer = el("button", "btn-mini", "✕");
-          supprimer.type = "button";
-          supprimer.setAttribute("aria-label", "Supprimer la série " + (j + 1));
-          supprimer.addEventListener("click", function () {
-            bloc.series.splice(j, 1);
-            if (bloc.series.length === 0) bloc.series.push({ rep: "", charge: "" });
-            afficherBlocs();
-          });
-          ligne.appendChild(supprimer);
-
-          carte.appendChild(ligne);
-        });
-
-        // Ajouter une série (copie les valeurs de la précédente)
-        const ajout = el("button", "btn-suppr", "+ Série");
-        ajout.type = "button";
-        ajout.addEventListener("click", function () {
-          const derniere = bloc.series[bloc.series.length - 1];
-          bloc.series.push({ rep: derniere.rep, charge: derniere.charge });
-          afficherBlocs();
-          const champs = document.querySelectorAll(".bloc-exo")[i].querySelectorAll(".ligne-serie input");
-          champs[champs.length - 2].focus();
-        });
-        carte.appendChild(ajout);
 
         zone.appendChild(carte);
       });
+
+      sauverBrouillon();
     }
 
     /* ---------- Bilan et filtres ---------- */
@@ -516,7 +756,15 @@
         exos.forEach(function (ex) { detail.appendChild(creerLigneExercice(ex)); });
         if (s.notes) detail.appendChild(el("div", "notes-seance", s.notes));
 
-        const supprimer = el("button", "btn-suppr", "Supprimer la séance");
+        const actions = el("div", "seance-actions");
+
+        const modifier = el("button", "btn-suppr", "Modifier");
+        modifier.type = "button";
+        modifier.addEventListener("click", function () { ouvrirEdition(s, exos); });
+        actions.appendChild(modifier);
+
+        const supprimer = el("button", "btn-suppr", "Supprimer");
+        supprimer.type = "button";
         supprimer.addEventListener("click", async function () {
           if (!confirm("Supprimer cette séance ?")) return;
           try {
@@ -526,8 +774,9 @@
             alert("Erreur : " + e.message);
           }
         });
-        detail.appendChild(supprimer);
+        actions.appendChild(supprimer);
 
+        detail.appendChild(actions);
         ligne.appendChild(detail);
         zone.appendChild(ligne);
       });
@@ -544,8 +793,22 @@
 
     /* ---------- Enregistrement ---------- */
 
-    document.getElementById("btn-nouvelle").addEventListener("click", ouvrirFormulaire);
-    document.getElementById("btn-annuler").addEventListener("click", fermerFormulaire);
+    document.getElementById("btn-nouvelle").addEventListener("click", ouvrirNouvelle);
+
+    document.getElementById("btn-annuler").addEventListener("click", function () {
+      const contenu = blocs.length > 0 || document.getElementById("notes").value.trim() !== "";
+      const question = editionId !== null
+        ? "Annuler les modifications ?"
+        : "Abandonner cette séance ? Les exercices saisis seront perdus.";
+      if (contenu && !confirm(question)) return;
+      fermerFormulaire();
+    });
+
+    // Le brouillon suit aussi la date, le type et les notes
+    ["date", "type", "notes"].forEach(function (id) {
+      document.getElementById(id).addEventListener("input", sauverBrouillon);
+    });
+    document.getElementById("type").addEventListener("input", afficherChipsType);
 
     document.getElementById("btn-ajouter").addEventListener("click", async function () {
       const bouton = this;
@@ -572,22 +835,32 @@
         });
       });
 
+      const donnees = {
+        date: document.getElementById("date").value || aujourdhui(),
+        type: type,
+        notes: document.getElementById("notes").value.trim()
+      };
+
       bouton.disabled = true;
       try {
-        const id = await ajouterSeance({
-          date: document.getElementById("date").value || aujourdhui(),
-          type: type,
-          notes: document.getElementById("notes").value.trim()
-        });
-        try {
-          await ajouterSeries(id, lignes);
-        } catch (e) {
-          await supprimerSeance(id);   // on n'enregistre pas une séance à moitié
-          throw e;
+        if (editionId !== null) {
+          // Modification d'une séance déjà enregistrée
+          await modifierSeance(editionId, donnees);
+          await remplacerSeries(editionId, lignes);
+          fermerFormulaire();
+          confirmer("Séance modifiée");
+        } else {
+          // Nouvelle séance
+          const id = await ajouterSeance(donnees);
+          try {
+            await ajouterSeries(id, lignes);
+          } catch (e) {
+            await supprimerSeance(id);   // on n'enregistre pas une séance à moitié
+            throw e;
+          }
+          fermerFormulaire();
+          confirmer("Séance enregistrée");
         }
-
-        fermerFormulaire();
-        confirmer("Séance enregistrée");
         window.scrollTo({ top: 0, behavior: "smooth" });
         await afficherHistorique();
       } catch (e) {
@@ -602,11 +875,14 @@
     (async function () {
       const user = await exigerConnexion();
       if (!user) return;
+      moiId = user.id;
+      document.getElementById("date").value = aujourdhui();
       try {
-      exercices = await chargerExercices();
-      try { programme = (await chargerProfil()).programme; } catch (e) {}
-      afficherChoix();
-      await afficherHistorique();
+        exercices = await chargerExercices();
+        try { programme = (await chargerProfil()).programme; } catch (e) {}
+        afficherChoix();
+        restaurerBrouillon();          // reprend la séance commencée avant de quitter la page
+        await afficherHistorique();
       } catch (e) {
         alert("Erreur de chargement : " + e.message);
       }

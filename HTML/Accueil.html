@@ -64,7 +64,7 @@
       <small id="date-jour"></small>
       <h1 id="seance-jour"></h1>
 
-      <a class="btn cta" href="Activite.html">Commencer la séance</a>
+      <a class="btn cta" id="cta-seance" href="Activite.html">Commencer la séance</a>
 
       <details class="recap" id="recap" hidden>
         <summary>
@@ -124,6 +124,19 @@
     const LETTRES = ["L", "M", "M", "J", "V", "S", "D"];
 
     let programme = PROGRAMME_DEFAUT;
+
+    // Vrai si une séance a été commencée sans être enregistrée (brouillon de la page Séances)
+    async function seanceEnCours() {
+      try {
+        const r = await client.auth.getSession();
+        if (!r.data.session) return false;
+        const brut = localStorage.getItem("sportapp:brouillon:" + r.data.session.user.id);
+        const b = JSON.parse(brut || "null");
+        return !!(b && ((b.blocs && b.blocs.length) || b.notes));
+      } catch (e) {
+        return false;
+      }
+    }
     let datesFaites = new Set();      // dates où une séance a été enregistrée
     let moisAffiche = new Date();
     moisAffiche.setDate(1);
@@ -365,6 +378,9 @@
       document.getElementById("hero").className = "hero " + classeSeance(seance);
 
       await afficherRecap(seance, seances);
+
+      document.getElementById("cta-seance").textContent =
+        (await seanceEnCours()) ? "Reprendre ma séance en cours" : "Commencer la séance";
       afficherProfil(p, seances, poids);
     }
 
