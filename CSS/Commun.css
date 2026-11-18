@@ -145,11 +145,34 @@ summary:focus-visible {
 .row {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  column-gap: 14px;        /* pas d'écart vertical en plus : les libellés espacent déjà les champs */
 }
 
 .row > * {
-  flex: 1 1 150px;
+  flex: 1 1 170px;         /* sous ~370 px de large, les champs passent l'un sous l'autre */
+  min-width: 0;            /* une colonne peut rétrécir au lieu de déborder */
+}
+
+/* Trois petits champs toujours côte à côte (ex. : protéines, glucides, lipides) */
+.row.trois {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 10px;
+}
+
+.row.trois .champ-unite input {
+  padding-left: 10px;
+  padding-right: 26px;
+}
+
+.row.trois .champ-unite span {
+  right: 10px;
+}
+
+.row.trois label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* ---------- Formulaires ---------- */
@@ -171,6 +194,8 @@ input,
 select,
 textarea {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   padding: 12px 14px;
   font: inherit;
   color: var(--texte);
@@ -190,6 +215,23 @@ textarea:focus {
 
 textarea {
   resize: vertical;
+}
+
+/* Dates et heures : sur iPhone, ces champs gardent une largeur fixe et débordent sur leur voisin */
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-height: 48px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  margin: 0;
+  text-align: left;
 }
 
 .actions {
