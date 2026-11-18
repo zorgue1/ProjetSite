@@ -421,6 +421,33 @@
   color: var(--gris);
 }
 
+.carte-niveau.avec-niveau {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--texte-bouton);
+  background: var(--degrade);
+  box-shadow: 0 4px 14px var(--accent-halo);
+}
+
+.niveau-piste {
+  display: block;
+  height: 6px;
+  margin-top: 8px;
+  overflow: hidden;
+  background: var(--carte-douce);
+  border-radius: 999px;
+}
+
+.niveau-piste span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--anneau-1), var(--anneau-2));
+  border-radius: 999px;
+  transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* ---------- Profil ---------- */
 .profil-tete {
   display: flex;

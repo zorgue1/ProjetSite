@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SportApp – Profil</title>
+  <link rel="manifest" href="../manifest.json">
+  <meta name="theme-color" content="#090d13">
+  <link rel="apple-touch-icon" href="../Image/icon-180.png">
+  <script src="../JS/theme.js"></script>
+  <link rel="stylesheet" href="../CSS/Couleur.css">
+  <link rel="stylesheet" href="../CSS/Commun.css">
+  <link rel="stylesheet" href="../CSS/Profil.css">
+</head>
+<body>
+  <!-- Dégradé de l'anneau de niveau -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="grad-niveau" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" style="stop-color: var(--anneau-1)"/>
+        <stop offset="1" style="stop-color: var(--anneau-2)"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <header class="bandeau" id="entete"></header>
+  <script src="../JS/entete.js"></script>
+
+  <main>
+    <p class="confirmation" id="confirmation" role="status" hidden></p>
+    <p class="vide alerte" id="alerte" hidden></p>
+
+    <!-- ===================== Mon profil ===================== -->
+    <div id="vue-moi">
+      <section class="profil-hero" id="hero-moi"></section>
+
+      <!-- Pseudo et confidentialité -->
+      <section class="card" id="moi-formulaire" hidden>
+        <label for="pseudo">Pseudo</label>
+        <div class="champ-arobase">
+          <span>@</span>
+          <input id="pseudo" type="text" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ton_pseudo">
+        </div>
+        <p class="mut petit">3 à 20 caractères : lettres, chiffres, point ou tiret bas. C’est grâce à lui qu’on te trouve.</p>
+        <button class="btn" id="btn-pseudo" type="button">Enregistrer</button>
+
+        <label class="interrupteur">
+          <input type="checkbox" id="partage">
+          <span class="interrupteur-piste" aria-hidden="true"></span>
+          <span class="interrupteur-texte">
+            <strong>Partager mes PR</strong>
+            <span class="mut petit">Visibles seulement par les gens que tu suis et qui te suivent.</span>
+          </span>
+        </label>
+      </section>
+
+      <!-- Trouver quelqu'un -->
+      <section class="card recherche">
+        <div class="champ-arobase">
+          <span>@</span>
+          <input id="recherche" type="text" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Trouver quelqu’un par son pseudo">
+        </div>
+        <button class="btn" id="btn-recherche" type="button">Voir</button>
+      </section>
+
+      <h3 class="titre-section">Défis de la semaine <span class="mut" id="jours-restants"></span></h3>
+      <section class="card defis" id="defis"></section>
+
+      <h3 class="titre-section">Badges <span class="mut" id="badges-compte"></span></h3>
+      <section class="badges" id="badges"></section>
+
+      <div id="bloc-classement" hidden>
+        <h3 class="titre-section">Classement <span class="mut">· toi et les gens que tu suis</span></h3>
+        <section class="card classement" id="classement"></section>
+      </div>
+
+      <h3 class="titre-section">Dernières XP</h3>
+      <section class="card historique" id="historique"></section>
+
+      <details class="card regles">
+        <summary>Comment gagner de l’XP ?</summary>
+        <ul>
+          <li><strong>+100 XP</strong> par séance (une par jour, avec au moins 3 séries).</li>
+          <li><strong>+50 XP</strong> par PR vérifié qui bat ton record précédent.</li>
+          <li><strong>+100 à +150 XP</strong> par défi de la semaine réussi.</li>
+        </ul>
+        <p class="mut">Pour que ça reste juste : une séance notée plus de 2 jours après, ou datée dans le futur, ne compte pas. Un PR est <strong>✓ vérifié</strong> s’il reste cohérent avec tes séries des 60 derniers jours (pas plus de 15 % au-dessus de ton 1RM estimé). Tout est calculé par le serveur.</p>
+      </details>
+    </div>
+
+    <!-- ===================== Abonnés / abonnements ===================== -->
+    <div id="vue-liste" hidden>
+      <a class="retour" href="Profil.html">‹ Mon profil</a>
+      <nav class="onglets-liste">
+        <a href="#abonnes" id="onglet-abonnes">Abonnés</a>
+        <a href="#abonnements" id="onglet-abonnements">Abonnements</a>
+      </nav>
+      <section id="liste"></section>
+    </div>
+
+    <!-- ===================== Profil de quelqu'un d'autre ===================== -->
+    <div id="vue-user" hidden>
+      <a class="retour" href="Profil.html">‹ Mon profil</a>
+      <section class="profil-hero" id="hero-user"></section>
+
+      <section id="zone-duel" hidden>
+        <h3 class="titre-section">Toi contre <span id="duel-nom"></span></h3>
+        <div class="card duel" id="duel"></div>
+      </section>
+
+      <h3 class="titre-section">Ses PR</h3>
+      <div class="ami-prs" id="user-prs"></div>
+
+      <h3 class="titre-section">Ses badges <span class="mut" id="user-badges-compte"></span></h3>
+      <section class="badges" id="user-badges"></section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../JS/supabase.js"></script>
+  <script src="../JS/donnees.js"></script>
+  <script>
+    const $ = function (id) { return document.getElementById(id); };
+    const CIRCONF = 2 * Math.PI * 54;
+
+    let moi = null;            // mon utilisateur
+    let profil = null;         // mon profil (prénom, pseudo, partage)
+    let stats = null;          // mon XP et mes chiffres (calculés par la base)
+    let liens = [];            // gens que je suis ou qui me suivent
+    let mesPRs = [];
+    let mesExercices = [];
+
+    function separer(n) {
+      return Math.round(Number(n)).toLocaleString("fr-FR");
+    }
+
+    function erreurLisible(e) {
+      const m = (e && e.message) || String(e);
+      const code = e && e.code;
+      if (code === "23505" && /pseudo/.test(m)) return "Ce pseudo est déjà pris, choisis-en un autre.";
+      if (code === "23505") return "Tu suis déjà cette personne.";
+      if (/mon_xp|abonnements|profil_public|42P01|42883|PGRST20[2-5]/.test(m + " " + code)) {
+        return "Le profil n’est pas encore activé : exécute le script SQL « profil » dans Supabase (SQL Editor), puis recharge la page.";
+      }
+      return "Erreur : " + m;
+    }
+
+    function alerte(texte) {
+      $("alerte").textContent = texte;
+      $("alerte").hidden = !texte;
+    }
+
+    function nomDe(p) {
+      return p.prenom || (p.pseudo ? "@" + p.pseudo : "Utilisateur");
+    }
+
+    function avatar(p, classe) {
+      const base = (p.prenom || p.pseudo || "?").trim();
+      return el("div", "avatar" + (classe ? " " + classe : ""), base.charAt(0).toUpperCase());
+    }
+
+    function pluriel(n, mot) {
+      return n + " " + mot + (n > 1 ? "s" : "");
+    }
+
+    /* ===================== En-tête de profil (moi ou un autre) ===================== */
+
+    // s : chiffres du profil ; actions : éléments à ajouter sous le nom (boutons)
+    function construireHero(zone, p, s, estMoi, actions) {
+      zone.innerHTML = "";
+      const n = niveauDe(s.xp);
+
+      const haut = el("div", "hero-haut");
+
+      // Avatar entouré de l'anneau de niveau
+      const bulle = el("div", "bulle");
+      bulle.innerHTML =
+        '<svg viewBox="0 0 120 120" aria-hidden="true">' +
+          '<circle class="anneau-fond" cx="60" cy="60" r="54"/>' +
+          '<circle class="anneau-plein" cx="60" cy="60" r="54"/>' +
+        '</svg>';
+      bulle.appendChild(avatar(p, "grand"));
+      bulle.appendChild(el("span", "bulle-niveau", "Niv. " + n.niveau));
+      haut.appendChild(bulle);
+      const plein = bulle.querySelector(".anneau-plein");
+      plein.style.strokeDasharray = CIRCONF;
+      plein.style.strokeDashoffset = CIRCONF;
+      setTimeout(function () { plein.style.strokeDashoffset = CIRCONF * (1 - n.dans / n.total); }, 80);
+
+      // Compteurs façon réseau social
+      const compteurs = el("div", "compteurs");
+      [[s.abonnes, "Abonnés", estMoi ? "#abonnes" : null],
+       [s.abonnements, "Abonnements", estMoi ? "#abonnements" : null],
+       ["#" + s.rang, "Rang", null]].forEach(function (c) {
+        const bloc = el(c[2] ? "a" : "div", "compteur");
+        if (c[2]) bloc.href = c[2];
+        bloc.appendChild(el("strong", "", String(c[0])));
+        bloc.appendChild(el("span", "", c[1]));
+        compteurs.appendChild(bloc);
+      });
+      haut.appendChild(compteurs);
+      zone.appendChild(haut);
+
+      // Nom, pseudo, titre
+      const nom = el("div", "hero-nom", p.prenom || (p.pseudo ? "@" + p.pseudo : "Mon profil"));
+      zone.appendChild(nom);
+      const ligne = el("div", "hero-pseudo");
+      if (p.pseudo && p.prenom) ligne.appendChild(el("span", "", "@" + p.pseudo));
+      if (!estMoi && p.me_suit) ligne.appendChild(el("span", "tag", "Te suit"));
+      if (estMoi && !p.pseudo) ligne.appendChild(el("span", "a-choisir", "Choisis ton pseudo pour qu’on te trouve"));
+      if (ligne.childNodes.length) zone.appendChild(ligne);
+
+      const titre = el("div", "hero-titre");
+      titre.appendChild(el("strong", "", n.titre));
+      titre.appendChild(el("span", "mut", " · " + separer(s.xp) + " XP · " +
+        (s.total > 1 ? "#" + s.rang + " sur " + s.total : "")));
+      zone.appendChild(titre);
+
+      const piste = el("div", "piste");
+      const rempli = el("span", "rempli");
+      piste.appendChild(rempli);
+      zone.appendChild(piste);
+      zone.appendChild(el("div", "mut petit", separer(n.reste) + " XP avant le niveau " + (n.niveau + 1) +
+        (s.serie_actuelle ? " · 🔥 " + pluriel(s.serie_actuelle, "semaine") + " d’affilée" : "")));
+      setTimeout(function () { rempli.style.width = (n.dans / n.total * 100) + "%"; }, 80);
+
+      if (actions && actions.length) {
+        const zoneActions = el("div", "hero-actions");
+        actions.forEach(function (a) { zoneActions.appendChild(a); });
+        zone.appendChild(zoneActions);
+      }
+    }
+
+    /* ===================== Mon profil ===================== */
+
+    function afficherMoi() {
+      const modifier = el("button", "btn secondaire", profil.pseudo ? "Modifier le profil" : "Choisir mon pseudo");
+      modifier.type = "button";
+      modifier.addEventListener("click", function () {
+        $("moi-formulaire").hidden = !$("moi-formulaire").hidden;
+        if (!$("moi-formulaire").hidden) $("pseudo").focus();
+      });
+      const reglages = el("a", "btn secondaire", "Paramètres");
+      reglages.href = "Parametres.html";
+      construireHero($("hero-moi"), profil, stats, true, [modifier, reglages]);
+      $("pseudo").value = profil.pseudo || "";
+      $("partage").checked = !!profil.partage_prs;
+    }
+
+    $("btn-pseudo").addEventListener("click", async function () {
+      const pseudo = $("pseudo").value.trim().replace(/^@/, "");
+      if (!/^[A-Za-z0-9._]{3,20}$/.test(pseudo)) {
+        $("pseudo").focus();
+        return alert("Ton pseudo doit faire 3 à 20 caractères : lettres sans accent, chiffres, point ou tiret bas.");
+      }
+      try {
+        await sauverProfilSocial(pseudo, profil.partage_prs);
+        profil.pseudo = pseudo;
+        $("moi-formulaire").hidden = true;
+        afficherMoi();
+        confirmer("Pseudo enregistré : @" + pseudo);
+      } catch (e) {
+        alert(erreurLisible(e));
+      }
+    });
+    $("pseudo").addEventListener("keydown", function (e) { if (e.key === "Enter") $("btn-pseudo").click(); });
+
+    $("partage").addEventListener("change", async function () {
+      const coche = this.checked;
+      try {
+        await sauverProfilSocial(profil.pseudo, coche);
+        profil.partage_prs = coche;
+        confirmer(coche ? "Tes PR sont visibles par tes abonnés que tu suis aussi" : "Tes PR sont maintenant privés");
+      } catch (e) {
+        this.checked = !coche;
+        alert(erreurLisible(e));
+      }
+    });
+
+    $("btn-recherche").addEventListener("click", async function () {
+      const pseudo = $("recherche").value.trim().replace(/^@/, "");
+      if (!pseudo) return $("recherche").focus();
+      try {
+        const trouve = await trouverPseudo(pseudo);
+        if (!trouve) return alert("Personne n’a le pseudo « @" + pseudo + " ».");
+        $("recherche").value = "";
+        location.hash = trouve.user_id === moi.id ? "" : "u=" + trouve.user_id;
+      } catch (e) {
+        alert(erreurLisible(e));
+      }
+    });
+    $("recherche").addEventListener("keydown", function (e) { if (e.key === "Enter") $("btn-recherche").click(); });
+
+    /* ---------- Défis de la semaine ---------- */
+
+    function afficherDefis(sem) {
+      const restants = 6 - (new Date().getDay() + 6) % 7;
+      $("jours-restants").textContent = restants
+        ? "· encore " + pluriel(restants, "jour")
+        : "· dernier jour !";
+
+      const objectifVolume = Math.round(Number(sem.tonnage_prec) * 1.1);
+      const defis = [
+        ["📅", "Assidu", "Fais 3 séances", sem.nb, 3, 150, sem.nb + " / 3"],
+        ["⚙️", "Machine", "Fais 5 séances", sem.nb, 5, 150, sem.nb + " / 5"],
+        ["🏆", "Record", "Bats un PR (vérifié)", sem.prs, 1, 100, sem.prs ? "Fait !" : "0 / 1"],
+        objectifVolume > 0
+          ? ["📈", "Volume", "Soulève 10 % de plus que la semaine dernière", Number(sem.tonnage), objectifVolume, 100,
+             separer(sem.tonnage) + " / " + separer(objectifVolume) + " kg"]
+          : ["📈", "Volume", "Pas de séance la semaine dernière : ce défi s’ouvre la semaine prochaine", 0, 1, 100, "—"]
+      ];
+
+      const zone = $("defis");
+      zone.innerHTML = "";
+      defis.forEach(function (d) {
+        const fait = d[3] >= d[4];
+        const ligne = el("div", "defi" + (fait ? " fait" : ""));
+        ligne.appendChild(el("span", "defi-icone", fait ? "✓" : d[0]));
+        const corps = el("div", "defi-corps");
+        const tete = el("div", "defi-tete");
+        tete.appendChild(el("strong", "", d[1]));
+        tete.appendChild(el("span", "defi-xp", "+" + d[5] + " XP"));
+        corps.appendChild(tete);
+        corps.appendChild(el("div", "mut petit", d[2]));
+        const piste = el("div", "piste");
+        const rempli = el("span", "rempli");
+        piste.appendChild(rempli);
+        corps.appendChild(piste);
+        corps.appendChild(el("div", "defi-compte", d[6]));
+        ligne.appendChild(corps);
+        zone.appendChild(ligne);
+        setTimeout(function () { rempli.style.width = Math.min(100, d[3] / d[4] * 100) + "%"; }, 120);
+      });
+    }
+
+    /* ---------- Badges ---------- */
+
+    // seulementGagnes : sur le profil d'un autre, on ne montre que ses badges obtenus
+    function afficherBadges(zone, compte, s, seulementGagnes) {
+      const liste = listeBadges(s);
+      zone.innerHTML = "";
+      let gagnes = 0;
+      liste.forEach(function (b) {
+        const ok = b[3] >= b[4];
+        if (ok) gagnes++;
+        if (seulementGagnes && !ok) return;
+        const carte = el("div", "badge" + (ok ? " gagne" : ""));
+        carte.title = b[2];
+        carte.appendChild(el("span", "badge-icone", b[0]));
+        carte.appendChild(el("strong", "", b[1]));
+        carte.appendChild(el("span", "mut petit", b[2]));
+        if (!ok) {
+          const piste = el("div", "piste");
+          const rempli = el("span", "rempli");
+          rempli.style.width = Math.min(100, b[3] / b[4] * 100) + "%";
+          piste.appendChild(rempli);
+          carte.appendChild(piste);
+        }
+        zone.appendChild(carte);
+      });
+      if (seulementGagnes && !gagnes) zone.appendChild(el("div", "vide", "Pas encore de badge."));
+      compte.textContent = "· " + gagnes + " / " + liste.length;
+    }
+
+    /* ---------- Classement ---------- */
+
+    async function afficherClassement() {
+      let gens = [];
+      try { gens = await chargerClassement(); } catch (e) { return; }
+      if (gens.length < 2) return;
+      $("bloc-classement").hidden = false;
+      const zone = $("classement");
+      zone.innerHTML = "";
+      gens.forEach(function (g, i) {
+        const ligne = el(g.moi ? "div" : "a", "rang" + (g.moi ? " moi" : ""));
+        if (!g.moi) ligne.href = "#u=" + g.id;
+        ligne.appendChild(el("span", "rang-place" + (i < 3 ? " m" + (i + 1) : ""), String(i + 1)));
+        const nom = el("div", "rang-nom");
+        nom.appendChild(el("strong", "", g.moi ? "Toi" : nomDe(g)));
+        const n = niveauDe(g.xp);
+        nom.appendChild(el("span", "mut petit", "Niv. " + n.niveau + " · " + n.titre));
+        ligne.appendChild(nom);
+        ligne.appendChild(el("span", "rang-xp", separer(g.xp) + " XP"));
+        zone.appendChild(ligne);
+      });
+    }
+
+    /* ---------- Historique ---------- */
+
+    function afficherHistorique(liste) {
+      const zone = $("historique");
+      zone.innerHTML = "";
+      if (!liste.length) {
+        zone.appendChild(el("p", "mut", "Pas encore d’XP : enregistre ta première séance !"));
+        return;
+      }
+      liste.forEach(function (h) {
+        const ligne = el("div", "histo");
+        ligne.appendChild(el("span", "histo-date mut", dateFr(h.date)));
+        ligne.appendChild(el("span", "histo-libelle", h.libelle));
+        ligne.appendChild(el("strong", "histo-xp", "+" + h.xp));
+        zone.appendChild(ligne);
+      });
+    }
+
+    /* ===================== Abonnés / abonnements ===================== */
+
+    // Bouton « Suivre » / « Abonné » qui se met à jour tout seul
+    function boutonSuivre(p, apres) {
+      const b = el("button", "btn petit", "");
+      b.type = "button";
+      function maj() {
+        b.textContent = p.je_suis ? "Abonné ✓" : (p.me_suit ? "Suivre en retour" : "Suivre");
+        b.classList.toggle("secondaire", p.je_suis);
+      }
+      maj();
+      b.addEventListener("click", async function (e) {
+        e.preventDefault();
+        if (p.je_suis && !confirm("Ne plus suivre " + nomDe(p) + " ?")) return;
+        b.disabled = true;
+        try {
+          if (p.je_suis) await nePlusSuivre(p.id);
+          else await suivre(p.id);
+          p.je_suis = !p.je_suis;
+          maj();
+          await chargerLiens();
+          if (apres) await apres();
+        } catch (err) {
+          alert(erreurLisible(err));
+        } finally {
+          b.disabled = false;
+        }
+      });
+      return b;
+    }
+
+    function afficherListe(type) {
+      $("onglet-abonnes").setAttribute("aria-current", String(type === "abonnes"));
+      $("onglet-abonnements").setAttribute("aria-current", String(type === "abonnements"));
+      const gens = liens.filter(function (l) { return type === "abonnes" ? l.me_suit : l.je_suis; })
+        .sort(function (a, b) { return nomDe(a).localeCompare(nomDe(b), "fr"); });
+      $("onglet-abonnes").textContent = "Abonnés · " + liens.filter(function (l) { return l.me_suit; }).length;
+      $("onglet-abonnements").textContent = "Abonnements · " + liens.filter(function (l) { return l.je_suis; }).length;
+
+      const zone = $("liste");
+      zone.innerHTML = "";
+      if (!gens.length) {
+        const vide = el("div", "vide");
+        vide.appendChild(el("strong", "", type === "abonnes" ? "Personne ne te suit encore" : "Tu ne suis personne"));
+        vide.appendChild(el("span", "", "Donne ton pseudo à tes potes de salle, ou cherche le leur depuis ton profil."));
+        zone.appendChild(vide);
+        return;
+      }
+      const carte = el("div", "card liste-amis");
+      gens.forEach(function (l) {
+        const ligne = el("a", "ami-ligne");
+        ligne.href = "#u=" + l.id;
+        ligne.appendChild(avatar(l));
+        const infos = el("div", "ami-infos");
+        infos.appendChild(el("div", "ami-nom", nomDe(l)));
+        const sous = [];
+        if (l.pseudo && l.prenom) sous.push("@" + l.pseudo);
+        if (l.je_suis && l.me_suit) sous.push("Vous vous suivez");
+        else if (l.me_suit) sous.push("Te suit");
+        if (sous.length) infos.appendChild(el("div", "mut petit", sous.join(" · ")));
+        ligne.appendChild(infos);
+        ligne.appendChild(boutonSuivre(l, function () { afficherListe(type); }));
+        carte.appendChild(ligne);
+      });
+      zone.appendChild(carte);
+    }
+
+    async function chargerLiens() {
+      try { liens = await chargerAbonnements(); } catch (e) { liens = []; }
+      stats.abonnes = liens.filter(function (l) { return l.me_suit; }).length;
+      stats.abonnements = liens.filter(function (l) { return l.je_suis; }).length;
+    }
+
+    /* ===================== Profil de quelqu'un d'autre ===================== */
+
+    async function afficherUser(id) {
+      const hero = $("hero-user");
+      hero.innerHTML = '<p class="mut">Chargement…</p>';
+      $("zone-duel").hidden = true;
+      $("user-prs").innerHTML = "";
+      $("user-badges").innerHTML = "";
+      let p;
+      try {
+        p = await chargerProfilPublic(id);
+      } catch (e) {
+        hero.innerHTML = "";
+        hero.appendChild(el("p", "", erreurLisible(e)));
+        return;
+      }
+      if (!p) {
+        hero.innerHTML = "";
+        hero.appendChild(el("p", "mut", "Ce profil n’existe pas."));
+        return;
+      }
+
+      construireHero(hero, p, p, false, [boutonSuivre(p, function () { return afficherUser(id); })]);
+      afficherBadges($("user-badges"), $("user-badges-compte"), p, true);
+      $("duel-nom").textContent = nomDe(p);
+
+      // PR : visibles si vous vous suivez mutuellement et qu'il partage
+      const zone = $("user-prs");
+      if (!p.prs) {
+        const vide = el("div", "vide prive");
+        vide.appendChild(el("strong", "", "🔒 PR privés"));
+        vide.appendChild(el("span", "", !p.partage
+          ? nomDe(p) + " ne partage pas ses PR."
+          : "Suivez-vous mutuellement pour voir les PR de " + nomDe(p) + "."));
+        zone.appendChild(vide);
+        return;
+      }
+      if (!p.prs.length) zone.appendChild(el("div", "vide", nomDe(p) + " n’a pas encore noté de PR."));
+      p.prs.forEach(function (pr, i) {
+        const c = el("div", "card pr-ami");
+        if (i < 3) c.appendChild(el("span", "medaille m" + (i + 1), String(i + 1)));
+        c.appendChild(el("div", "pr-ami-exo", pr.exercice));
+        c.appendChild(el("div", "mut petit", pr.muscle || ""));
+        const v = el("div", "pr-ami-valeur");
+        v.append(nb(pr.charge));
+        v.appendChild(el("small", "", "kg"));
+        c.appendChild(v);
+        c.appendChild(el("div", "mut petit", dateFr(pr.date)));
+        zone.appendChild(c);
+      });
+      afficherDuel(p.prs, nomDe(p));
+    }
+
+    // Comparaison sur les exercices que nous avons tous les deux (même nom)
+    function afficherDuel(prsAutre, nomAutre) {
+      const miens = {};
+      mesPRs.forEach(function (p) {
+        const ex = mesExercices.find(function (e) { return e.id === p.exercice_id; });
+        if (ex) miens[normaliser(ex.nom)] = Number(p.meilleur.charge);
+      });
+      const communs = prsAutre.filter(function (p) { return miens[normaliser(p.exercice)] !== undefined; });
+      const zone = $("duel");
+      zone.innerHTML = "";
+      $("zone-duel").hidden = !communs.length;
+      let gagnes = 0;
+      communs.forEach(function (p) {
+        const a = miens[normaliser(p.exercice)];
+        const b = Number(p.charge);
+        const max = Math.max(a, b);
+        if (a > b) gagnes++;
+        const ligne = el("div", "duel-ligne");
+        ligne.appendChild(el("div", "duel-exo", p.exercice));
+        const barres = el("div", "duel-barres");
+        [["moi", "Toi", a], ["lui", nomAutre, b]].forEach(function (x) {
+          const rang = el("div", "duel-rang " + x[0] + (x[2] === max ? " gagne" : ""));
+          rang.appendChild(el("span", "duel-qui", x[1]));
+          const piste = el("span", "duel-piste");
+          const rempli = el("span", "duel-rempli");
+          piste.appendChild(rempli);
+          rang.appendChild(piste);
+          rang.appendChild(el("span", "duel-kg", nb(x[2]) + " kg"));
+          barres.appendChild(rang);
+          setTimeout(function () { rempli.style.width = (x[2] / max * 100) + "%"; }, 80);
+        });
+        ligne.appendChild(barres);
+        zone.appendChild(ligne);
+      });
+      if (communs.length) {
+        zone.appendChild(el("p", "duel-score", "Tu mènes sur " + pluriel(gagnes, "exercice") + " sur " + communs.length + "."));
+      }
+    }
+
+    /* ===================== Navigation entre les vues ===================== */
+
+    function afficherVue() {
+      const h = location.hash.slice(1);
+      const u = h.match(/^u=(.+)$/);
+      const liste = h === "abonnes" || h === "abonnements";
+      $("vue-moi").hidden = !!u || liste;
+      $("vue-liste").hidden = !liste;
+      $("vue-user").hidden = !u;
+      window.scrollTo(0, 0);
+      if (u) afficherUser(decodeURIComponent(u[1]));
+      else if (liste) afficherListe(h);
+      else afficherMoi();
+    }
+    window.addEventListener("hashchange", afficherVue);
+
+    /* ===================== Démarrage ===================== */
+
+    (async function () {
+      moi = await exigerConnexion();
+      if (!moi) return;
+      try {
+        profil = await chargerProfil();
+      } catch (e) {
+        profil = { prenom: "", pseudo: "", partage_prs: false };
+      }
+      try {
+        stats = await chargerXP();
+      } catch (e) {
+        alerte(erreurLisible(e));
+        return;
+      }
+      try {
+        const r = await Promise.all([chargerPRs(), chargerExercices()]);
+        mesPRs = resumerPRs(r[0]);
+        mesExercices = r[1];
+      } catch (e) {}
+      await chargerLiens();
+      afficherVue();
+      afficherDefis(stats.semaine);
+      afficherBadges($("badges"), $("badges-compte"), stats, false);
+      afficherHistorique(stats.historique);
+      await afficherClassement();
+    })();
+  </script>
+</body>
+</html>

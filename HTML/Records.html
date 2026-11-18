@@ -82,6 +82,7 @@
     let records = {};          // records en séries, indexés par identifiant d'exercice
     let prs = [];              // résumé des PR à 1 rep (un par exercice)
     let muscleChoisi = "Tous";
+    let verifies = null;       // identifiants des PR vérifiés par la base (null : défis pas activés)
 
     const $ = function (id) { return document.getElementById(id); };
     const exoDe = function (id) { return exercices.find(function (e) { return e.id === id; }); };
@@ -124,6 +125,16 @@
       if (dernier.gain > 0) zone.appendChild(el("span", "gain", "+" + nb(dernier.gain) + " kg"));
     }
 
+    // « ✓ » si le PR est cohérent avec tes séries récentes, « ? » sinon
+    function marqueVerif(pr) {
+      if (!verifies) return document.createTextNode("");
+      const ok = verifies.has(String(pr.id));
+      const m = el("span", "verif" + (ok ? " ok" : ""), ok ? "✓ vérifié" : "?");
+      m.title = ok ? "PR cohérent avec tes séries des 60 derniers jours"
+        : "Non vérifié : aucune série récente sur cet exercice ne le confirme (pas d’XP)";
+      return m;
+    }
+
     /* ---------- Cartes des PR à 1 rep ---------- */
 
     function afficherPRs() {
@@ -162,6 +173,7 @@
         const pied = el("div", "pr-pied");
         pied.appendChild(el("span", "mut", dateFr(p.meilleur.date)));
         if (p.gain > 0) pied.appendChild(el("span", "gain", "+" + nb(p.gain) + " kg"));
+        pied.appendChild(marqueVerif(p.meilleur));
         resume.appendChild(pied);
         carte.appendChild(resume);
 
@@ -171,7 +183,9 @@
           const ligne = el("div", "histo-ligne" + (h.id === p.meilleur.id ? " record" : ""));
           ligne.appendChild(el("span", "histo-date", dateFr(h.date)));
           const centre = el("span", "histo-centre");
-          centre.appendChild(el("strong", "", nb(h.charge) + " kg"));
+          const charge = el("strong", "", nb(h.charge) + " kg");
+          charge.appendChild(marqueVerif(h));
+          centre.appendChild(charge);
           if (h.note) centre.appendChild(el("span", "mut", h.note));
           ligne.appendChild(centre);
           const suppr = el("button", "histo-suppr", "×");
@@ -197,6 +211,7 @@
     async function chargerPRsEtAfficher() {
       try {
         prs = resumerPRs(await chargerPRs());
+        try { verifies = new Set((await chargerXP()).pr_verifies.map(String)); } catch (e) { verifies = null; }
         $("alerte").hidden = true;
       } catch (e) {
         prs = [];

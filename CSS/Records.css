@@ -345,3 +345,27 @@
   font-weight: 600;
   color: var(--gris);
 }
+
+/* PR vérifié par la base (✓) ou non (?) */
+.verif {
+  order: 1;
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--gris);
+  background: var(--carte-douce);
+  border-radius: 999px;
+  cursor: help;
+}
+
+.verif.ok {
+  color: var(--pull);
+  background: color-mix(in srgb, var(--pull) 14%, transparent);
+}
+
+.histo-centre strong .verif {
+  margin-left: 6px;
+}

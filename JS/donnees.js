@@ -91,7 +91,9 @@ async function chargerProfil() {
     programme: (data && data.programme) || PROGRAMME_DEFAUT,
     taille: data && data.taille ? String(data.taille) : "",
     activite: (data && data.activite) || "modere",
-    objectif: (data && data.objectif) || "maintien"
+    objectif: (data && data.objectif) || "maintien",
+    pseudo: (data && data.pseudo) || "",
+    partage_prs: !!(data && data.partage_prs)
   };
 }
 
@@ -549,6 +551,109 @@ async function ajouterPR(pr) {
 async function supprimerPR(id) {
   const { error } = await client.from("prs").delete().eq("id", id);
   if (error) throw error;
+}
+
+/* ---------- Profil social : pseudo et abonnements ---------- */
+
+// Pseudo (pour être trouvé) et partage de ses PR
+async function sauverProfilSocial(pseudo, partage) {
+  const { data: { user } } = await client.auth.getUser();
+  const { error } = await client.from("profils").upsert({
+    user_id: user.id,
+    pseudo: pseudo || null,
+    partage_prs: partage
+  });
+  if (error) throw error;
+}
+
+async function trouverPseudo(pseudo) {
+  const { data, error } = await client.rpc("trouver_pseudo", { p: pseudo });
+  if (error) throw error;
+  return data && data.length ? data[0] : null;
+}
+
+// Les gens que je suis ou qui me suivent : { id, pseudo, prenom, je_suis, me_suit }
+async function chargerAbonnements() {
+  const { data, error } = await client.rpc("mes_abonnements");
+  if (error) throw error;
+  return data;
+}
+
+// Niveau, badges, abonnés et PR (si visibles) d'un autre utilisateur
+async function chargerProfilPublic(id) {
+  const { data, error } = await client.rpc("profil_public", { u: id });
+  if (error) throw error;
+  return data;
+}
+
+async function suivre(id) {
+  const { error } = await client.from("abonnements").insert({ suivi: id });
+  if (error) throw error;
+}
+
+async function nePlusSuivre(id) {
+  const { data: { user } } = await client.auth.getUser();
+  const { error } = await client.from("abonnements").delete().eq("suiveur", user.id).eq("suivi", id);
+  if (error) throw error;
+}
+
+/* ---------- XP, niveaux et badges (l'XP est calculée par la base) ---------- */
+
+async function chargerXP() {
+  const { data, error } = await client.rpc("mon_xp");
+  if (error) throw error;
+  return data;
+}
+
+async function chargerClassement() {
+  const { data, error } = await client.rpc("classement_amis");
+  if (error) throw error;
+  return data;
+}
+
+// XP totale à atteindre pour le niveau n : 0, 200, 500, 900, 1400…
+function seuilNiveau(n) {
+  return 50 * (n - 1) * (n + 2);
+}
+
+const TITRES = [[30, "Légende"], [20, "Élite"], [15, "Athlète"], [10, "Confirmé"], [5, "Régulier"], [1, "Débutant"]];
+
+function niveauDe(xp) {
+  let n = 1;
+  while (xp >= seuilNiveau(n + 1)) n++;
+  const debut = seuilNiveau(n), fin = seuilNiveau(n + 1);
+  return {
+    niveau: n,
+    titre: TITRES.find(function (t) { return n >= t[0]; })[1],
+    dans: xp - debut,           // XP gagnée dans le niveau
+    total: fin - debut,         // XP du niveau entier
+    reste: fin - xp
+  };
+}
+
+// [icône, nom, description, valeur atteinte, objectif]
+function listeBadges(s) {
+  const n = niveauDe(s.xp).niveau;
+  const podium = s.xp > 0 && s.total >= 3 && s.rang <= 3;
+  const premier = s.xp > 0 && s.total >= 2 && s.rang === 1;
+  return [
+    ["👟", "Premier pas", "Ta première séance validée", s.seances, 1],
+    ["💪", "Habitué", "10 séances validées", s.seances, 10],
+    ["🏋️", "Acharné", "50 séances validées", s.seances, 50],
+    ["💯", "Centenaire", "100 séances validées", s.seances, 100],
+    ["🔥", "En feu", "4 semaines d’affilée à 3 séances", s.meilleure_serie, 4],
+    ["☄️", "Inarrêtable", "12 semaines d’affilée à 3 séances", s.meilleure_serie, 12],
+    ["🏆", "Record battu", "Un PR vérifié", s.prs, 1],
+    ["⚡", "Briseur de records", "10 PR vérifiés", s.prs, 10],
+    ["🦍", "Club des 100", "Un PR vérifié à 100 kg ou plus", Number(s.max_pr), 100],
+    ["🚛", "10 tonnes", "10 000 kg soulevés en une séance", Math.round(Number(s.tonnage_max)), 10000],
+    ["🤝", "Pas seul", "Ton premier abonné", s.abonnes, 1],
+    ["📣", "Populaire", "10 abonnés", s.abonnes, 10],
+    ["⭐", "Niveau 10", "Atteindre le niveau 10", n, 10],
+    // Classement parmi tous les utilisateurs de l'app
+    ["🥉", "Sur le podium", "Top 3 en XP de tous les utilisateurs", podium ? 1 : 0, 1],
+    ["👑", "Le plus expérimenté", "N°1 en XP de tous les utilisateurs", premier ? 1 : 0, 1]
+  ];
 }
 
 // Regroupe les PR par exercice : meilleur PR, gain par rapport au précédent, historique

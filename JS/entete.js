@@ -16,7 +16,9 @@
       '<path d="M14 7c0-1.500 1.200-1.500 1.200-3"/>',
     progression:
       '<line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="12" width="3" height="8"/>' +
-      '<rect x="11" y="7" width="3" height="13"/><rect x="16" y="3" width="3" height="17"/>'
+      '<rect x="11" y="7" width="3" height="13"/><rect x="16" y="3" width="3" height="17"/>',
+    profil:
+      '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'
   };
 
   /* ---------- Sections de la barre du bas ---------- */
@@ -29,7 +31,9 @@
     { nom: "Nutrition", lien: "Nutrition.html", icone: ICONES.nutrition,
       pages: ["Nutrition.html"] },
     { nom: "Progression", lien: "Progression.html", icone: ICONES.progression,
-      pages: ["Progression.html"] }
+      pages: ["Progression.html"] },
+    { nom: "Profil", lien: "Profil.html", icone: ICONES.profil,
+      pages: ["Profil.html"] }
   ];
 
   /* ---------- Sous-onglets de chaque section ---------- */

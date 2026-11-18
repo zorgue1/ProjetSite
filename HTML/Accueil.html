@@ -96,6 +96,21 @@
       <span class="carte-fleche" aria-hidden="true">›</span>
     </a>
 
+    <!-- Raccourci vers le profil (niveau, XP, abonnés) -->
+    <a class="carte-menu carte-pr" href="Profil.html">
+      <span class="carte-icone carte-niveau" id="niveau-pastille" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 3l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.4 6.8 19.2l1-5.9L3.5 9.2l5.9-.8z"/>
+        </svg>
+      </span>
+      <span class="carte-texte">
+        <strong id="niveau-titre">Mon profil</strong>
+        <small id="niveau-resume">Niveau, défis, badges et abonnés</small>
+        <span class="niveau-piste" id="niveau-piste" hidden><span id="niveau-rempli"></span></span>
+      </span>
+      <span class="carte-fleche" aria-hidden="true">›</span>
+    </a>
+
     <!-- Profil -->
     <section class="card profil">
       <div class="profil-tete">
@@ -371,6 +386,25 @@
       max.title = nomDe(plusLourd.exercice_id);
     }
 
+    /* ---------- Raccourci « Défis » ---------- */
+
+    async function afficherCarteNiveau() {
+      let s;
+      try { s = await chargerXP(); } catch (e) { return; }   // script SQL pas encore lancé
+      const n = niveauDe(s.xp);
+      const pastille = document.getElementById("niveau-pastille");
+      pastille.textContent = n.niveau;
+      pastille.classList.add("avec-niveau");
+      document.getElementById("niveau-titre").textContent = "Niveau " + n.niveau + " · " + n.titre;
+      document.getElementById("niveau-resume").textContent =
+        Math.round(s.xp).toLocaleString("fr-FR") + " XP · encore " + n.reste + " XP" +
+        (s.semaine.nb < 3 ? " · défi : " + s.semaine.nb + "/3 séances" : "");
+      document.getElementById("niveau-piste").hidden = false;
+      setTimeout(function () {
+        document.getElementById("niveau-rempli").style.width = (n.dans / n.total * 100) + "%";
+      }, 80);
+    }
+
     /* ---------- Chargement ---------- */
 
     async function afficher() {
@@ -399,7 +433,7 @@
       document.getElementById("cta-seance").textContent =
         (await seanceEnCours()) ? "Reprendre ma séance en cours" : "Commencer la séance";
       afficherProfil(p, seances, poids);
-      await afficherCartePR();
+      await Promise.all([afficherCartePR(), afficherCarteNiveau()]);
     }
 
     document.getElementById("mois-prec").addEventListener("click", function () {
