@@ -33,9 +33,15 @@
     <!-- ===================== Mon profil ===================== -->
     <div id="vue-moi">
       <section class="profil-hero" id="hero-moi"></section>
+      <input type="file" id="fichier-photo" accept="image/*" hidden>
 
-      <!-- Pseudo et confidentialité -->
+      <!-- Pseudo, photo et confidentialité -->
       <section class="card" id="moi-formulaire" hidden>
+        <div class="ligne-photo">
+          <button class="btn secondaire" id="btn-photo" type="button">📷 Changer ma photo</button>
+          <button class="btn secondaire" id="btn-suppr-photo" type="button" hidden>Supprimer la photo</button>
+        </div>
+
         <label for="pseudo">Pseudo</label>
         <div class="champ-arobase">
           <span>@</span>
@@ -154,11 +160,6 @@
       return p.prenom || (p.pseudo ? "@" + p.pseudo : "Utilisateur");
     }
 
-    function avatar(p, classe) {
-      const base = (p.prenom || p.pseudo || "?").trim();
-      return el("div", "avatar" + (classe ? " " + classe : ""), base.charAt(0).toUpperCase());
-    }
-
     function pluriel(n, mot) {
       return n + " " + mot + (n > 1 ? "s" : "");
     }
@@ -173,14 +174,20 @@
       const haut = el("div", "hero-haut");
 
       // Avatar entouré de l'anneau de niveau
-      const bulle = el("div", "bulle");
+      // Sur mon profil, toucher la photo permet de la changer
+      const bulle = el(estMoi ? "label" : "div", "bulle");
+      if (estMoi) {
+        bulle.htmlFor = "fichier-photo";
+        bulle.title = "Changer ma photo";
+      }
       bulle.innerHTML =
         '<svg viewBox="0 0 120 120" aria-hidden="true">' +
           '<circle class="anneau-fond" cx="60" cy="60" r="54"/>' +
           '<circle class="anneau-plein" cx="60" cy="60" r="54"/>' +
         '</svg>';
-      bulle.appendChild(avatar(p, "grand"));
+      bulle.appendChild(creerAvatar(p, "grand"));
       bulle.appendChild(el("span", "bulle-niveau", "Niv. " + n.niveau));
+      if (estMoi) bulle.appendChild(el("span", "bulle-photo", "📷"));
       haut.appendChild(bulle);
       const plein = bulle.querySelector(".anneau-plein");
       plein.style.strokeDasharray = CIRCONF;
@@ -245,7 +252,44 @@
       construireHero($("hero-moi"), profil, stats, true, [modifier, reglages]);
       $("pseudo").value = profil.pseudo || "";
       $("partage").checked = !!profil.partage_prs;
+      $("btn-suppr-photo").hidden = !profil.photo_url;
+      if (!profil.pseudo) $("moi-formulaire").hidden = false;   // compte sans pseudo : on le demande
     }
+
+    /* ---------- Photo de profil ---------- */
+
+    $("fichier-photo").addEventListener("change", async function () {
+      const fichier = this.files[0];
+      this.value = "";
+      if (!fichier) return;
+      confirmer("Envoi de la photo…");
+      try {
+        const r = await changerPhoto(fichier, profil.photo_chemin);
+        profil.photo_url = r.photo_url;
+        profil.photo_chemin = r.photo_chemin;
+        afficherMoi();
+        confirmer("Photo de profil mise à jour");
+      } catch (e) {
+        alert(/bucket|avatars|photo_url/i.test(e.message || "")
+          ? "Les photos ne sont pas encore activées : exécute le script SQL « compte » dans Supabase."
+          : "Erreur : " + e.message);
+      }
+    });
+
+    $("btn-photo").addEventListener("click", function () { $("fichier-photo").click(); });
+
+    $("btn-suppr-photo").addEventListener("click", async function () {
+      if (!confirm("Supprimer ta photo de profil ?")) return;
+      try {
+        await supprimerPhoto(profil.photo_chemin);
+        profil.photo_url = "";
+        profil.photo_chemin = "";
+        afficherMoi();
+        confirmer("Photo supprimée");
+      } catch (e) {
+        alert("Erreur : " + e.message);
+      }
+    });
 
     $("btn-pseudo").addEventListener("click", async function () {
       const pseudo = $("pseudo").value.trim().replace(/^@/, "");
@@ -375,6 +419,7 @@
         const ligne = el(g.moi ? "div" : "a", "rang" + (g.moi ? " moi" : ""));
         if (!g.moi) ligne.href = "#u=" + g.id;
         ligne.appendChild(el("span", "rang-place" + (i < 3 ? " m" + (i + 1) : ""), String(i + 1)));
+        ligne.appendChild(creerAvatar(g, "mini"));
         const nom = el("div", "rang-nom");
         nom.appendChild(el("strong", "", g.moi ? "Toi" : nomDe(g)));
         const n = niveauDe(g.xp);
@@ -455,7 +500,7 @@
       gens.forEach(function (l) {
         const ligne = el("a", "ami-ligne");
         ligne.href = "#u=" + l.id;
-        ligne.appendChild(avatar(l));
+        ligne.appendChild(creerAvatar(l));
         const infos = el("div", "ami-infos");
         infos.appendChild(el("div", "ami-nom", nomDe(l)));
         const sous = [];

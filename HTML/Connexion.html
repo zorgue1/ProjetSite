@@ -38,6 +38,7 @@
 
       <label for="mdp">Mot de passe (6 caractères minimum)</label>
       <input id="mdp" type="password" autocomplete="current-password">
+      <button type="button" class="lien-oubli" id="btn-oubli">Mot de passe oublié ?</button>
 
       <!-- Champs affichés seulement pour créer un compte -->
       <div id="champs-inscription" hidden>
@@ -51,6 +52,10 @@
             <input id="nom" type="text" autocomplete="family-name">
           </div>
         </div>
+
+        <label for="pseudo">Pseudo (ton identifiant unique)</label>
+        <input id="pseudo" type="text" maxlength="20" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="ex. : leo.b">
+        <p class="mut aide" id="pseudo-etat">3 à 20 caractères : lettres, chiffres, point ou tiret bas.</p>
 
         <label for="naissance">Date de naissance</label>
         <input id="naissance" type="date">
@@ -226,6 +231,7 @@
       document.getElementById("onglet-connexion").setAttribute("aria-pressed", String(!inscription));
       document.getElementById("onglet-inscription").setAttribute("aria-pressed", String(inscription));
       document.getElementById("champs-inscription").hidden = !inscription;
+      document.getElementById("btn-oubli").hidden = inscription;
       document.getElementById("btn-valider").textContent = inscription ? "Créer mon compte" : "Se connecter";
       document.getElementById("mdp").autocomplete = inscription ? "new-password" : "current-password";
       afficherMessage("", false);
@@ -260,8 +266,31 @@
         return afficherMessage("Indique ton sexe pour créer le compte (il sert au calcul des calories).", true);
       }
 
-      const { data, error } = await client.auth.signUp(identifiants());
-      if (error) return afficherMessage("Création impossible : " + error.message, true);
+      const pseudo = document.getElementById("pseudo").value.trim().replace(/^@/, "");
+      if (!(await verifierPseudo())) {
+        document.getElementById("pseudo").focus();
+        return afficherMessage("Choisis un pseudo valide et libre pour créer le compte.", true);
+      }
+
+      // Le profil (avec le pseudo) est créé par la base dès l'inscription : personne ne peut le prendre ensuite
+      const { data, error } = await client.auth.signUp(Object.assign(identifiants(), {
+        options: {
+          data: {
+            pseudo: pseudo,
+            prenom: prenom,
+            nom: document.getElementById("nom").value.trim(),
+            naissance: document.getElementById("naissance").value,
+            poids: document.getElementById("poids").value.replace(",", "."),
+            taille: document.getElementById("taille").value,
+            sexe: sexe
+          }
+        }
+      }));
+      if (error) {
+        return afficherMessage(/database error/i.test(error.message)
+          ? "Ce pseudo vient d'être pris, choisis-en un autre."
+          : "Création impossible : " + error.message, true);
+      }
 
       if (!data.session) {
         return afficherMessage("Compte créé. Vérifie tes e-mails pour confirmer, puis connecte-toi.", false);
@@ -291,6 +320,55 @@
       // Même si l'enregistrement du profil échouait, le compte existe : tout se complète dans Paramètres
       window.location.replace("Accueil.html");
     }
+
+    /* ---------- Pseudo unique ---------- */
+
+    // Vérifie le format puis demande à la base si le pseudo est libre ; affiche le résultat sous le champ
+    async function verifierPseudo() {
+      const champ = document.getElementById("pseudo");
+      const etat = document.getElementById("pseudo-etat");
+      const pseudo = champ.value.trim().replace(/^@/, "");
+      if (!/^[A-Za-z0-9._]{3,20}$/.test(pseudo)) {
+        etat.textContent = "3 à 20 caractères : lettres sans accent, chiffres, point ou tiret bas.";
+        etat.className = "mut aide" + (pseudo ? " pris" : "");
+        return false;
+      }
+      try {
+        const { data, error } = await client.rpc("pseudo_libre", { p: pseudo });
+        if (error) throw error;
+        if (champ.value.trim().replace(/^@/, "") !== pseudo) return false;   // le champ a changé entre-temps
+        etat.textContent = data ? "✓ @" + pseudo + " est libre" : "✗ @" + pseudo + " est déjà pris";
+        etat.className = "mut aide " + (data ? "libre" : "pris");
+        return data === true;
+      } catch (e) {
+        etat.textContent = "Vérification impossible pour le moment.";
+        etat.className = "mut aide pris";
+        return false;
+      }
+    }
+
+    let minuteurPseudo = null;
+    document.getElementById("pseudo").addEventListener("input", function () {
+      clearTimeout(minuteurPseudo);
+      minuteurPseudo = setTimeout(verifierPseudo, 400);
+    });
+
+    /* ---------- Mot de passe oublié ---------- */
+
+    document.getElementById("btn-oubli").addEventListener("click", async function () {
+      const email = document.getElementById("email").value.trim();
+      if (!email) {
+        document.getElementById("email").focus();
+        return afficherMessage("Écris ton adresse e-mail juste au-dessus, puis clique à nouveau sur « Mot de passe oublié ? ».", true);
+      }
+      this.disabled = true;
+      const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: location.href.replace(/Connexion.html.*$/, "MotDePasse.html")
+      });
+      this.disabled = false;
+      if (error) return afficherMessage("Envoi impossible : " + error.message, true);
+      afficherMessage("Si un compte existe avec " + email + ", tu vas recevoir un e-mail pour choisir un nouveau mot de passe.", false);
+    });
 
     document.getElementById("onglet-connexion").addEventListener("click", function () { choisirMode("connexion"); });
     document.getElementById("onglet-inscription").addEventListener("click", function () { choisirMode("inscription"); });

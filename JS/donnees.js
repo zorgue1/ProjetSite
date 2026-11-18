@@ -93,7 +93,9 @@ async function chargerProfil() {
     activite: (data && data.activite) || "modere",
     objectif: (data && data.objectif) || "maintien",
     pseudo: (data && data.pseudo) || "",
-    partage_prs: !!(data && data.partage_prs)
+    partage_prs: !!(data && data.partage_prs),
+    photo_url: (data && data.photo_url) || "",
+    photo_chemin: (data && data.photo_chemin) || ""
   };
 }
 
@@ -566,6 +568,13 @@ async function sauverProfilSocial(pseudo, partage) {
   if (error) throw error;
 }
 
+// Vrai si le pseudo a le bon format et que personne ne l'a (fonctionne aussi sans être connecté)
+async function pseudoLibre(pseudo) {
+  const { data, error } = await client.rpc("pseudo_libre", { p: pseudo });
+  if (error) throw error;
+  return data === true;
+}
+
 async function trouverPseudo(pseudo) {
   const { data, error } = await client.rpc("trouver_pseudo", { p: pseudo });
   if (error) throw error;
@@ -595,6 +604,76 @@ async function nePlusSuivre(id) {
   const { data: { user } } = await client.auth.getUser();
   const { error } = await client.from("abonnements").delete().eq("suiveur", user.id).eq("suivi", id);
   if (error) throw error;
+}
+
+/* ---------- Photo de profil ---------- */
+
+// Avatar rond : la photo si elle existe, sinon l'initiale
+function creerAvatar(p, classe) {
+  const a = el("div", "avatar" + (classe ? " " + classe : ""));
+  if (p && p.photo_url) {
+    const img = document.createElement("img");
+    img.src = p.photo_url;
+    img.alt = "";
+    img.loading = "lazy";
+    a.appendChild(img);
+  } else {
+    a.textContent = ((p && (p.prenom || p.pseudo)) || "?").trim().charAt(0).toUpperCase() || "?";
+  }
+  return a;
+}
+
+// Recadre la photo en carré (400 px) et la convertit en JPEG léger
+function preparerAvatar(fichier) {
+  return new Promise(function (resolve, reject) {
+    const url = URL.createObjectURL(fichier);
+    const img = new Image();
+    img.onload = function () {
+      const cote = Math.min(img.width, img.height);
+      const taille = Math.min(400, cote);
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = taille;
+      canvas.getContext("2d").drawImage(img,
+        (img.width - cote) / 2, (img.height - cote) / 2, cote, cote, 0, 0, taille, taille);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(function (blob) {
+        if (blob) resolve(blob);
+        else reject(new Error("Photo illisible"));
+      }, "image/jpeg", 0.85);
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      reject(new Error("Format de photo non pris en charge"));
+    };
+    img.src = url;
+  });
+}
+
+// Envoie la nouvelle photo, l'enregistre dans le profil et supprime l'ancienne
+async function changerPhoto(fichier, ancienChemin) {
+  const { data: { user } } = await client.auth.getUser();
+  const blob = await preparerAvatar(fichier);
+  const chemin = user.id + "/" + Date.now() + ".jpg";
+  const { error: e1 } = await client.storage
+    .from("avatars").upload(chemin, blob, { contentType: "image/jpeg" });
+  if (e1) throw e1;
+  const url = client.storage.from("avatars").getPublicUrl(chemin).data.publicUrl;
+  const { error: e2 } = await client.from("profils")
+    .upsert({ user_id: user.id, photo_url: url, photo_chemin: chemin });
+  if (e2) {
+    await client.storage.from("avatars").remove([chemin]);
+    throw e2;
+  }
+  if (ancienChemin) await client.storage.from("avatars").remove([ancienChemin]);
+  return { photo_url: url, photo_chemin: chemin };
+}
+
+async function supprimerPhoto(chemin) {
+  const { data: { user } } = await client.auth.getUser();
+  const { error } = await client.from("profils")
+    .upsert({ user_id: user.id, photo_url: null, photo_chemin: null });
+  if (error) throw error;
+  if (chemin) await client.storage.from("avatars").remove([chemin]);
 }
 
 /* ---------- XP, niveaux et badges (l'XP est calculée par la base) ---------- */

@@ -18,3 +18,24 @@
 .compte {
   margin-top: 24px;
 }
+/* Changer le mot de passe */
+.mdp {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 14px;
+}
+
+.mdp summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mdp[open] summary {
+  margin-bottom: 4px;
+}
+
+.mdp .btn {
+  margin-top: 14px;
+}

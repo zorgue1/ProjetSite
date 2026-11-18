@@ -814,3 +814,46 @@ a.rang:hover .rang-nom strong {
     font-size: 24px;
   }
 }
+
+/* ---------- Photo de profil ---------- */
+label.bulle {
+  cursor: pointer;
+}
+
+.bulle-photo {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: 50%;
+  box-shadow: var(--ombre);
+}
+
+.ligne-photo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.ligne-photo .btn {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  cursor: pointer;
+}
+
+.avatar.mini {
+  width: 36px;
+  height: 36px;
+  font-size: 17px;
+  box-shadow: none;
+}

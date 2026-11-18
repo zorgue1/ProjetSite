@@ -88,6 +88,24 @@
     <section class="card">
       <h2>Compte</h2>
       <p class="mut email-compte" id="email-compte"></p>
+
+      <details class="mdp">
+        <summary>Changer mon mot de passe</summary>
+        <label for="mdp-actuel">Mot de passe actuel</label>
+        <input id="mdp-actuel" type="password" autocomplete="current-password">
+        <div class="row">
+          <div>
+            <label for="mdp-nouveau">Nouveau (6 caractères min.)</label>
+            <input id="mdp-nouveau" type="password" autocomplete="new-password">
+          </div>
+          <div>
+            <label for="mdp-confirme">Confirme-le</label>
+            <input id="mdp-confirme" type="password" autocomplete="new-password">
+          </div>
+        </div>
+        <button class="btn" id="btn-mdp" type="button">Changer le mot de passe</button>
+      </details>
+
       <button class="btn secondaire" id="btn-deconnexion" type="button">Se déconnecter</button>
     </section>
 
@@ -232,6 +250,31 @@
     /* ---------- Compte ---------- */
 
     document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
+
+    // On vérifie d'abord le mot de passe actuel, puis on enregistre le nouveau
+    document.getElementById("btn-mdp").addEventListener("click", async function () {
+      const actuel = document.getElementById("mdp-actuel").value;
+      const nouveau = document.getElementById("mdp-nouveau").value;
+      if (!actuel) return document.getElementById("mdp-actuel").focus();
+      if (nouveau.length < 6) return alert("Le nouveau mot de passe doit faire au moins 6 caractères.");
+      if (nouveau !== document.getElementById("mdp-confirme").value) return alert("Les deux nouveaux mots de passe ne sont pas identiques.");
+      if (nouveau === actuel) return alert("Le nouveau mot de passe est le même que l'actuel.");
+
+      const bouton = this;
+      bouton.disabled = true;
+      try {
+        const { data: { user } } = await client.auth.getUser();
+        const verif = await client.auth.signInWithPassword({ email: user.email, password: actuel });
+        if (verif.error) return alert("Mot de passe actuel incorrect.");
+        const { error } = await client.auth.updateUser({ password: nouveau });
+        if (error) return alert("Changement impossible : " + error.message);
+        ["mdp-actuel", "mdp-nouveau", "mdp-confirme"].forEach(function (id) { document.getElementById(id).value = ""; });
+        document.querySelector("details.mdp").open = false;
+        alert("Mot de passe changé !");
+      } finally {
+        bouton.disabled = false;
+      }
+    });
 
     (async function () {
       const user = await exigerConnexion();

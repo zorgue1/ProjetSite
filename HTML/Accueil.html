@@ -327,6 +327,7 @@
     function afficherProfil(p, seances, poids) {
       const initiales = (p.prenom.charAt(0) + p.nom.charAt(0)).toUpperCase();
       document.getElementById("avatar").textContent = initiales || "?";
+      if (p.photo_url) document.getElementById("avatar").replaceChildren(creerAvatar(p).firstChild);
 
       const nomComplet = (p.prenom + " " + p.nom.toUpperCase()).trim();
       document.getElementById("identite").textContent =
