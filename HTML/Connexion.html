@@ -275,6 +275,8 @@
       // Le profil (avec le pseudo) est créé par la base dès l'inscription : personne ne peut le prendre ensuite
       const { data, error } = await client.auth.signUp(Object.assign(identifiants(), {
         options: {
+          // Le lien de confirmation reçu par e-mail ramène sur cette page (puis vers l'accueil)
+          emailRedirectTo: location.href.split("#")[0].split("?")[0],
           data: {
             pseudo: pseudo,
             prenom: prenom,
