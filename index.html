@@ -2,10 +2,86 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0; url=HTML/Connexion.html">
-  <title>SportApp</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Ce que Google et les aperçus de liens (WhatsApp, Insta…) affichent -->
+  <title>SportApp – Suivi muscu, nutrition et progression</title>
+  <meta name="description" content="SportApp, ton carnet de musculation gratuit : note tes séances et tes PR, suis tes calories, ta progression, et relève des défis avec tes amis. S’installe sur ton téléphone comme une appli.">
+  <link rel="canonical" href="https://zorgue1.github.io/ProjetSite/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SportApp">
+  <meta property="og:title" content="SportApp – Suivi muscu, nutrition et progression">
+  <meta property="og:description" content="Séances, PR, calories, progression et défis entre amis. Gratuit, sur téléphone et ordinateur.">
+  <meta property="og:url" content="https://zorgue1.github.io/ProjetSite/">
+  <meta property="og:image" content="https://zorgue1.github.io/ProjetSite/Image/icon-512.png">
+  <!-- Google Search Console : coller ici la balise « google-site-verification » -->
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#090d13">
+  <link rel="icon" href="Image/icon-192.png">
+  <link rel="apple-touch-icon" href="Image/icon-180.png">
+
+  <script>
+    // Déjà connecté (session Supabase enregistrée sur cet appareil) : on ouvre directement l'appli
+    try {
+      if (Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-token$/.test(k); })) {
+        location.replace("HTML/Accueil.html");
+      }
+    } catch (e) {}
+  </script>
+  <script src="JS/theme.js"></script>
+  <link rel="stylesheet" href="CSS/Couleur.css">
+  <link rel="stylesheet" href="CSS/Commun.css">
+  <link rel="stylesheet" href="CSS/Vitrine.css">
 </head>
 <body>
-  <a href="HTML/Connexion.html">Ouvrir SportApp</a>
+  <header class="vitrine-hero">
+    <div class="logo">
+      <svg class="logo-icone" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="4"  y="24" width="6"  height="16" rx="2"/>
+        <rect x="11" y="18" width="7"  height="28" rx="2"/>
+        <rect x="18" y="29" width="28" height="6"  rx="2"/>
+        <rect x="46" y="18" width="7"  height="28" rx="2"/>
+        <rect x="54" y="24" width="6"  height="16" rx="2"/>
+      </svg>
+      <h1>SportApp</h1>
+    </div>
+    <p class="accroche">Ton carnet de muscu : séances, PR, calories et défis entre potes.</p>
+    <div class="boutons">
+      <a class="btn" href="HTML/Connexion.html#inscription">Créer mon compte</a>
+      <a class="btn secondaire" href="HTML/Connexion.html">Se connecter</a>
+    </div>
+    <p class="mut petit">Gratuit · sur téléphone et ordinateur · s’installe comme une appli</p>
+  </header>
+
+  <main>
+    <section class="atouts" aria-label="Ce que fait SportApp">
+      <article class="card">
+        <span aria-hidden="true">🏋️</span>
+        <h2>Séances et records</h2>
+        <p>Note tes séries, tes charges et tes PR. Ton programme de la semaine t’attend à l’accueil.</p>
+      </article>
+      <article class="card">
+        <span aria-hidden="true">🥗</span>
+        <h2>Nutrition</h2>
+        <p>Tes besoins en calories et en macros calculés pour toi, et un anneau qui se remplit à chaque repas.</p>
+      </article>
+      <article class="card">
+        <span aria-hidden="true">📈</span>
+        <h2>Progression</h2>
+        <p>Courbes de poids, de charges et de régularité pour voir tes efforts payer.</p>
+      </article>
+      <article class="card">
+        <span aria-hidden="true">🏆</span>
+        <h2>Défis et amis</h2>
+        <p>Gagne de l’XP, monte de niveau, débloque des badges et compare tes PR avec tes amis.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="mut petit">
+    SportApp · projet personnel · photo : Victor Freitas (Unsplash)
+  </footer>
 </body>
 </html>

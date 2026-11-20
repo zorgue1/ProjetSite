@@ -1,0 +1,119 @@
+/* Page publique d'accueil (index.html) : ce que voient Google et les nouveaux venus */
+
+.petit {
+  font-size: 13px;
+}
+
+/* ---------- Haut de page sur la photo ---------- */
+.vitrine-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 18vh 20px 56px;
+  text-align: center;
+  isolation: isolate;
+}
+
+.vitrine-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(rgba(9, 13, 19, 0.45), var(--fond) 96%),
+    /* Photo : Victor Freitas sur Unsplash (licence libre) – unsplash.com/photos/WvDYdXDzkhs */
+    url("../Image/Muscu.jpg") center 30% / cover no-repeat;
+}
+
+.vitrine-hero .logo {
+  padding: 0;
+}
+
+.vitrine-hero h1 {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: clamp(48px, 12vw, 76px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.vitrine-hero .logo-icone {
+  width: clamp(48px, 11vw, 68px);
+  height: clamp(48px, 11vw, 68px);
+}
+
+.accroche {
+  max-width: 460px;
+  margin: 0;
+  font-size: clamp(18px, 4.6vw, 22px);
+  font-weight: 700;
+  line-height: 1.35;
+  color: #fff;
+}
+
+.boutons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  margin-top: 6px;
+}
+
+.boutons .btn {
+  flex: 1 1 160px;
+  margin: 0;
+  text-align: center;
+  text-decoration: none;
+}
+
+.boutons .btn.secondaire {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: none;
+}
+
+/* ---------- Atouts ---------- */
+main {
+  padding-top: 8px;
+}
+
+.atouts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.atouts .card {
+  margin: 0;
+  animation: monter 0.4s ease both;
+}
+
+.atouts span {
+  font-size: 30px;
+}
+
+.atouts h2 {
+  margin: 8px 0 6px;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.atouts p {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--gris);
+}
+
+footer {
+  padding: 0 20px 40px;
+  text-align: center;
+}
