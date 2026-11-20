@@ -100,6 +100,7 @@
         <button class="btn" id="btn-valider" type="button">Se connecter</button>
       </div>
       <p id="message" role="status"></p>
+      <button type="button" class="lien-oubli renvoyer" id="btn-renvoyer" hidden>Renvoyer l’e-mail de confirmation</button>
     </section>
 
   </main>
@@ -241,6 +242,7 @@
       document.getElementById("onglet-inscription").setAttribute("aria-pressed", String(inscription));
       document.getElementById("champs-inscription").hidden = !inscription;
       document.getElementById("btn-oubli").hidden = inscription;
+      document.getElementById("btn-renvoyer").hidden = true;
       document.getElementById("btn-valider").textContent = inscription ? "Créer mon compte" : "Se connecter";
       document.getElementById("mdp").autocomplete = inscription ? "new-password" : "current-password";
       afficherMessage("", false);
@@ -261,6 +263,10 @@
 
     async function seConnecter() {
       const { error } = await client.auth.signInWithPassword(identifiants());
+      if (error && /not confirmed/i.test(error.message)) {
+        document.getElementById("btn-renvoyer").hidden = false;
+        return afficherMessage("Ton adresse n'est pas encore confirmée : clique sur le lien reçu par e-mail.", true);
+      }
       if (error) return afficherMessage("Connexion impossible : " + error.message, true);
       window.location.replace("Accueil.html");
     }
@@ -309,8 +315,14 @@
           : "Création impossible : " + error.message, true);
       }
 
+      // Adresse déjà inscrite : Supabase ne dit rien (pour protéger la vie privée) et n'envoie pas d'e-mail
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        return afficherMessage("Un compte existe déjà avec cette adresse. Connecte-toi, ou utilise « Mot de passe oublié ? ».", true);
+      }
+
       if (!data.session) {
-        return afficherMessage("Compte créé. Vérifie tes e-mails pour confirmer, puis connecte-toi.", false);
+        document.getElementById("btn-renvoyer").hidden = false;
+        return afficherMessage("Compte créé ! Ouvre l'e-mail de confirmation (regarde aussi dans les spams), puis connecte-toi.", false);
       }
 
       // Le compte est prêt : on enregistre le profil, le poids de départ et le programme
@@ -368,6 +380,31 @@
     document.getElementById("pseudo").addEventListener("input", function () {
       clearTimeout(minuteurPseudo);
       minuteurPseudo = setTimeout(verifierPseudo, 400);
+    });
+
+    /* ---------- Renvoyer l'e-mail de confirmation ---------- */
+
+    document.getElementById("btn-renvoyer").addEventListener("click", async function () {
+      const email = document.getElementById("email").value.trim();
+      if (!email) {
+        document.getElementById("email").focus();
+        return afficherMessage("Écris ton adresse e-mail juste au-dessus.", true);
+      }
+      this.disabled = true;
+      const { error } = await client.auth.resend({
+        type: "signup",
+        email: email,
+        options: { emailRedirectTo: location.href.split("#")[0].split("?")[0] }
+      });
+      // On attend une minute avant de pouvoir redemander (limite de Supabase)
+      const bouton = this;
+      setTimeout(function () { bouton.disabled = false; }, 60000);
+      if (error) {
+        return afficherMessage(/security purposes|rate limit|seconds/i.test(error.message)
+          ? "Patiente une minute avant de redemander un e-mail."
+          : "Envoi impossible : " + error.message, true);
+      }
+      afficherMessage("E-mail renvoyé à " + email + ". Regarde aussi dans les spams.", false);
     });
 
     /* ---------- Mot de passe oublié ---------- */

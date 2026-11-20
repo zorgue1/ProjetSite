@@ -131,3 +131,7 @@ body::before {
 .lien-oubli[hidden] {
   display: none;
 }
+
+.lien-oubli.renvoyer {
+  margin: 10px auto 0;
+}
