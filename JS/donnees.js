@@ -68,10 +68,24 @@ async function seanceEnCours() {
 
 /* ---------- Connexion ---------- */
 
+// Sans réseau, Supabase ne peut pas rafraîchir la session : on reprend celle gardée sur l'appareil
+function sessionHorsLigne() {
+  if (navigator.onLine) return null;
+  try {
+    const cle = Object.keys(localStorage).find(function (k) { return /^sb-.+-auth-token$/.test(k); });
+    const s = cle && JSON.parse(localStorage.getItem(cle));
+    return s && s.user ? s : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // À appeler au début de chaque page : renvoie l'utilisateur ou redirige vers Connexion.html
 async function exigerConnexion() {
   const { data } = await client.auth.getSession();
   if (!data.session) {
+    const horsLigne = sessionHorsLigne();
+    if (horsLigne) return horsLigne.user;
     window.location.replace("Connexion.html");
     return null;
   }
@@ -247,6 +261,69 @@ async function supprimerSeance(id) {
   if (error) throw error;
 }
 
+/* ---------- Séances enregistrées sans réseau ---------- */
+
+// Une séance et ses séries d'un coup : si les séries échouent, la séance est retirée
+async function enregistrerSeanceComplete(donnees, lignes) {
+  const id = await ajouterSeance(donnees);
+  try {
+    await ajouterSeries(id, lignes);
+  } catch (e) {
+    try { await supprimerSeance(id); } catch (e2) {}
+    throw e;
+  }
+  return id;
+}
+
+// Vrai si l'erreur vient d'une absence de réseau (et pas d'un refus de la base)
+function estErreurReseau(e) {
+  return !navigator.onLine || /fetch|network|load failed|internet/i.test((e && e.message) || String(e));
+}
+
+function cleAttente(userId) {
+  return "sportapp:attente:" + userId;
+}
+
+function seancesEnAttente(userId) {
+  try { return JSON.parse(localStorage.getItem(cleAttente(userId)) || "[]"); } catch (e) { return []; }
+}
+
+function mettreEnAttente(userId, donnees, lignes) {
+  const liste = seancesEnAttente(userId);
+  liste.push({ donnees: donnees, lignes: lignes });
+  localStorage.setItem(cleAttente(userId), JSON.stringify(liste));
+}
+
+// Envoie les séances gardées sur l'appareil ; renvoie le nombre de séances envoyées
+let envoiEnCours = false;
+async function envoyerSeancesEnAttente() {
+  if (envoiEnCours || !navigator.onLine) return 0;
+  const { data } = await client.auth.getSession();
+  if (!data.session) return 0;
+  const userId = data.session.user.id;
+  envoiEnCours = true;
+  let envoyees = 0;
+  try {
+    let liste = seancesEnAttente(userId);
+    while (liste.length) {
+      try {
+        await enregistrerSeanceComplete(liste[0].donnees, liste[0].lignes);
+        envoyees++;
+      } catch (e) {
+        if (estErreurReseau(e)) break;   // toujours pas de réseau : on réessaiera plus tard
+        console.error("Séance en attente refusée par la base", e);
+      }
+      liste.shift();
+      localStorage.setItem(cleAttente(userId), JSON.stringify(liste));
+    }
+  } finally {
+    envoiEnCours = false;
+  }
+  if (envoyees) document.dispatchEvent(new CustomEvent("seances-envoyees", { detail: envoyees }));
+  return envoyees;
+}
+
+
 /* ---------- Poids ---------- */
 
 async function ajouterPoids(valeur) {
@@ -389,30 +466,32 @@ function grouperSeries(lignes) {
   return parSeance;
 }
 
-// Ce que tu as fait la dernière fois pour un exercice
-async function chargerDerniereFois(exerciceId) {
-  const { data, error } = await client
-    .from("series")
-    .select("seance_id, numero, repetitions, charge, seances(date)")
-    .eq("exercice_id", exerciceId)
-    .order("id", { ascending: false })
-    .limit(60);
-  if (error) throw error;
-  if (data.length === 0) return null;
+// Pour un exercice : ce que tu as fait la dernière fois (indice) et tes records (record)
+// record = { charge : la plus lourde, e1rm : meilleur 1RM estimé (formule d'Epley) }
+async function chargerInfosExercice(exerciceId) {
+  const historique = await chargerHistoriqueExercice(exerciceId);
+  if (historique.length === 0) return { indice: null, record: { charge: 0, e1rm: 0 } };
 
   // La séance la plus récente (par date, puis par identifiant)
-  let meilleure = data[0];
-  data.forEach(function (l) {
-    const a = l.seances.date, b = meilleure.seances.date;
-    if (a > b || (a === b && l.seance_id > meilleure.seance_id)) meilleure = l;
+  let derniere = historique[0];
+  let charge = 0, e1rm = 0;
+  historique.forEach(function (l) {
+    const a = l.seances.date, b = derniere.seances.date;
+    if (a > b || (a === b && l.seance_id > derniere.seance_id)) derniere = l;
+    const c = Number(l.charge);
+    if (c > charge) charge = c;
+    if (c > 0 && c * (1 + l.repetitions / 30) > e1rm) e1rm = c * (1 + l.repetitions / 30);
   });
 
   return {
-    date: meilleure.seances.date,
-    series: data
-      .filter(function (l) { return l.seance_id === meilleure.seance_id; })
-      .sort(function (x, y) { return x.numero - y.numero; })
-      .map(function (l) { return { repetitions: l.repetitions, charge: Number(l.charge) }; })
+    indice: {
+      date: derniere.seances.date,
+      series: historique
+        .filter(function (l) { return l.seance_id === derniere.seance_id; })
+        .sort(function (x, y) { return x.numero - y.numero; })
+        .map(function (l) { return { repetitions: l.repetitions, charge: Number(l.charge) }; })
+    },
+    record: { charge: charge, e1rm: e1rm }
   };
 }
 
@@ -791,6 +870,7 @@ document.documentElement.style.visibility = "hidden";
 async function verifierSession() {
   const { data } = await client.auth.getSession();
   if (!data.session) {
+    if (sessionHorsLigne()) { document.documentElement.style.visibility = "visible"; return; }
     window.location.replace("Connexion.html");
   } else {
     document.documentElement.style.visibility = "visible";
@@ -808,3 +888,6 @@ client.auth.onAuthStateChange(function (evenement) {
 });
 
 verifierSession();
+// Dès que le réseau est là, les séances enregistrées hors connexion partent toutes seules
+window.addEventListener("online", envoyerSeancesEnAttente);
+setTimeout(envoyerSeancesEnAttente, 1500);

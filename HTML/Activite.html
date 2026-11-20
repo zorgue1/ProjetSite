@@ -70,6 +70,9 @@
       </div>
     </section>
 
+    <!-- Séances enregistrées sans réseau, pas encore envoyées -->
+    <p class="vide attente" id="attente" hidden></p>
+
     <!-- Bilan -->
     <section class="bilan" id="bilan"></section>
 
@@ -78,6 +81,35 @@
     <section id="historique"></section>
 
   </main>
+
+  <!-- Nouveau record pendant la séance -->
+  <div class="annonce-record" id="annonce-record" role="status" hidden></div>
+
+  <!-- Chrono de repos (apparaît après chaque série validée) -->
+  <div class="chrono" id="chrono" hidden>
+    <span class="chrono-barre" id="chrono-barre"></span>
+    <div class="chrono-texte">
+      <span class="chrono-titre" id="chrono-titre">Repos</span>
+      <strong id="chrono-temps">1:30</strong>
+    </div>
+    <button type="button" class="chrono-btn" id="chrono-moins" aria-label="Retirer 15 secondes">−15</button>
+    <button type="button" class="chrono-btn" id="chrono-plus" aria-label="Ajouter 15 secondes">+15</button>
+    <button type="button" class="chrono-btn passer" id="chrono-passer">Passer</button>
+  </div>
+
+  <!-- Récap de fin de séance -->
+  <div class="recap-fond" id="recap" hidden>
+    <div class="recap-carte" role="dialog" aria-modal="true" aria-labelledby="recap-titre">
+      <div class="confettis" id="confettis" aria-hidden="true"></div>
+      <div class="recap-emoji" aria-hidden="true">💪</div>
+      <h2 id="recap-titre">Séance terminée !</h2>
+      <p class="mut" id="recap-sous"></p>
+      <div class="recap-chiffres" id="recap-chiffres"></div>
+      <div class="recap-records" id="recap-records"></div>
+      <p class="recap-xp" id="recap-xp"></p>
+      <button class="btn" id="recap-ok" type="button">Super !</button>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ" crossorigin="anonymous"></script>
   <script src="../JS/supabase.js"></script>
@@ -93,6 +125,25 @@
 
     let moiId = null;            // identifiant de l'utilisateur connecté
     let editionId = null;        // séance en cours de modification (null = nouvelle séance)
+    let debutSeance = null;      // heure de début de la séance (pour le récap)
+    let xpAvant = null;          // XP avant la séance (pour afficher l'XP gagnée)
+
+    // Petites données gardées sur l'appareil, pour que la page marche aussi sans réseau
+    function lireLocal(nom, defaut) {
+      try { return JSON.parse(localStorage.getItem("sportapp:" + nom + ":" + moiId)) || defaut; } catch (e) { return defaut; }
+    }
+    function ecrireLocal(nom, valeur) {
+      try { localStorage.setItem("sportapp:" + nom + ":" + moiId, JSON.stringify(valeur)); } catch (e) {}
+    }
+
+    function nombre(v) {
+      return parseFloat(String(v).replace(",", ".")) || 0;
+    }
+
+    // Vibration courte (sur les téléphones qui le permettent)
+    function vibrer(motif) {
+      try { if (navigator.vibrate) navigator.vibrate(motif); } catch (e) {}
+    }
     const FILTRES = ["Tous", "Push", "Pull", "Leg", "Autres"];
 
     function dateCourte(texte) {
@@ -155,6 +206,7 @@
         date: document.getElementById("date").value,
         type: document.getElementById("type").value,
         notes: notes,
+        debut: debutSeance,
         blocs: blocs.map(function (b) {
           return {
             exercice: {
@@ -181,6 +233,8 @@
       document.getElementById("date").value = b.date || aujourdhui();
       document.getElementById("type").value = b.type || "";
       document.getElementById("notes").value = b.notes || "";
+      debutSeance = b.debut || Date.now();
+      prendreXPAvant();
 
       blocs = (b.blocs || []).map(function (x) {
         const biblio = exercices.find(function (e) { return e.id === x.exercice.id; }) || x.exercice;
@@ -188,6 +242,7 @@
           exercice: biblio,
           series: x.series && x.series.length ? x.series : [{ rep: "", charge: "" }],
           indice: null,
+          record: null,
           ouvert: !!x.ouvert
         };
       });
@@ -196,6 +251,7 @@
       afficherBlocs();
       afficherResultats();
       blocs.forEach(chargerIndice);
+      reprendreChrono();
       confirmer("Séance en cours reprise");
       return true;
     }
@@ -261,6 +317,8 @@
       document.getElementById("date").value = aujourdhui();
       document.getElementById("notes").value = "";
       blocs = [];
+      debutSeance = Date.now();
+      prendreXPAvant();
 
       // La séance prévue aujourd'hui est proposée d'office (tu peux la changer)
       const prevu = programme[(new Date().getDay() + 6) % 7];
@@ -302,9 +360,10 @@
         return {
           exercice: biblio,
           series: ex.series.map(function (x) {
-            return { rep: String(x.repetitions), charge: x.charge > 0 ? String(x.charge) : "" };
+            return { rep: String(x.repetitions), charge: x.charge > 0 ? String(x.charge) : "", faite: true };
           }),
           indice: null,
+          record: null,
           ouvert: false
         };
       });
@@ -428,16 +487,25 @@
       zone.scrollTop = haut;
     }
 
-    // Ce qui avait été fait la dernière fois (pas pour une modification de séance)
+    // Ce qui avait été fait la dernière fois et les records de l'exercice (pas pour une modification).
+    // Une copie est gardée sur l'appareil : sans réseau, on s'en sert.
     async function chargerIndice(bloc) {
       if (editionId !== null) return;
+      const copie = lireLocal("infos-exos", {});
+      let infos = copie[bloc.exercice.id] || null;
       try {
-        bloc.indice = await chargerDerniereFois(bloc.exercice.id);
-        if (!bloc.indice || blocs.indexOf(bloc) === -1) return;
-        // On ne reconstruit pas la liste si tu es en train de saisir un chiffre
-        if (document.getElementById("blocs").contains(document.activeElement)) return;
-        afficherBlocs();
+        infos = await chargerInfosExercice(bloc.exercice.id);
+        copie[bloc.exercice.id] = infos;
+        ecrireLocal("infos-exos", copie);
       } catch (e) {}
+      if (!infos || blocs.indexOf(bloc) === -1) return;
+      bloc.indice = infos.indice;
+      // Les séries déjà validées dans cette séance comptent aussi
+      bloc.record = { charge: infos.record.charge, e1rm: infos.record.e1rm };
+      bloc.series.forEach(function (s) { if (s.faite) majRecord(bloc, s); });
+      // On ne reconstruit pas la liste si tu es en train de saisir un chiffre
+      if (document.getElementById("blocs").contains(document.activeElement)) return;
+      afficherBlocs();
     }
 
     function ajouterBloc(exercice) {
@@ -445,7 +513,7 @@
 
       // Les exercices précédents se replient, le nouveau s'ouvre
       blocs.forEach(function (b) { b.ouvert = false; });
-      const bloc = { exercice: exercice, series: [{ rep: "", charge: "" }], indice: null, ouvert: true };
+      const bloc = { exercice: exercice, series: [{ rep: "", charge: "" }], indice: null, record: null, ouvert: true };
       blocs.push(bloc);
 
       document.getElementById("recherche-exo").value = "";
@@ -470,8 +538,114 @@
 
     /* ---------- Exercices de la séance (liste repliable) ---------- */
 
+    // Séries qui seront enregistrées : au moins une répétition.
+    // Une série ajoutée toute seule après une validation (auto) ne compte que si tu la valides ou la modifies.
     function seriesValides(bloc) {
-      return bloc.series.filter(function (s) { return parseInt(s.rep, 10) > 0; });
+      return bloc.series.filter(function (s) {
+        return parseInt(s.rep, 10) > 0 && !(s.auto && !s.faite);
+      });
+    }
+
+    /* ---------- Records pendant la séance ---------- */
+
+    // Met à jour le record de l'exercice avec cette série ; renvoie le type de record battu (ou "")
+    function majRecord(bloc, serie) {
+      if (!bloc.record) return "";
+      const charge = nombre(serie.charge);
+      const reps = parseInt(serie.rep, 10) || 0;
+      if (charge <= 0 || reps <= 0) return "";
+      const e1rm = charge * (1 + reps / 30);
+      // Première fois sur cet exercice : pas de record à fêter
+      const avaitHistorique = bloc.record.charge > 0;
+      let type = "";
+      if (charge > bloc.record.charge) type = "charge";
+      else if (e1rm > bloc.record.e1rm + 0.01) type = "e1rm";
+      bloc.record.charge = Math.max(bloc.record.charge, charge);
+      bloc.record.e1rm = Math.max(bloc.record.e1rm, e1rm);
+      return avaitHistorique ? type : "";
+    }
+
+    let minuteurAnnonce = null;
+    function annoncerRecord(bloc, serie, type) {
+      const zone = document.getElementById("annonce-record");
+      zone.innerHTML = "";
+      zone.appendChild(el("strong", "", "🎉 Nouveau record !"));
+      zone.appendChild(el("span", "", bloc.exercice.nom + " · " + (type === "charge"
+        ? "charge la plus lourde : " + nb(nombre(serie.charge)) + " kg"
+        : texteSerie({ repetitions: parseInt(serie.rep, 10), charge: nombre(serie.charge) }) +
+          " (1RM estimé ≈ " + nb(nombre(serie.charge) * (1 + parseInt(serie.rep, 10) / 30)) + " kg)")));
+      zone.hidden = false;
+      zone.classList.remove("visible");
+      void zone.offsetWidth;          // relance l'animation
+      zone.classList.add("visible");
+      vibrer([80, 60, 80, 60, 200]);
+      clearTimeout(minuteurAnnonce);
+      minuteurAnnonce = setTimeout(function () { zone.hidden = true; }, 4000);
+    }
+
+    /* ---------- Saisie d'une série ---------- */
+
+    // Champ avec gros boutons − et + (pas : 1 répétition ou 2,5 kg)
+    function stepper(libelle, serie, cle, pas, mode, suggestion, quandChange) {
+      const bloc = el("div", "stepper");
+      bloc.appendChild(el("span", "stepper-libelle", libelle));
+      const ligne = el("div", "stepper-ligne");
+      const moins = el("button", "stepper-btn", "−");
+      moins.type = "button";
+      moins.setAttribute("aria-label", "Moins " + pas + " " + libelle);
+      const champ = champNombre(libelle, serie[cle], mode, cle === "rep" ? "1" : "0.5");
+      if (suggestion !== "" && suggestion !== undefined) champ.placeholder = String(suggestion).replace(".", ",");
+      const plus = el("button", "stepper-btn", "+");
+      plus.type = "button";
+      plus.setAttribute("aria-label", "Plus " + pas + " " + libelle);
+
+      function changer(valeur) {
+        serie[cle] = valeur;
+        serie.auto = false;
+        champ.value = valeur;
+        quandChange();
+      }
+      function pousser(sens) {
+        // Sans valeur, on part de la suggestion (ce que tu as fait la dernière fois)
+        const base = champ.value !== "" ? nombre(champ.value) : nombre(suggestion);
+        const v = Math.max(0, Math.round((base + sens * pas) * 100) / 100);
+        changer(String(v));
+        vibrer(10);
+      }
+      moins.addEventListener("click", function () { pousser(-1); });
+      plus.addEventListener("click", function () { pousser(1); });
+      champ.addEventListener("input", function () { changer(champ.value); });
+
+      ligne.appendChild(moins);
+      ligne.appendChild(champ);
+      ligne.appendChild(plus);
+      bloc.appendChild(ligne);
+      return bloc;
+    }
+
+    // ✓ Valider : la série est faite → chrono de repos, record éventuel, série suivante préparée
+    function validerSerie(bloc, serie, avant) {
+      // Rien de saisi : on reprend ce que tu as fait la dernière fois
+      if (serie.rep === "" && avant) serie.rep = String(avant.repetitions);
+      if (serie.charge === "" && avant && avant.charge > 0) serie.charge = String(avant.charge);
+      if (!(parseInt(serie.rep, 10) > 0)) {
+        alert("Indique le nombre de répétitions de la série.");
+        return;
+      }
+      serie.faite = true;
+      serie.auto = false;
+
+      const type = editionId === null ? majRecord(bloc, serie) : "";
+      serie.record = !!type;
+      if (type) annoncerRecord(bloc, serie, type);
+      else vibrer(30);
+
+      // La série suivante est préparée avec les mêmes valeurs
+      if (bloc.series[bloc.series.length - 1] === serie) {
+        bloc.series.push({ rep: serie.rep, charge: serie.charge, auto: true });
+      }
+      afficherBlocs();
+      if (editionId === null) demarrerChrono();
     }
 
     // Résumé affiché quand l'exercice est replié
@@ -554,28 +728,34 @@
             corps.appendChild(indice);
           }
 
+          const precedentes = bloc.indice ? bloc.indice.series : [];
           bloc.series.forEach(function (serie, j) {
-            const ligne = el("div", "ligne-serie");
-            ligne.appendChild(el("span", "num-serie", String(j + 1)));
+            const avant = precedentes[j];
 
-            const rep = champNombre("Reps", serie.rep, "numeric", "1");
-            rep.addEventListener("input", function () {
-              serie.rep = rep.value;
-              resume.textContent = resumeBloc(bloc);
-              sauverBrouillon();
-            });
-            ligne.appendChild(rep);
+            // Série faite : une ligne compacte (la toucher permet de la corriger)
+            if (serie.faite) {
+              const ligne = el("button", "serie-faite" + (serie.record ? " record" : ""));
+              ligne.type = "button";
+              ligne.appendChild(el("span", "num-serie ok", "✓"));
+              ligne.appendChild(el("span", "serie-valeurs", texteSerie({
+                repetitions: parseInt(serie.rep, 10) || 0, charge: nombre(serie.charge)
+              })));
+              if (serie.record) ligne.appendChild(el("span", "badge-record", "🏆 Record"));
+              ligne.appendChild(el("span", "serie-modifier", "Modifier"));
+              ligne.setAttribute("aria-label", "Série " + (j + 1) + " faite, toucher pour la modifier");
+              ligne.addEventListener("click", function () {
+                serie.faite = false;
+                afficherBlocs();
+              });
+              corps.appendChild(ligne);
+              return;
+            }
 
-            ligne.appendChild(el("span", "croix", "×"));
-
-            const charge = champNombre("kg", serie.charge, "decimal", "0.5");
-            charge.addEventListener("input", function () {
-              serie.charge = charge.value;
-              resume.textContent = resumeBloc(bloc);
-              sauverBrouillon();
-            });
-            ligne.appendChild(charge);
-
+            // Série à faire : gros boutons − / + et ✓ Valider
+            const carteSerie = el("div", "serie-edition");
+            const haut = el("div", "serie-haut");
+            haut.appendChild(el("strong", "", "Série " + (j + 1)));
+            if (avant) haut.appendChild(el("span", "serie-avant", "Dernière fois : " + texteSerie(avant)));
             const supprimer = el("button", "btn-mini", "✕");
             supprimer.type = "button";
             supprimer.setAttribute("aria-label", "Supprimer la série " + (j + 1));
@@ -584,9 +764,23 @@
               if (bloc.series.length === 0) bloc.series.push({ rep: "", charge: "" });
               afficherBlocs();
             });
-            ligne.appendChild(supprimer);
+            haut.appendChild(supprimer);
+            carteSerie.appendChild(haut);
 
-            corps.appendChild(ligne);
+            function quandChange() {
+              resume.textContent = resumeBloc(bloc);
+              sauverBrouillon();
+            }
+            const reglages = el("div", "serie-reglages");
+            reglages.appendChild(stepper("Reps", serie, "rep", 1, "numeric", avant ? avant.repetitions : "", quandChange));
+            reglages.appendChild(stepper("kg", serie, "charge", 2.5, "decimal", avant && avant.charge > 0 ? avant.charge : "", quandChange));
+            carteSerie.appendChild(reglages);
+
+            const valider = el("button", "btn valider-serie", "✓ Valider la série " + (j + 1));
+            valider.type = "button";
+            valider.addEventListener("click", function () { validerSerie(bloc, serie, avant); });
+            carteSerie.appendChild(valider);
+            corps.appendChild(carteSerie);
           });
 
           // Ajouter une série (copie les valeurs de la précédente)
@@ -594,10 +788,8 @@
           ajout.type = "button";
           ajout.addEventListener("click", function () {
             const derniere = bloc.series[bloc.series.length - 1];
-            bloc.series.push({ rep: derniere.rep, charge: derniere.charge });
+            bloc.series.push({ rep: derniere.rep, charge: derniere.charge, auto: true });
             afficherBlocs();
-            const champs = document.querySelectorAll(".bloc-exo")[i].querySelectorAll(".ligne-serie input");
-            champs[champs.length - 2].focus();
           });
           corps.appendChild(ajout);
 
@@ -759,6 +951,217 @@
       }
     }
 
+    /* ---------- Chrono de repos ---------- */
+
+    // L'heure de fin est gardée sur l'appareil : le chrono continue même si tu changes de page
+    let chrono = null;            // { fin: heure de fin (ms), total: durée (s) }
+    let minuteurChrono = null;
+    let sonChrono = null;
+
+    function dureeRepos() {
+      return lireLocal("repos", 90);
+    }
+
+    function demarrerChrono() {
+      const total = dureeRepos();
+      chrono = { fin: Date.now() + total * 1000, total: total };
+      ecrireLocal("chrono", chrono);
+      // Le son doit être préparé pendant un geste de l'utilisateur (règle des navigateurs)
+      try { sonChrono = sonChrono || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+      afficherChrono();
+    }
+
+    function reprendreChrono() {
+      const c = lireLocal("chrono", null);
+      if (c && c.fin > Date.now()) {
+        chrono = c;
+        afficherChrono();
+      }
+    }
+
+    function arreterChrono() {
+      clearInterval(minuteurChrono);
+      chrono = null;
+      ecrireLocal("chrono", null);
+      document.getElementById("chrono").hidden = true;
+      document.body.classList.remove("avec-chrono");
+    }
+
+    function bip() {
+      if (!sonChrono) return;
+      try {
+        [0, 0.25, 0.5].forEach(function (decalage, i) {
+          const o = sonChrono.createOscillator();
+          const g = sonChrono.createGain();
+          o.frequency.value = i === 2 ? 1046 : 784;
+          g.gain.setValueAtTime(0.25, sonChrono.currentTime + decalage);
+          g.gain.exponentialRampToValueAtTime(0.001, sonChrono.currentTime + decalage + 0.2);
+          o.connect(g).connect(sonChrono.destination);
+          o.start(sonChrono.currentTime + decalage);
+          o.stop(sonChrono.currentTime + decalage + 0.2);
+        });
+      } catch (e) {}
+    }
+
+    function afficherChrono() {
+      const zone = document.getElementById("chrono");
+      zone.hidden = false;
+      zone.classList.remove("fini");
+      document.body.classList.add("avec-chrono");
+      document.getElementById("chrono-titre").textContent = "Repos";
+      clearInterval(minuteurChrono);
+
+      function tic() {
+        if (!chrono) return;
+        const reste = Math.max(0, Math.ceil((chrono.fin - Date.now()) / 1000));
+        document.getElementById("chrono-temps").textContent =
+          Math.floor(reste / 60) + ":" + String(reste % 60).padStart(2, "0");
+        document.getElementById("chrono-barre").style.width = (reste / chrono.total * 100) + "%";
+        if (reste === 0) {
+          clearInterval(minuteurChrono);
+          zone.classList.add("fini");
+          document.getElementById("chrono-titre").textContent = "C’est reparti";
+          document.getElementById("chrono-temps").textContent = "💪";
+          vibrer([300, 150, 300, 150, 500]);
+          bip();
+          chrono = null;
+          ecrireLocal("chrono", null);
+          setTimeout(function () { if (!chrono) arreterChrono(); }, 5000);
+        }
+      }
+      tic();
+      minuteurChrono = setInterval(tic, 250);
+    }
+
+    // ±15 s : modifie le repos en cours et devient ta durée habituelle
+    function ajusterChrono(secondes) {
+      if (!chrono) return;
+      const total = Math.max(15, Math.min(600, chrono.total + secondes));
+      chrono.fin += (total - chrono.total) * 1000;
+      chrono.total = total;
+      ecrireLocal("chrono", chrono);
+      ecrireLocal("repos", total);
+      afficherChrono();
+    }
+
+    document.getElementById("chrono-moins").addEventListener("click", function () { ajusterChrono(-15); });
+    document.getElementById("chrono-plus").addEventListener("click", function () { ajusterChrono(15); });
+    document.getElementById("chrono-passer").addEventListener("click", arreterChrono);
+
+    /* ---------- Récap de fin de séance ---------- */
+
+    async function prendreXPAvant() {
+      xpAvant = null;
+      try { xpAvant = (await chargerXP()).xp; } catch (e) {}
+    }
+
+    function dureeTexte(ms) {
+      const min = Math.round(ms / 60000);
+      return min >= 60 ? Math.floor(min / 60) + " h " + String(min % 60).padStart(2, "0") : min + " min";
+    }
+
+    function lancerConfettis() {
+      const zone = document.getElementById("confettis");
+      zone.innerHTML = "";
+      const couleurs = ["#ff6b35", "#ffb020", "#2dd4bf", "#a78bfa", "#f472b6", "#60a5fa"];
+      for (let i = 0; i < 40; i++) {
+        const c = el("span", "confetti");
+        c.style.left = Math.random() * 100 + "%";
+        c.style.background = couleurs[i % couleurs.length];
+        c.style.animationDelay = Math.random() * 0.6 + "s";
+        c.style.animationDuration = 1.6 + Math.random() * 1.2 + "s";
+        c.style.transform = "rotate(" + Math.random() * 360 + "deg)";
+        zone.appendChild(c);
+      }
+    }
+
+    // stats : calculées à partir des exercices saisis, avant de fermer le formulaire
+    function statsSeance() {
+      let series = 0, volume = 0;
+      const records = [];
+      blocs.forEach(function (bloc) {
+        seriesValides(bloc).forEach(function (s) {
+          series++;
+          volume += (parseInt(s.rep, 10) || 0) * nombre(s.charge);
+          if (s.record) records.push(bloc.exercice.nom + " : " + texteSerie({ repetitions: parseInt(s.rep, 10), charge: nombre(s.charge) }));
+        });
+      });
+      return {
+        exercices: blocs.filter(function (b) { return seriesValides(b).length; }).length,
+        series: series,
+        volume: volume,
+        records: records,
+        duree: debutSeance ? Date.now() - debutSeance : 0
+      };
+    }
+
+    async function afficherRecap(type, stats, horsLigne) {
+      document.getElementById("recap-sous").textContent = type +
+        (stats.duree > 60000 && stats.duree < 5 * 3600000 ? " · " + dureeTexte(stats.duree) : "");
+
+      const chiffres = document.getElementById("recap-chiffres");
+      chiffres.innerHTML = "";
+      [[String(stats.exercices), "exercices"], [String(stats.series), "séries"],
+       [stats.volume >= 1000 ? nb(stats.volume / 1000) + " t" : Math.round(stats.volume) + " kg", "soulevés"]]
+        .forEach(function (c) {
+          const b = el("div", "recap-chiffre");
+          b.appendChild(el("strong", "", c[0]));
+          b.appendChild(el("span", "", c[1]));
+          chiffres.appendChild(b);
+        });
+
+      const records = document.getElementById("recap-records");
+      records.innerHTML = "";
+      if (stats.records.length) {
+        records.appendChild(el("strong", "", "🏆 " + (stats.records.length > 1 ? stats.records.length + " records battus" : "Record battu")));
+        stats.records.forEach(function (r) { records.appendChild(el("span", "", r)); });
+      }
+
+      const xp = document.getElementById("recap-xp");
+      xp.textContent = horsLigne ? "Pas de réseau : ta séance sera envoyée (et ton XP comptée) dès que tu seras connecté." : "";
+      document.getElementById("recap").hidden = false;
+      document.body.classList.add("sans-defilement");
+      lancerConfettis();
+      vibrer([60, 40, 60]);
+      document.getElementById("recap-ok").focus();
+
+      // XP gagnée : calculée par le serveur, on compare avant / après
+      if (!horsLigne && xpAvant !== null) {
+        try {
+          const apres = (await chargerXP()).xp;
+          const gain = apres - xpAvant;
+          const avant = niveauDe(xpAvant).niveau, maintenant = niveauDe(apres).niveau;
+          xp.textContent = gain > 0
+            ? "+" + gain + " XP" + (maintenant > avant ? " · 🎉 Niveau " + maintenant + " atteint !" : "")
+            : "Pas d’XP pour celle-ci (une seule séance compte par jour, avec au moins 3 séries).";
+          xp.classList.toggle("gain", gain > 0);
+        } catch (e) {}
+      }
+    }
+
+    document.getElementById("recap-ok").addEventListener("click", function () {
+      document.getElementById("recap").hidden = true;
+      document.body.classList.remove("sans-defilement");
+    });
+
+    /* ---------- Séances en attente d'envoi ---------- */
+
+    function afficherAttente() {
+      const n = seancesEnAttente(moiId).length;
+      const zone = document.getElementById("attente");
+      zone.hidden = !n;
+      zone.textContent = n
+        ? "📶 " + (n > 1 ? n + " séances enregistrées" : "1 séance enregistrée") +
+          " sur ton téléphone, en attente de réseau. Elle" + (n > 1 ? "s" : "") + " partira toute seule."
+        : "";
+    }
+
+    document.addEventListener("seances-envoyees", async function (e) {
+      afficherAttente();
+      confirmer(e.detail > 1 ? e.detail + " séances envoyées" : "Séance hors connexion envoyée");
+      try { await afficherHistorique(); } catch (err) {}
+    });
+
     /* ---------- Enregistrement ---------- */
 
     document.getElementById("btn-nouvelle").addEventListener("click", ouvrirNouvelle);
@@ -769,6 +1172,7 @@
         ? "Annuler les modifications ?"
         : "Abandonner cette séance ? Les exercices saisis seront perdus.";
       if (contenu && !confirm(question)) return;
+      arreterChrono();
       fermerFormulaire();
     });
 
@@ -790,9 +1194,8 @@
       const lignes = [];
       blocs.forEach(function (bloc) {
         let numero = 0;
-        bloc.series.forEach(function (s) {
+        seriesValides(bloc).forEach(function (s) {
           const rep = parseInt(s.rep, 10);
-          if (!rep || rep <= 0) return;
           numero++;
           lignes.push({
             exercice_id: bloc.exercice.id,
@@ -818,19 +1221,23 @@
           fermerFormulaire();
           confirmer("Séance modifiée");
         } else {
-          // Nouvelle séance
-          const id = await ajouterSeance(donnees);
+          // Nouvelle séance (sans réseau, elle est gardée sur le téléphone et envoyée plus tard)
+          const stats = statsSeance();
+          let horsLigne = false;
           try {
-            await ajouterSeries(id, lignes);
+            await enregistrerSeanceComplete(donnees, lignes);
           } catch (e) {
-            await supprimerSeance(id);   // on n'enregistre pas une séance à moitié
-            throw e;
+            if (!estErreurReseau(e)) throw e;
+            mettreEnAttente(moiId, donnees, lignes);
+            horsLigne = true;
           }
+          arreterChrono();
           fermerFormulaire();
-          confirmer("Séance enregistrée");
+          afficherAttente();
+          afficherRecap(type, stats, horsLigne);
         }
         window.scrollTo({ top: 0, behavior: "smooth" });
-        await afficherHistorique();
+        try { await afficherHistorique(); } catch (e) {}
       } catch (e) {
         alert("Erreur : " + e.message);
       } finally {
@@ -845,14 +1252,29 @@
       if (!user) return;
       moiId = user.id;
       document.getElementById("date").value = aujourdhui();
+
+      // Exercices et programme : copie gardée sur l'appareil pour la salle sans réseau
       try {
         exercices = await chargerExercices();
-        try { programme = (await chargerProfil()).programme; } catch (e) {}
-        afficherChoix();
-        restaurerBrouillon();          // reprend la séance commencée avant de quitter la page
+        ecrireLocal("exercices", exercices);
+      } catch (e) {
+        exercices = lireLocal("exercices", []);
+        if (!exercices.length) alert("Erreur de chargement : " + e.message);
+      }
+      try {
+        programme = (await chargerProfil()).programme;
+        ecrireLocal("programme", programme);
+      } catch (e) {
+        programme = lireLocal("programme", PROGRAMME_DEFAUT);
+      }
+      afficherChoix();
+      restaurerBrouillon();          // reprend la séance commencée avant de quitter la page
+      afficherAttente();
+      try {
         await afficherHistorique();
       } catch (e) {
-        alert("Erreur de chargement : " + e.message);
+        document.getElementById("historique").appendChild(el("div", "vide",
+          navigator.onLine ? "Historique indisponible pour le moment." : "Pas de réseau : l’historique reviendra avec la connexion."));
       }
     })();
   </script>
