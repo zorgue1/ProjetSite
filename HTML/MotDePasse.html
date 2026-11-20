@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://unzyqfkxgfepvzirnmfd.supabase.co wss://unzyqfkxgfepvzirnmfd.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SportApp – Nouveau mot de passe</title>
   <link rel="manifest" href="../manifest.json">
@@ -30,7 +31,7 @@
 
       <!-- Affiché quand on arrive par le lien reçu par e-mail -->
       <div id="formulaire" hidden>
-        <label for="mdp1">Nouveau mot de passe (6 caractères minimum)</label>
+        <label for="mdp1">Nouveau mot de passe (8 caractères, lettres et chiffres)</label>
         <input id="mdp1" type="password" autocomplete="new-password">
         <label for="mdp2">Confirme le mot de passe</label>
         <input id="mdp2" type="password" autocomplete="new-password">
@@ -44,10 +45,17 @@
     </section>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ" crossorigin="anonymous"></script>
   <script src="../JS/supabase.js"></script>
   <script>
     const message = document.getElementById("message");
+
+    // Mot de passe solide : 8 caractères minimum, avec au moins une lettre et un chiffre
+    function erreurMotDePasse(mdp) {
+      if (mdp.length < 8) return "Le mot de passe doit faire au moins 8 caractères.";
+      if (!/[A-Za-z]/.test(mdp) || !/[0-9]/.test(mdp)) return "Le mot de passe doit contenir au moins une lettre et un chiffre.";
+      return "";
+    }
 
     function afficherMessage(texte, erreur) {
       message.textContent = texte;
@@ -74,13 +82,17 @@
     document.getElementById("btn-valider").addEventListener("click", async function () {
       const mdp1 = document.getElementById("mdp1").value;
       const mdp2 = document.getElementById("mdp2").value;
-      if (mdp1.length < 6) return afficherMessage("Le mot de passe doit faire au moins 6 caractères.", true);
+      const erreur = erreurMotDePasse(mdp1);
+      if (erreur) return afficherMessage(erreur, true);
       if (mdp1 !== mdp2) return afficherMessage("Les deux mots de passe ne sont pas identiques.", true);
 
       this.disabled = true;
       const { error } = await client.auth.updateUser({ password: mdp1 });
       this.disabled = false;
       if (error) return afficherMessage("Changement impossible : " + error.message, true);
+
+      // Par sécurité, on déconnecte les autres appareils (un éventuel intrus perd l'accès)
+      await client.auth.signOut({ scope: "others" });
 
       afficherMessage("Mot de passe changé ! Redirection vers l’accueil…", false);
       setTimeout(function () { window.location.replace("Accueil.html"); }, 1500);

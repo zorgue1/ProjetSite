@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://unzyqfkxgfepvzirnmfd.supabase.co wss://unzyqfkxgfepvzirnmfd.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>SportApp – Paramètres</title>
   <link rel="manifest" href="../manifest.json">
@@ -95,7 +96,7 @@
         <input id="mdp-actuel" type="password" autocomplete="current-password">
         <div class="row">
           <div>
-            <label for="mdp-nouveau">Nouveau (6 caractères min.)</label>
+            <label for="mdp-nouveau">Nouveau (8 car., lettres + chiffres)</label>
             <input id="mdp-nouveau" type="password" autocomplete="new-password">
           </div>
           <div>
@@ -111,7 +112,7 @@
 
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ" crossorigin="anonymous"></script>
   <script src="../JS/supabase.js"></script>
   <script src="../JS/donnees.js"></script>
   <script>
@@ -251,12 +252,20 @@
 
     document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
 
+    // Mot de passe solide : 8 caractères minimum, avec au moins une lettre et un chiffre
+    function erreurMotDePasse(mdp) {
+      if (mdp.length < 8) return "Le mot de passe doit faire au moins 8 caractères.";
+      if (!/[A-Za-z]/.test(mdp) || !/[0-9]/.test(mdp)) return "Le mot de passe doit contenir au moins une lettre et un chiffre.";
+      return "";
+    }
+
     // On vérifie d'abord le mot de passe actuel, puis on enregistre le nouveau
     document.getElementById("btn-mdp").addEventListener("click", async function () {
       const actuel = document.getElementById("mdp-actuel").value;
       const nouveau = document.getElementById("mdp-nouveau").value;
       if (!actuel) return document.getElementById("mdp-actuel").focus();
-      if (nouveau.length < 6) return alert("Le nouveau mot de passe doit faire au moins 6 caractères.");
+      const erreurMdp = erreurMotDePasse(nouveau);
+      if (erreurMdp) return alert(erreurMdp);
       if (nouveau !== document.getElementById("mdp-confirme").value) return alert("Les deux nouveaux mots de passe ne sont pas identiques.");
       if (nouveau === actuel) return alert("Le nouveau mot de passe est le même que l'actuel.");
 
@@ -268,9 +277,10 @@
         if (verif.error) return alert("Mot de passe actuel incorrect.");
         const { error } = await client.auth.updateUser({ password: nouveau });
         if (error) return alert("Changement impossible : " + error.message);
+        await client.auth.signOut({ scope: "others" });   // les autres appareils sont déconnectés
         ["mdp-actuel", "mdp-nouveau", "mdp-confirme"].forEach(function (id) { document.getElementById(id).value = ""; });
         document.querySelector("details.mdp").open = false;
-        alert("Mot de passe changé !");
+        alert("Mot de passe changé ! Tes autres appareils ont été déconnectés.");
       } finally {
         bouton.disabled = false;
       }

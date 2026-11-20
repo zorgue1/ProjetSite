@@ -30,6 +30,13 @@ function nb(v) {
   return String(Math.round(Number(v) * 10) / 10).replace(".", ",");
 }
 
+// Rend un texte sans danger avant de l'insérer dans du HTML écrit à la main (ex. : un graphique SVG)
+function echapperHTML(texte) {
+  return String(texte).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
 // Crée un élément HTML (le texte est inséré en toute sécurité)
 function el(balise, classe, texte) {
   const e = document.createElement(balise);
