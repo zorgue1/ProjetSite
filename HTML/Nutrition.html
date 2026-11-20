@@ -109,7 +109,7 @@
     </section>
 
     <!-- Les repas du jour, rangés par moment -->
-    <section id="journal"></section>
+    <section id="journal"><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div></section>
 
     <!-- Réglage des besoins -->
     <details class="card besoins" id="besoins">
@@ -347,14 +347,9 @@
           const suppr = el("button", "repas-suppr", "×");
           suppr.type = "button";
           suppr.setAttribute("aria-label", "Supprimer " + r.nom);
-          suppr.addEventListener("click", async function () {
-            if (!confirm("Supprimer « " + r.nom + " » ?")) return;
-            try {
-              await supprimerRepas(r.id);
-              await chargerJour();
-            } catch (e) {
-              alert(erreurLisible(e));
-            }
+          suppr.addEventListener("click", function () {
+            supprimerAvecAnnulation("« " + r.nom + " » supprimé", ligne,
+              function () { return supprimerRepas(r.id); }, chargerJour);
           });
           ligne.appendChild(suppr);
           carte.appendChild(ligne);
@@ -450,8 +445,8 @@
       // Calories absentes mais macros remplies : 4 kcal/g (P, G) et 9 kcal/g (L)
       if (kcal === null && (p || g || l)) kcal = (p || 0) * 4 + (g || 0) * 4 + (l || 0) * 9;
 
-      if (!nom) { $("repas-nom").focus(); return alert("Indique ce que tu as mangé."); }
-      if (kcal === null || isNaN(kcal) || kcal < 0) { $("repas-kcal").focus(); return alert("Indique les calories du repas."); }
+      if (!nom) { $("repas-nom").focus(); return informer("Indique ce que tu as mangé."); }
+      if (kcal === null || isNaN(kcal) || kcal < 0) { $("repas-kcal").focus(); return informer("Indique les calories du repas."); }
 
       const bouton = this;
       bouton.disabled = true;
@@ -464,7 +459,7 @@
         confirmer("Repas ajouté : " + entier(kcal) + " kcal");
         await chargerJour();
       } catch (e) {
-        alert(erreurLisible(e));
+        informer(erreurLisible(e));
       } finally {
         bouton.disabled = false;
       }
@@ -581,7 +576,7 @@
         confirmer("Besoins enregistrés : " + (besoins.manque.length ? "il manque encore des infos" : entier(besoins.calories) + " kcal / jour"));
         window.scrollTo({ top: 0, behavior: "smooth" });
       } catch (e) {
-        alert(erreurLisible(e));
+        informer(erreurLisible(e));
       } finally {
         bouton.disabled = false;
       }

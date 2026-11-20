@@ -633,7 +633,7 @@
         poids = await chargerPoids();
         afficherPoids();
       } catch (e) {
-        alert("Erreur : " + e.message);
+        informer("Erreur : " + e.message);
       } finally {
         bouton.disabled = false;
       }
@@ -856,7 +856,7 @@
         afficherTout();
         await initialiserProg();
       } catch (e) {
-        alert("Erreur de chargement : " + e.message);
+        informer("Erreur de chargement : " + e.message);
       }
     })();
   </script>

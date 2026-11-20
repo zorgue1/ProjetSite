@@ -63,7 +63,7 @@
     <section class="vedette" id="vedette" hidden></section>
 
     <!-- PR à 1 rep, un par exercice -->
-    <section class="pr-grille" id="pr-grille"></section>
+    <section class="pr-grille" id="pr-grille"><div class="squelette grand"></div></section>
 
     <!-- Records calculés à partir des séances -->
     <div class="section-tete">
@@ -72,7 +72,7 @@
     </div>
     <input id="recherche" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
     <div class="chips" id="chips"></div>
-    <section id="liste"></section>
+    <section id="liste"><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div></section>
 
   </main>
 
@@ -193,14 +193,9 @@
           const suppr = el("button", "histo-suppr", "×");
           suppr.type = "button";
           suppr.setAttribute("aria-label", "Supprimer ce PR du " + dateFr(h.date));
-          suppr.addEventListener("click", async function () {
-            if (!confirm("Supprimer le PR de " + nb(h.charge) + " kg du " + dateFr(h.date) + " ?")) return;
-            try {
-              await supprimerPR(h.id);
-              await chargerPRsEtAfficher();
-            } catch (e) {
-              alert(erreurLisible(e));
-            }
+          suppr.addEventListener("click", function () {
+            supprimerAvecAnnulation("PR de " + nb(h.charge) + " kg supprimé", ligne,
+              function () { return supprimerPR(h.id); }, chargerPRsEtAfficher);
           });
           ligne.appendChild(suppr);
           histo.appendChild(ligne);
@@ -263,7 +258,7 @@
 
     function ouvrirFormulaire() {
       if (!exercices.length) {
-        alert("Ta bibliothèque d’exercices est vide : ajoute d’abord des exercices dans Sport → Exercices.");
+        informer("Ta bibliothèque d’exercices est vide : ajoute d’abord des exercices dans Sport → Exercices.");
         return;
       }
       $("formulaire").hidden = false;
@@ -291,7 +286,7 @@
     $("btn-enregistrer").addEventListener("click", async function () {
       const exoId = castId($("pr-exo").value);
       const charge = parseFloat($("pr-charge").value.replace(",", "."));
-      if (!(charge > 0)) { $("pr-charge").focus(); return alert("Indique la charge soulevée sur 1 répétition."); }
+      if (!(charge > 0)) { $("pr-charge").focus(); return informer("Indique la charge soulevée sur 1 répétition."); }
 
       const avant = prs.find(function (p) { return p.exercice_id === exoId; });
       const bouton = this;
@@ -310,7 +305,7 @@
         else confirmer("PR ajouté à l’historique de " + nom);
         await chargerPRsEtAfficher();
       } catch (e) {
-        alert(erreurLisible(e));
+        informer(erreurLisible(e));
       } finally {
         bouton.disabled = false;
       }
@@ -402,7 +397,7 @@
         afficherChips();
         afficherListe();
       } catch (e) {
-        alert("Erreur de chargement : " + e.message);
+        informer("Erreur de chargement : " + e.message);
       }
       await chargerPRsEtAfficher();
       if (location.hash === "#nouveau") ouvrirFormulaire();

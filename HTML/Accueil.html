@@ -28,7 +28,7 @@
   <main>
 
     <!-- Série et calendrier -->
-    <section class="card serie">
+    <section class="card serie charge">
       <div class="serie-tete">
         <div class="serie-score">
           <svg class="serie-flamme" id="serie-flamme" aria-hidden="true"><use href="#flamme"/></svg>
@@ -62,7 +62,7 @@
     </section>
 
     <!-- Séance du jour -->
-    <section class="hero" id="hero">
+    <section class="hero charge" id="hero">
       <small id="date-jour"></small>
       <h1 id="seance-jour"></h1>
 
@@ -82,8 +82,11 @@
       </details>
     </section>
 
+    <!-- Installer l'appli (seulement si elle n'est pas déjà installée) -->
+    <div id="zone-installer"></div>
+
     <!-- Raccourci vers les PR -->
-    <a class="carte-menu carte-pr" id="carte-pr" href="Records.html">
+    <a class="carte-menu carte-pr charge" id="carte-pr" href="Records.html">
       <span class="carte-icone" aria-hidden="true">
         <svg viewBox="0 0 24 24">
           <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/>
@@ -99,7 +102,7 @@
     </a>
 
     <!-- Raccourci vers le profil (niveau, XP, abonnés) -->
-    <a class="carte-menu carte-pr" href="Profil.html">
+    <a class="carte-menu carte-pr charge" href="Profil.html">
       <span class="carte-icone carte-niveau" id="niveau-pastille" aria-hidden="true">
         <svg viewBox="0 0 24 24">
           <path d="M12 3l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.4 6.8 19.2l1-5.9L3.5 9.2l5.9-.8z"/>
@@ -114,7 +117,7 @@
     </a>
 
     <!-- Profil -->
-    <section class="card profil">
+    <section class="card profil charge">
       <div class="profil-tete">
         <div class="avatar" id="avatar">?</div>
         <div>
@@ -408,6 +411,104 @@
       }, 80);
     }
 
+    /* ---------- Installer l'appli sur le téléphone ---------- */
+
+    function afficherInstallation() {
+      const zone = document.getElementById("zone-installer");
+      zone.innerHTML = "";
+      if (estInstallee() || localStorage.getItem("sportapp:installer-ferme")) return;
+      const iphone = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if (!invitationInstallation && !iphone) return;     // pas proposé par ce navigateur (pour l'instant)
+
+      const carte = el("div", "installer");
+      const icone = document.createElement("img");
+      icone.className = "installer-icone";
+      icone.src = "../Image/icon-192.png";
+      icone.alt = "";
+      carte.appendChild(icone);
+      const texte = el("div", "installer-texte");
+      texte.appendChild(el("strong", "", "Installe SportApp"));
+      texte.appendChild(el("span", "", iphone
+        ? "Touche Partager (le carré avec la flèche ⬆️) puis « Sur l’écran d’accueil »."
+        : "Une icône sur ton écran, en plein écran, sans passer par le navigateur."));
+      carte.appendChild(texte);
+
+      if (!iphone) {
+        const bouton = el("button", "btn", "Installer");
+        bouton.type = "button";
+        bouton.addEventListener("click", async function () {
+          invitationInstallation.prompt();
+          const choix = await invitationInstallation.userChoice;
+          invitationInstallation = null;
+          if (choix.outcome === "accepted") zone.innerHTML = "";
+        });
+        carte.appendChild(bouton);
+      }
+      const fermer = el("button", "installer-fermer", "×");
+      fermer.type = "button";
+      fermer.setAttribute("aria-label", "Ne plus proposer");
+      fermer.addEventListener("click", function () {
+        localStorage.setItem("sportapp:installer-ferme", "1");
+        zone.innerHTML = "";
+      });
+      carte.appendChild(fermer);
+      zone.appendChild(carte);
+    }
+    document.addEventListener("installation-possible", afficherInstallation);
+
+    /* ---------- Premier lancement : 3 écrans pour découvrir l'appli ---------- */
+
+    function afficherBienvenue(prenom, seanceDuJour, nbSeances) {
+      if (localStorage.getItem("sportapp:bienvenue")) return;
+      localStorage.setItem("sportapp:bienvenue", "1");
+      if (nbSeances > 0) return;          // tu connais déjà l'appli
+
+      const etapes = [
+        ["👋", "Bienvenue" + (prenom ? ", " + prenom : "") + " !",
+          "SportApp suit tes séances, tes records, ta nutrition et ta progression. " +
+          (estRepos(seanceDuJour) ? "Aujourd’hui c’est repos : profites-en !" : "Ton programme est prêt : aujourd’hui, c’est " + seanceDuJour + ".")],
+        ["🏋️", "Note ta séance",
+          "Touche « Commencer la séance », ajoute tes exercices et valide chaque série : le chrono de repos démarre tout seul et tes records sont fêtés."],
+        ["🤝", "Défie tes potes",
+          "Dans Profil, choisis ton pseudo et cherche celui de tes amis pour comparer vos PR et grimper au classement. Ton programme se change dans Paramètres."]
+      ];
+      let i = 0;
+      const fond = el("div", "dialogue-fond");
+      const boite = el("div", "dialogue bienvenue");
+      boite.setAttribute("role", "dialog");
+      boite.setAttribute("aria-modal", "true");
+      fond.appendChild(boite);
+
+      function fermer() { fond.remove(); }
+      function montrer() {
+        const e = etapes[i];
+        boite.innerHTML = "";
+        boite.appendChild(el("div", "bienvenue-emoji", e[0]));
+        boite.appendChild(el("h2", "", e[1]));
+        boite.appendChild(el("p", "", e[2]));
+        const points = el("div", "bienvenue-points");
+        etapes.forEach(function (_, j) { points.appendChild(el("span", j === i ? "actif" : "")); });
+        boite.appendChild(points);
+        const boutons = el("div", "dialogue-boutons");
+        const passer = el("button", "btn secondaire", i === etapes.length - 1 ? "Fermer" : "Passer");
+        passer.type = "button";
+        passer.addEventListener("click", fermer);
+        const suivant = el("button", "btn", i === etapes.length - 1 ? "C’est parti 💪" : "Suivant");
+        suivant.type = "button";
+        suivant.addEventListener("click", function () {
+          if (i === etapes.length - 1) return fermer();
+          i++;
+          montrer();
+        });
+        boutons.appendChild(passer);
+        boutons.appendChild(suivant);
+        boite.appendChild(boutons);
+        suivant.focus();
+      }
+      montrer();
+      document.body.appendChild(fond);
+    }
+
     /* ---------- Chargement ---------- */
 
     async function afficher() {
@@ -437,6 +538,8 @@
         (await seanceEnCours()) ? "Reprendre ma séance en cours" : "Commencer la séance";
       afficherProfil(p, seances, poids);
       await Promise.all([afficherCartePR(), afficherCarteNiveau()]);
+      afficherInstallation();
+      afficherBienvenue(p.prenom, seance, seances.length);
     }
 
     document.getElementById("mois-prec").addEventListener("click", function () {
@@ -464,7 +567,7 @@
         document.getElementById("maj-poids").hidden = true;
         await afficher();
       } catch (e) {
-        alert("Erreur : " + e.message);
+        informer("Erreur : " + e.message);
       }
     });
 
@@ -474,7 +577,10 @@
       try {
         await afficher();
       } catch (e) {
-        alert("Erreur de chargement : " + e.message);
+        informer("Erreur de chargement : " + e.message);
+      } finally {
+        // Fin du chargement : les cartes perdent leur voile animé
+        document.querySelectorAll(".charge").forEach(function (x) { x.classList.remove("charge"); });
       }
     })();
   </script>

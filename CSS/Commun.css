@@ -677,3 +677,257 @@ body.avec-barre {
   height: 100%;
   object-fit: cover;
 }
+
+/* ---------- Fenêtres aux couleurs de l'appli (à la place de alert / confirm) ---------- */
+.dialogue-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: fondu 0.15s ease both;
+}
+
+.dialogue {
+  width: min(100%, 380px);
+  padding: 22px 20px 18px;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: 20px;
+  box-shadow: var(--ombre);
+  animation: dialogue-entree 0.25s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+
+.dialogue-texte {
+  margin: 0 0 18px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.dialogue-boutons {
+  display: flex;
+  gap: 10px;
+}
+
+.dialogue-boutons .btn {
+  flex: 1;
+  margin: 0;
+}
+
+.btn.danger {
+  color: #fff;
+  background: var(--danger);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+@keyframes fondu {
+  from { opacity: 0; }
+}
+
+@keyframes dialogue-entree {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+}
+
+/* ---------- Petit message en bas de l'écran (« Supprimé — Annuler ») ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  z-index: 85;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  overflow: hidden;
+  padding: 12px 12px 12px 18px;
+  color: #fff;
+  background: #1d2430;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transform: translateX(-50%);
+  animation: toast-entree 0.25s ease both;
+}
+
+.toast-texte {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.toast-action {
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffa12e;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.toast-barre {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  background: #ffa12e;
+  transform-origin: left;
+  animation: toast-temps linear both;
+}
+
+@keyframes toast-entree {
+  from { opacity: 0; transform: translate(-50%, 16px); }
+}
+
+@keyframes toast-temps {
+  to { transform: scaleX(0); }
+}
+
+/* ---------- Chargement : formes grises qui « respirent » ---------- */
+.squelette {
+  height: 84px;
+  margin-bottom: 10px;
+  border-radius: var(--rayon);
+  background: linear-gradient(100deg, var(--carte) 30%, var(--carte-douce) 50%, var(--carte) 70%);
+  background-size: 300% 100%;
+  animation: respirer 1.4s ease-in-out infinite;
+}
+
+.squelette.petit {
+  height: 52px;
+}
+
+.squelette.grand {
+  height: 220px;
+}
+
+/* Une zone remplie après le chargement : on cache son contenu vide sous un voile animé */
+.charge {
+  position: relative;
+}
+
+.charge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  background: linear-gradient(100deg, var(--carte) 30%, var(--carte-douce) 50%, var(--carte) 70%);
+  background-size: 300% 100%;
+  animation: respirer 1.4s ease-in-out infinite;
+}
+
+@keyframes respirer {
+  from { background-position: 100% 0; }
+  to   { background-position: 0 0; }
+}
+
+/* ---------- Installer l'appli / premier lancement ---------- */
+.installer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background:
+    radial-gradient(260px 140px at 0% 0%, var(--accent-halo), transparent 70%),
+    var(--carte);
+  border: 1px solid var(--accent);
+  border-radius: var(--rayon);
+}
+
+.installer-icone {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+}
+
+.installer-texte {
+  flex: 1;
+  min-width: 0;
+}
+
+.installer-texte strong {
+  display: block;
+}
+
+.installer-texte span {
+  font-size: 13px;
+  color: var(--gris);
+}
+
+.installer .btn {
+  margin: 0;
+  padding: 10px 16px;
+}
+
+.installer-fermer {
+  align-self: flex-start;
+  padding: 0 4px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--gris);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.bienvenue {
+  text-align: center;
+}
+
+.bienvenue-emoji {
+  font-size: 52px;
+  line-height: 1;
+}
+
+.bienvenue h2 {
+  margin: 10px 0 8px;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 30px;
+  text-transform: uppercase;
+}
+
+.bienvenue p {
+  margin: 0 0 18px;
+  line-height: 1.5;
+  color: var(--gris);
+}
+
+.bienvenue-points {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.bienvenue-points span {
+  width: 8px;
+  height: 8px;
+  background: var(--bordure);
+  border-radius: 50%;
+  transition: width 0.2s, background 0.2s;
+}
+
+.bienvenue-points span.actif {
+  width: 22px;
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .squelette,
+  .charge::after,
+  .dialogue,
+  .toast {
+    animation: none;
+  }
+}

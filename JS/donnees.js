@@ -45,13 +45,144 @@ function el(balise, classe, texte) {
   return e;
 }
 
+// Vibration courte (sur les téléphones qui le permettent)
+function vibrer(motif) {
+  try { if (navigator.vibrate) navigator.vibrate(motif); } catch (e) {}
+}
+
 // Affiche un message dans l'encadré #confirmation pendant 3,5 s
 function confirmer(texte) {
   const c = document.getElementById("confirmation");
+  vibrer(15);
+  if (!c) return toast(texte);
   c.textContent = texte;
   c.hidden = false;
   setTimeout(function () { c.hidden = true; }, 3500);
 }
+
+/* ---------- Fenêtres aux couleurs de l'appli (à la place de alert / confirm) ---------- */
+
+// Fenêtre avec un message et des boutons ; renvoie une promesse avec le bouton choisi
+function fenetre(texte, boutons) {
+  return new Promise(function (resolve) {
+    const fond = el("div", "dialogue-fond");
+    const boite = el("div", "dialogue");
+    boite.setAttribute("role", "alertdialog");
+    boite.setAttribute("aria-modal", "true");
+    boite.appendChild(el("p", "dialogue-texte", texte));
+    const zone = el("div", "dialogue-boutons");
+    const avant = document.activeElement;
+
+    function fermer(valeur) {
+      document.removeEventListener("keydown", clavier);
+      fond.remove();
+      if (avant && avant.focus) avant.focus();
+      resolve(valeur);
+    }
+    function clavier(e) {
+      if (e.key === "Escape") fermer(false);
+    }
+    boutons.forEach(function (b) {
+      const bouton = el("button", "btn" + (b.classe ? " " + b.classe : ""), b.texte);
+      bouton.type = "button";
+      bouton.addEventListener("click", function () { fermer(b.valeur); });
+      zone.appendChild(bouton);
+    });
+    boite.appendChild(zone);
+    fond.appendChild(boite);
+    fond.addEventListener("click", function (e) { if (e.target === fond) fermer(false); });
+    document.addEventListener("keydown", clavier);
+    document.body.appendChild(fond);
+    zone.lastChild.focus();
+  });
+}
+
+// Remplace alert() : un message avec « OK »
+function informer(texte) {
+  return fenetre(texte, [{ texte: "OK", valeur: true }]);
+}
+
+// Remplace confirm() : renvoie true si on accepte
+// options : { ok: "Supprimer", annuler: "Garder", danger: true }
+function demander(texte, options) {
+  const o = options || {};
+  return fenetre(texte, [
+    { texte: o.annuler || "Annuler", valeur: false, classe: "secondaire" },
+    { texte: o.ok || "OK", valeur: true, classe: o.danger ? "danger" : "" }
+  ]);
+}
+
+/* ---------- Petit message en bas de l'écran, avec un bouton facultatif ---------- */
+
+let toastActuel = null;
+function toast(texte, action, quandAction, duree) {
+  if (toastActuel) toastActuel.remove();
+  const t = el("div", "toast");
+  t.setAttribute("role", "status");
+  t.appendChild(el("span", "toast-texte", texte));
+  if (action) {
+    const b = el("button", "toast-action", action);
+    b.type = "button";
+    b.addEventListener("click", function () {
+      t.remove();
+      quandAction();
+    });
+    t.appendChild(b);
+  }
+  const barre = el("span", "toast-barre");
+  barre.style.animationDuration = (duree || 3500) + "ms";
+  t.appendChild(barre);
+  document.body.appendChild(t);
+  toastActuel = t;
+  setTimeout(function () { if (t.isConnected) t.remove(); }, duree || 3500);
+}
+
+/* ---------- Supprimer avec « Annuler » pendant 5 secondes ---------- */
+
+// L'élément disparaît tout de suite ; la suppression n'est faite qu'après 5 s (ou si tu quittes la page)
+const suppressionsEnAttente = [];
+function supprimerAvecAnnulation(texte, element, supprimer, apres) {
+  element.hidden = true;
+  vibrer(20);
+  const tache = { fait: false };
+  tache.executer = async function () {
+    if (tache.fait) return;
+    tache.fait = true;
+    clearTimeout(tache.minuteur);
+    suppressionsEnAttente.splice(suppressionsEnAttente.indexOf(tache), 1);
+    try {
+      await supprimer();
+      if (apres) await apres();
+    } catch (e) {
+      element.hidden = false;
+      informer("Suppression impossible : " + ((e && e.message) || e));
+    }
+  };
+  tache.minuteur = setTimeout(tache.executer, 5000);
+  suppressionsEnAttente.push(tache);
+  toast(texte, "Annuler", function () {
+    if (tache.fait) return;
+    tache.fait = true;
+    clearTimeout(tache.minuteur);
+    suppressionsEnAttente.splice(suppressionsEnAttente.indexOf(tache), 1);
+    element.hidden = false;
+    vibrer(10);
+  }, 5000);
+}
+
+// Avant de quitter la page, les suppressions en attente sont faites tout de suite
+function viderSuppressions() {
+  return Promise.all(suppressionsEnAttente.slice().map(function (t) { return t.executer(); }));
+}
+document.addEventListener("visibilitychange", function () {
+  if (document.visibilityState === "hidden") viderSuppressions();
+});
+document.addEventListener("click", function (e) {
+  const lien = e.target.closest && e.target.closest("a[href]");
+  if (!lien || !suppressionsEnAttente.length || lien.target || lien.getAttribute("href").charAt(0) === "#") return;
+  e.preventDefault();
+  viderSuppressions().then(function () { location.href = lien.href; });
+});
 
 // Vrai si une séance a été commencée sans être enregistrée (brouillon de la page Séances)
 async function seanceEnCours() {
@@ -891,3 +1022,17 @@ verifierSession();
 // Dès que le réseau est là, les séances enregistrées hors connexion partent toutes seules
 window.addEventListener("online", envoyerSeancesEnAttente);
 setTimeout(envoyerSeancesEnAttente, 1500);
+
+/* ---------- Installation de l'appli ---------- */
+
+// Android / ordinateur : le navigateur propose l'installation, on la garde pour notre bouton « Installer »
+let invitationInstallation = null;
+window.addEventListener("beforeinstallprompt", function (e) {
+  e.preventDefault();
+  invitationInstallation = e;
+  document.dispatchEvent(new Event("installation-possible"));
+});
+
+function estInstallee() {
+  return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+}

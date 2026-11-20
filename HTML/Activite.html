@@ -78,7 +78,7 @@
 
     <!-- Historique -->
     <div class="chips" id="filtres-historique"></div>
-    <section id="historique"></section>
+    <section id="historique"><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div></section>
 
   </main>
 
@@ -140,10 +140,6 @@
       return parseFloat(String(v).replace(",", ".")) || 0;
     }
 
-    // Vibration courte (sur les téléphones qui le permettent)
-    function vibrer(motif) {
-      try { if (navigator.vibrate) navigator.vibrate(motif); } catch (e) {}
-    }
     const FILTRES = ["Tous", "Push", "Pull", "Leg", "Autres"];
 
     function dateCourte(texte) {
@@ -332,19 +328,19 @@
     }
 
     // Peut-on ouvrir une modification sans écraser une séance en cours de saisie ?
-    function peutEditer() {
+    async function peutEditer() {
       if (document.getElementById("formulaire").hidden) return true;
-      if (editionId !== null) return confirm("Abandonner les modifications en cours ?");
+      if (editionId !== null) return demander("Abandonner les modifications en cours ?", { ok: "Abandonner", danger: true });
       if (blocs.length > 0 || document.getElementById("notes").value.trim() !== "") {
-        alert("Termine ou annule d’abord la séance en cours.");
+        informer("Termine ou annule d’abord la séance en cours.");
         return false;
       }
       return true;
     }
 
     // Rouvre une séance enregistrée dans le formulaire, déjà remplie
-    function ouvrirEdition(s, exos) {
-      if (!peutEditer()) return;
+    async function ouvrirEdition(s, exos) {
+      if (!(await peutEditer())) return;
 
       editionId = s.id;
       majTitres();
@@ -629,7 +625,7 @@
       if (serie.rep === "" && avant) serie.rep = String(avant.repetitions);
       if (serie.charge === "" && avant && avant.charge > 0) serie.charge = String(avant.charge);
       if (!(parseInt(serie.rep, 10) > 0)) {
-        alert("Indique le nombre de répétitions de la série.");
+        informer("Indique le nombre de répétitions de la série.");
         return;
       }
       serie.faite = true;
@@ -698,8 +694,8 @@
         const retirer = el("button", "btn-mini", "✕");
         retirer.type = "button";
         retirer.setAttribute("aria-label", "Retirer " + bloc.exercice.nom + " de la séance");
-        retirer.addEventListener("click", function () {
-          if (seriesValides(bloc).length > 0 && !confirm("Retirer « " + bloc.exercice.nom + " » de la séance ?")) return;
+        retirer.addEventListener("click", async function () {
+          if (seriesValides(bloc).length > 0 && !(await demander("Retirer « " + bloc.exercice.nom + " » de la séance ?", { ok: "Retirer", danger: true }))) return;
           blocs.splice(i, 1);
           afficherBlocs();
           afficherResultats();
@@ -925,14 +921,9 @@
 
         const supprimer = el("button", "btn-suppr", "Supprimer");
         supprimer.type = "button";
-        supprimer.addEventListener("click", async function () {
-          if (!confirm("Supprimer cette séance ?")) return;
-          try {
-            await supprimerSeance(s.id);
-            await afficherHistorique();
-          } catch (e) {
-            alert("Erreur : " + e.message);
-          }
+        supprimer.addEventListener("click", function () {
+          supprimerAvecAnnulation("Séance du " + dateFr(s.date) + " supprimée", ligne,
+            function () { return supprimerSeance(s.id); }, afficherHistorique);
         });
         actions.appendChild(supprimer);
 
@@ -1166,12 +1157,12 @@
 
     document.getElementById("btn-nouvelle").addEventListener("click", ouvrirNouvelle);
 
-    document.getElementById("btn-annuler").addEventListener("click", function () {
+    document.getElementById("btn-annuler").addEventListener("click", async function () {
       const contenu = blocs.length > 0 || document.getElementById("notes").value.trim() !== "";
       const question = editionId !== null
         ? "Annuler les modifications ?"
         : "Abandonner cette séance ? Les exercices saisis seront perdus.";
-      if (contenu && !confirm(question)) return;
+      if (contenu && !(await demander(question, { ok: editionId !== null ? "Annuler les modifications" : "Abandonner", annuler: "Continuer", danger: true }))) return;
       arreterChrono();
       fermerFormulaire();
     });
@@ -1239,7 +1230,7 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
         try { await afficherHistorique(); } catch (e) {}
       } catch (e) {
-        alert("Erreur : " + e.message);
+        informer("Erreur : " + e.message);
       } finally {
         bouton.disabled = false;
       }
@@ -1259,7 +1250,7 @@
         ecrireLocal("exercices", exercices);
       } catch (e) {
         exercices = lireLocal("exercices", []);
-        if (!exercices.length) alert("Erreur de chargement : " + e.message);
+        if (!exercices.length) informer("Erreur de chargement : " + e.message);
       }
       try {
         programme = (await chargerProfil()).programme;
@@ -1273,6 +1264,7 @@
       try {
         await afficherHistorique();
       } catch (e) {
+        document.getElementById("historique").innerHTML = "";
         document.getElementById("historique").appendChild(el("div", "vide",
           navigator.onLine ? "Historique indisponible pour le moment." : "Pas de réseau : l’historique reviendra avec la connexion."));
       }

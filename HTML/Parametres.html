@@ -228,7 +228,7 @@
         construireProgramme(profil.programme);
         document.getElementById("message").textContent = "Paramètres enregistrés";
       } catch (e) {
-        alert("Erreur : " + e.message);
+        informer("Erreur : " + e.message);
       }
     });
 
@@ -266,22 +266,22 @@
       const nouveau = document.getElementById("mdp-nouveau").value;
       if (!actuel) return document.getElementById("mdp-actuel").focus();
       const erreurMdp = erreurMotDePasse(nouveau);
-      if (erreurMdp) return alert(erreurMdp);
-      if (nouveau !== document.getElementById("mdp-confirme").value) return alert("Les deux nouveaux mots de passe ne sont pas identiques.");
-      if (nouveau === actuel) return alert("Le nouveau mot de passe est le même que l'actuel.");
+      if (erreurMdp) return informer(erreurMdp);
+      if (nouveau !== document.getElementById("mdp-confirme").value) return informer("Les deux nouveaux mots de passe ne sont pas identiques.");
+      if (nouveau === actuel) return informer("Le nouveau mot de passe est le même que l'actuel.");
 
       const bouton = this;
       bouton.disabled = true;
       try {
         const { data: { user } } = await client.auth.getUser();
         const verif = await client.auth.signInWithPassword({ email: user.email, password: actuel });
-        if (verif.error) return alert("Mot de passe actuel incorrect.");
+        if (verif.error) return informer("Mot de passe actuel incorrect.");
         const { error } = await client.auth.updateUser({ password: nouveau });
-        if (error) return alert("Changement impossible : " + error.message);
+        if (error) return informer("Changement impossible : " + error.message);
         await client.auth.signOut({ scope: "others" });   // les autres appareils sont déconnectés
         ["mdp-actuel", "mdp-nouveau", "mdp-confirme"].forEach(function (id) { document.getElementById(id).value = ""; });
         document.querySelector("details.mdp").open = false;
-        alert("Mot de passe changé ! Tes autres appareils ont été déconnectés.");
+        informer("Mot de passe changé ! Tes autres appareils ont été déconnectés.");
       } finally {
         bouton.disabled = false;
       }
@@ -294,7 +294,7 @@
       try {
         await remplir();
       } catch (e) {
-        alert("Erreur de chargement : " + e.message);
+        informer("Erreur de chargement : " + e.message);
       }
     })();
   </script>

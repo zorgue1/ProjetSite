@@ -26,7 +26,7 @@
 
     <input id="recherche" type="search" placeholder="Rechercher un exercice…" autocomplete="off">
     <div class="tuiles" id="tuiles"></div>
-    <section id="liste"></section>
+    <section id="liste"><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div></section>
 
     <!-- Ajout d'un exercice : le formulaire n'apparaît qu'après un clic -->
     <div class="ajout-zone">
@@ -103,7 +103,7 @@
         await modifierExercice(ex.id, champs);
         Object.assign(ex, champs);
       } catch (e) {
-        alert("Erreur : " + e.message);
+        informer("Erreur : " + e.message);
       }
       afficherTuiles();
       afficherListe();
@@ -174,7 +174,7 @@
 
         const bouton = el("button", "btn-suppr", "Supprimer");
         bouton.addEventListener("click", async function () {
-          if (!confirm("Supprimer « " + ex.nom + " » ?")) return;
+          if (!(await demander("Supprimer l'exercice « " + ex.nom + " » ?", { ok: "Supprimer", danger: true }))) return;
           try {
             await supprimerExercice(ex);
             exercices = await chargerExercices();
@@ -182,9 +182,9 @@
             afficherListe();
           } catch (e) {
             if (/foreign key|violates/i.test(e.message)) {
-              alert("Cet exercice est utilisé dans des séances, il ne peut pas être supprimé.");
+              informer("Cet exercice est utilisé dans des séances, il ne peut pas être supprimé.");
             } else {
-              alert("Erreur : " + e.message);
+              informer("Erreur : " + e.message);
             }
           }
         });
@@ -299,7 +299,7 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
       } catch (e) {
         message.textContent = "";
-        alert("Erreur : " + e.message);
+        informer("Erreur : " + e.message);
       } finally {
         bouton.disabled = false;
       }
@@ -345,7 +345,7 @@
         afficherTuiles();
         afficherListe();
       } catch (e) {
-        alert("Erreur de chargement : " + e.message);
+        informer("Erreur de chargement : " + e.message);
       }
     })();
   </script>

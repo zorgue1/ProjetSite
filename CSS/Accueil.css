@@ -535,3 +535,9 @@
 .jour-point.autre {
   background: var(--accent);
 }
+
+/* Carte « Installe SportApp » */
+#zone-installer .installer {
+  margin-bottom: 16px;
+  animation: monter 0.4s ease both;
+}

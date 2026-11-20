@@ -34,7 +34,7 @@
 
     <!-- ===================== Mon profil ===================== -->
     <div id="vue-moi">
-      <section class="profil-hero" id="hero-moi"></section>
+      <section class="profil-hero" id="hero-moi"><div class="squelette grand"></div></section>
       <input type="file" id="fichier-photo" accept="image/*" hidden>
 
       <!-- Pseudo, photo et confidentialité -->
@@ -72,10 +72,10 @@
       </section>
 
       <h3 class="titre-section">Défis de la semaine <span class="mut" id="jours-restants"></span></h3>
-      <section class="card defis" id="defis"></section>
+      <section class="card defis" id="defis"><div class="squelette petit"></div><div class="squelette petit"></div></section>
 
       <h3 class="titre-section">Badges <span class="mut" id="badges-compte"></span></h3>
-      <section class="badges" id="badges"></section>
+      <section class="badges" id="badges"><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div></section>
 
       <div id="bloc-classement" hidden>
         <h3 class="titre-section">Classement <span class="mut">· toi et les gens que tu suis</span></h3>
@@ -272,7 +272,7 @@
         afficherMoi();
         confirmer("Photo de profil mise à jour");
       } catch (e) {
-        alert(/bucket|avatars|photo_url/i.test(e.message || "")
+        informer(/bucket|avatars|photo_url/i.test(e.message || "")
           ? "Les photos ne sont pas encore activées : exécute le script SQL « compte » dans Supabase."
           : "Erreur : " + e.message);
       }
@@ -281,7 +281,7 @@
     $("btn-photo").addEventListener("click", function () { $("fichier-photo").click(); });
 
     $("btn-suppr-photo").addEventListener("click", async function () {
-      if (!confirm("Supprimer ta photo de profil ?")) return;
+      if (!(await demander("Supprimer ta photo de profil ?", { ok: "Supprimer", danger: true }))) return;
       try {
         await supprimerPhoto(profil.photo_chemin);
         profil.photo_url = "";
@@ -289,7 +289,7 @@
         afficherMoi();
         confirmer("Photo supprimée");
       } catch (e) {
-        alert("Erreur : " + e.message);
+        informer("Erreur : " + e.message);
       }
     });
 
@@ -297,7 +297,7 @@
       const pseudo = $("pseudo").value.trim().replace(/^@/, "");
       if (!/^[A-Za-z0-9._]{3,20}$/.test(pseudo)) {
         $("pseudo").focus();
-        return alert("Ton pseudo doit faire 3 à 20 caractères : lettres sans accent, chiffres, point ou tiret bas.");
+        return informer("Ton pseudo doit faire 3 à 20 caractères : lettres sans accent, chiffres, point ou tiret bas.");
       }
       try {
         await sauverProfilSocial(pseudo, profil.partage_prs);
@@ -306,7 +306,7 @@
         afficherMoi();
         confirmer("Pseudo enregistré : @" + pseudo);
       } catch (e) {
-        alert(erreurLisible(e));
+        informer(erreurLisible(e));
       }
     });
     $("pseudo").addEventListener("keydown", function (e) { if (e.key === "Enter") $("btn-pseudo").click(); });
@@ -319,7 +319,7 @@
         confirmer(coche ? "Tes PR sont visibles par tes abonnés que tu suis aussi" : "Tes PR sont maintenant privés");
       } catch (e) {
         this.checked = !coche;
-        alert(erreurLisible(e));
+        informer(erreurLisible(e));
       }
     });
 
@@ -328,11 +328,11 @@
       if (!pseudo) return $("recherche").focus();
       try {
         const trouve = await trouverPseudo(pseudo);
-        if (!trouve) return alert("Personne n’a le pseudo « @" + pseudo + " ».");
+        if (!trouve) return informer("Personne n’a le pseudo « @" + pseudo + " ».");
         $("recherche").value = "";
         location.hash = trouve.user_id === moi.id ? "" : "u=" + trouve.user_id;
       } catch (e) {
-        alert(erreurLisible(e));
+        informer(erreurLisible(e));
       }
     });
     $("recherche").addEventListener("keydown", function (e) { if (e.key === "Enter") $("btn-recherche").click(); });
@@ -463,7 +463,7 @@
       maj();
       b.addEventListener("click", async function (e) {
         e.preventDefault();
-        if (p.je_suis && !confirm("Ne plus suivre " + nomDe(p) + " ?")) return;
+        if (p.je_suis && !(await demander("Ne plus suivre " + nomDe(p) + " ?", { ok: "Ne plus suivre", danger: true }))) return;
         b.disabled = true;
         try {
           if (p.je_suis) await nePlusSuivre(p.id);
@@ -473,7 +473,7 @@
           await chargerLiens();
           if (apres) await apres();
         } catch (err) {
-          alert(erreurLisible(err));
+          informer(erreurLisible(err));
         } finally {
           b.disabled = false;
         }
