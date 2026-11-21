@@ -458,9 +458,14 @@
   stroke-linecap: round;
 }
 
-/* Produit trouvé */
+/* Produits scannés pour le repas */
 .produit {
+  display: grid;
+  gap: 8px;
   margin-top: 12px;
+}
+
+.produit-item {
   padding: 12px;
   background: var(--carte-douce);
   border: 1px solid var(--accent);
@@ -626,4 +631,14 @@ body.sans-defilement {
   .scan-cadre::after {
     animation: none;
   }
+}
+
+.produits-total {
+  margin: 2px 0 0;
+  padding: 10px 12px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: 12px;
 }

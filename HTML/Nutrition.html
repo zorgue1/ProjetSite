@@ -77,12 +77,12 @@
       <!-- Scanner le code-barres d'un paquet : calories et macros remplies toutes seules -->
       <button class="btn secondaire btn-scanner" id="btn-scanner" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V4h3M18 4h3v3M21 17v3h-3M6 20H3v-3"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg>
-        Scanner un code-barres
+        <span id="btn-scanner-texte">Scanner un code-barres</span>
       </button>
       <div class="produit" id="produit" hidden></div>
 
       <label for="repas-nom">Ce que tu as mangé</label>
-      <input id="repas-nom" type="text" maxlength="80" placeholder="Ex. : Riz, poulet, brocolis" autocomplete="off">
+      <input id="repas-nom" type="text" maxlength="100" placeholder="Ex. : Riz, poulet, brocolis" autocomplete="off">
 
       <label for="repas-kcal">Calories</label>
       <div class="champ-unite grand">
@@ -417,7 +417,7 @@
     function viderFormulaire() {
       ["repas-nom", "repas-kcal", "repas-p", "repas-g", "repas-l"].forEach(function (id) { $(id).value = ""; });
       $("detail-macros").open = false;
-      oublierProduit();
+      oublierProduits();
     }
 
     /* ---------- Scanner un code-barres ---------- */
@@ -430,7 +430,7 @@
     };
     const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e"];
     const scan = { detecteur: null, flux: null, boucle: null };
-    let produit = null;          // produit trouvé : valeurs pour 100 g
+    let produits = [];           // produits scannés pour ce repas (valeurs pour 100 g + quantité)
 
     function chargerScript(src, integrity) {
       return new Promise(function (ok, ko) {
@@ -552,14 +552,15 @@
     async function chercherProduit(code) {
       const zone = $("produit");
       zone.hidden = false;
-      zone.innerHTML = "";
-      zone.appendChild(el("div", "squelette petit"));
+      const attente = el("div", "squelette petit");
+      zone.appendChild(attente);
       try {
         const reponse = await fetch("https://world.openfoodfacts.org/api/v2/product/" + encodeURIComponent(code) +
           ".json?fields=product_name,product_name_fr,brands,nutriments,serving_quantity,image_front_small_url");
         const d = await reponse.json();
+        attente.remove();
         if (d.status !== 1 || !d.product) {
-          oublierProduit();
+          afficherProduits();
           return informer("Produit introuvable (code " + code + ").\nTu peux saisir les valeurs de l’emballage à la main.");
         }
         const p = d.product, n = p.nutriments || {};
@@ -567,109 +568,153 @@
         if (kcal === null && valeur(n.energy_100g) !== null) kcal = valeur(n.energy_100g) / 4.184;   // kJ → kcal
         const nom = (p.product_name_fr || p.product_name || "Produit " + code).trim();
         const marque = (p.brands || "").split(",")[0].trim();
-        produit = {
+        const portion = valeur(p.serving_quantity);
+        produits.push({
           nom: marque && nom.toLowerCase().indexOf(marque.toLowerCase()) === -1 ? nom + " (" + marque + ")" : nom,
+          court: nom.length > 28 ? nom.slice(0, 27).trim() + "…" : nom,     // pour le nom du repas
           image: p.image_front_small_url || "",
           kcal: kcal,
           p: valeur(n.proteins_100g),
           g: valeur(n.carbohydrates_100g),
           l: valeur(n.fat_100g),
-          portion: valeur(p.serving_quantity)
-        };
-        afficherProduit(produit.portion && produit.portion > 0 ? produit.portion : 100);
+          portion: portion,
+          grammes: portion && portion > 0 ? portion : 100
+        });
+        afficherProduits();
       } catch (e) {
-        oublierProduit();
+        attente.remove();
+        afficherProduits();
         informer(navigator.onLine
           ? "Recherche du produit impossible pour le moment. Réessaie dans un instant."
           : "Pas de réseau : la recherche du produit a besoin d’internet.");
       }
     }
 
-    function oublierProduit() {
-      produit = null;
-      $("produit").hidden = true;
-      $("produit").innerHTML = "";
+    function oublierProduits() {
+      produits = [];
+      afficherProduits();
     }
 
-    // Remplit le formulaire pour la quantité choisie (en grammes)
-    function remplirDepuisProduit(grammes) {
-      const f = grammes / 100;
-      function arrondi(v) { return v === null ? "" : String(Math.round(v * f * 10) / 10); }
-      $("repas-nom").value = (produit.nom + " · " + nb(grammes) + " g").slice(0, 80);
-      $("repas-kcal").value = produit.kcal === null ? "" : Math.round(produit.kcal * f);
-      $("repas-p").value = arrondi(produit.p);
-      $("repas-g").value = arrondi(produit.g);
-      $("repas-l").value = arrondi(produit.l);
-      $("detail-macros").open = produit.p !== null || produit.g !== null || produit.l !== null;
+    // Additionne tous les produits du repas et remplit le formulaire
+    function remplirDepuisProduits() {
+      let kcal = 0, kcalManquantes = false;
+      const total = { p: null, g: null, l: null };
+      produits.forEach(function (pr) {
+        const f = pr.grammes / 100;
+        if (pr.kcal === null) kcalManquantes = true;
+        else kcal += pr.kcal * f;
+        ["p", "g", "l"].forEach(function (k) {
+          if (pr[k] !== null) total[k] = (total[k] || 0) + pr[k] * f;
+        });
+      });
+      function arrondi(v) { return v === null ? "" : String(Math.round(v * 10) / 10); }
+
+      $("repas-nom").value = (produits.length === 1
+        ? produits[0].nom + " · " + nb(produits[0].grammes) + " g"
+        : produits.map(function (pr) { return pr.court + " " + nb(pr.grammes) + " g"; }).join(" + ")).slice(0, 100);
+      $("repas-kcal").value = kcalManquantes && kcal === 0 ? "" : Math.round(kcal);
+      $("repas-p").value = arrondi(total.p);
+      $("repas-g").value = arrondi(total.g);
+      $("repas-l").value = arrondi(total.l);
+      $("detail-macros").open = total.p !== null || total.g !== null || total.l !== null;
+
+      const ligne = document.getElementById("produits-total");
+      if (ligne) {
+        ligne.textContent = "Total du repas : " + Math.round(kcal) + " kcal" +
+          (total.p !== null ? " · P " + nb(total.p) : "") +
+          (total.g !== null ? " · G " + nb(total.g) : "") +
+          (total.l !== null ? " · L " + nb(total.l) : "") +
+          (kcalManquantes ? " (calories incomplètes)" : "");
+      }
     }
 
-    function afficherProduit(grammes) {
+    // Une carte par produit scanné, avec sa quantité ; le total en dessous
+    function afficherProduits() {
       const zone = $("produit");
       zone.innerHTML = "";
-      zone.hidden = false;
+      zone.hidden = produits.length === 0;
+      $("btn-scanner-texte").textContent = produits.length ? "Scanner un autre produit" : "Scanner un code-barres";
+      if (!produits.length) return;
 
-      const tete = el("div", "produit-tete");
-      if (produit.image) {
-        const img = document.createElement("img");
-        img.src = produit.image;
-        img.alt = "";
-        img.className = "produit-image";
-        img.onerror = function () { img.remove(); };
-        tete.appendChild(img);
-      }
-      const infos = el("div", "produit-infos");
-      infos.appendChild(el("strong", "", produit.nom));
-      infos.appendChild(el("span", "mut", produit.kcal === null
-        ? "Calories non renseignées : complète à la main."
-        : "Pour 100 g : " + Math.round(produit.kcal) + " kcal" +
-          (produit.p !== null ? " · P " + nb(produit.p) : "") +
-          (produit.g !== null ? " · G " + nb(produit.g) : "") +
-          (produit.l !== null ? " · L " + nb(produit.l) : "")));
-      tete.appendChild(infos);
-      const retirer = el("button", "btn-mini", "✕");
-      retirer.type = "button";
-      retirer.setAttribute("aria-label", "Retirer le produit scanné");
-      retirer.addEventListener("click", function () {
-        oublierProduit();
-        ["repas-nom", "repas-kcal", "repas-p", "repas-g", "repas-l"].forEach(function (id) { $(id).value = ""; });
-      });
-      tete.appendChild(retirer);
-      zone.appendChild(tete);
-
-      // Quantité mangée : boutons rapides ou saisie libre
-      const ligne = el("div", "produit-quantite");
-      const champ = document.createElement("input");
-      champ.type = "number";
-      champ.min = "1";
-      champ.step = "1";
-      champ.inputMode = "numeric";
-      champ.value = Math.round(grammes);
-      champ.setAttribute("aria-label", "Quantité mangée en grammes");
-      const choix = [];
-      if (produit.portion && produit.portion > 0) choix.push([produit.portion, "1 portion"]);
-      [50, 100, 200].forEach(function (g) { if (g !== produit.portion) choix.push([g, g + " g"]); });
-      const chips = el("div", "chips");
-      choix.forEach(function (c) {
-        const b = el("button", "chip", c[1]);
-        b.type = "button";
-        b.addEventListener("click", function () {
-          champ.value = Math.round(c[0]);
-          remplirDepuisProduit(c[0]);
+      produits.forEach(function (pr, i) {
+        const carte = el("div", "produit-item");
+        const tete = el("div", "produit-tete");
+        if (pr.image) {
+          const img = document.createElement("img");
+          img.src = pr.image;
+          img.alt = "";
+          img.className = "produit-image";
+          img.onerror = function () { img.remove(); };
+          tete.appendChild(img);
+        }
+        const infos = el("div", "produit-infos");
+        infos.appendChild(el("strong", "", pr.nom));
+        infos.appendChild(el("span", "mut", pr.kcal === null
+          ? "Calories non renseignées : complète à la main."
+          : "Pour 100 g : " + Math.round(pr.kcal) + " kcal" +
+            (pr.p !== null ? " · P " + nb(pr.p) : "") +
+            (pr.g !== null ? " · G " + nb(pr.g) : "") +
+            (pr.l !== null ? " · L " + nb(pr.l) : "")));
+        tete.appendChild(infos);
+        const retirer = el("button", "btn-mini", "✕");
+        retirer.type = "button";
+        retirer.setAttribute("aria-label", "Retirer " + pr.nom + " du repas");
+        retirer.addEventListener("click", function () {
+          produits.splice(i, 1);
+          afficherProduits();
+          if (!produits.length) {
+            ["repas-nom", "repas-kcal", "repas-p", "repas-g", "repas-l"].forEach(function (id) { $(id).value = ""; });
+          }
         });
-        chips.appendChild(b);
-      });
-      ligne.appendChild(chips);
-      const unite = el("div", "champ-unite");
-      unite.appendChild(champ);
-      unite.appendChild(el("span", "", "g"));
-      ligne.appendChild(unite);
-      champ.addEventListener("input", function () {
-        const g = parseFloat(champ.value);
-        if (g > 0) remplirDepuisProduit(g);
-      });
-      zone.appendChild(ligne);
+        tete.appendChild(retirer);
+        carte.appendChild(tete);
 
-      remplirDepuisProduit(grammes);
+        // Quantité mangée : boutons rapides ou saisie libre
+        const ligne = el("div", "produit-quantite");
+        const champ = document.createElement("input");
+        champ.type = "number";
+        champ.min = "1";
+        champ.step = "1";
+        champ.inputMode = "numeric";
+        champ.value = Math.round(pr.grammes);
+        champ.setAttribute("aria-label", "Quantité de " + pr.nom + " en grammes");
+        const choix = [];
+        if (pr.portion && pr.portion > 0) choix.push([pr.portion, "1 portion"]);
+        [50, 100, 200].forEach(function (g) { if (g !== pr.portion) choix.push([g, g + " g"]); });
+        const chips = el("div", "chips");
+        choix.forEach(function (c) {
+          const b = el("button", "chip", c[1]);
+          b.type = "button";
+          b.addEventListener("click", function () {
+            pr.grammes = c[0];
+            champ.value = Math.round(c[0]);
+            remplirDepuisProduits();
+          });
+          chips.appendChild(b);
+        });
+        ligne.appendChild(chips);
+        const unite = el("div", "champ-unite");
+        unite.appendChild(champ);
+        unite.appendChild(el("span", "", "g"));
+        ligne.appendChild(unite);
+        champ.addEventListener("input", function () {
+          const g = parseFloat(champ.value);
+          if (g > 0) {
+            pr.grammes = g;
+            remplirDepuisProduits();
+          }
+        });
+        carte.appendChild(ligne);
+        zone.appendChild(carte);
+      });
+
+      // Plusieurs produits : le total du repas
+      if (produits.length > 1) {
+        const total = el("p", "produits-total");
+        total.id = "produits-total";
+        zone.appendChild(total);
+      }
+      remplirDepuisProduits();
     }
 
     async function ouvrirFormulaire() {
