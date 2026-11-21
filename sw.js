@@ -2,8 +2,13 @@
 // Stratégie « réseau d'abord » : tu as toujours la dernière version du site.
 // Le cache ne sert qu'en secours quand il n'y a pas de connexion.
 
-const CACHE = "sportapp-v2";
-const BIBLIOTHEQUE = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/";
+const CACHE = "sportapp-v3";
+// Versions figées (elles ne changent jamais) : à mettre à jour avec celles des pages HTML
+const BIBLIOTHEQUES = [
+  "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/",
+  "https://cdn.jsdelivr.net/npm/barcode-detector@3.2.4/",
+  "https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.7/"
+];
 
 self.addEventListener("install", function () {
   self.skipWaiting();
@@ -29,8 +34,8 @@ self.addEventListener("fetch", function (event) {
   // Seulement les fichiers du site (et la bibliothèque Supabase) : les données Supabase et les polices ne passent jamais par le cache
   const url = new URL(requete.url);
 
-  // La bibliothèque Supabase (version figée, elle ne change jamais) : gardée pour marcher sans réseau
-  if (url.href.indexOf(BIBLIOTHEQUE) === 0) {
+  // Bibliothèques figées : gardées pour marcher sans réseau
+  if (BIBLIOTHEQUES.some(function (b) { return url.href.indexOf(b) === 0; })) {
     event.respondWith(
       caches.match(requete).then(function (enCache) {
         return enCache || fetch(requete).then(function (reponse) {

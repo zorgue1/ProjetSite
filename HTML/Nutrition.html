@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://unzyqfkxgfepvzirnmfd.supabase.co wss://unzyqfkxgfepvzirnmfd.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://unzyqfkxgfepvzirnmfd.supabase.co wss://unzyqfkxgfepvzirnmfd.supabase.co https://cdn.jsdelivr.net https://world.openfoodfacts.org; media-src 'self' blob: mediastream:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
   <title>SportApp – Nutrition</title>
@@ -74,6 +74,13 @@
       <label id="label-moment">Moment</label>
       <div class="onglets quatre" id="choix-moment" role="group" aria-labelledby="label-moment"></div>
 
+      <!-- Scanner le code-barres d'un paquet : calories et macros remplies toutes seules -->
+      <button class="btn secondaire btn-scanner" id="btn-scanner" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V4h3M18 4h3v3M21 17v3h-3M6 20H3v-3"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg>
+        Scanner un code-barres
+      </button>
+      <div class="produit" id="produit" hidden></div>
+
       <label for="repas-nom">Ce que tu as mangé</label>
       <input id="repas-nom" type="text" maxlength="80" placeholder="Ex. : Riz, poulet, brocolis" autocomplete="off">
 
@@ -134,6 +141,23 @@
     </details>
 
   </main>
+
+  <!-- Lecture du code-barres avec la caméra -->
+  <div class="scan-fond" id="scan" hidden>
+    <div class="scan-carte" role="dialog" aria-modal="true" aria-labelledby="scan-titre">
+      <h2 id="scan-titre">Scanner un produit</h2>
+      <div class="scan-video">
+        <video id="scan-video" playsinline muted></video>
+        <span class="scan-cadre" aria-hidden="true"></span>
+      </div>
+      <p class="mut" id="scan-etat" role="status"></p>
+      <div class="scan-manuel">
+        <input id="scan-code" type="text" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="Ou tape les chiffres du code" aria-label="Chiffres du code-barres">
+        <button class="btn" id="scan-ok" type="button">OK</button>
+      </div>
+      <button class="btn secondaire" id="scan-fermer" type="button">Fermer</button>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ" crossorigin="anonymous"></script>
   <script src="../JS/supabase.js"></script>
@@ -393,6 +417,259 @@
     function viderFormulaire() {
       ["repas-nom", "repas-kcal", "repas-p", "repas-g", "repas-l"].forEach(function (id) { $(id).value = ""; });
       $("detail-macros").open = false;
+      oublierProduit();
+    }
+
+    /* ---------- Scanner un code-barres ---------- */
+
+    // Lecteur de secours (iPhone, ordinateur) : version figée, vérifiée par son empreinte
+    const LECTEUR = {
+      src: "https://cdn.jsdelivr.net/npm/barcode-detector@3.2.4/dist/iife/ponyfill.js",
+      integrity: "sha384-V0LFv1UaolwYOQ6Y1C07pBzM25t1t+HbAAwyN47cJtg/Sqa2jYnTPGGt+oL1kjS/",
+      wasm: "https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.7/dist/reader/zxing_reader.wasm"
+    };
+    const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e"];
+    const scan = { detecteur: null, flux: null, boucle: null };
+    let produit = null;          // produit trouvé : valeurs pour 100 g
+
+    function chargerScript(src, integrity) {
+      return new Promise(function (ok, ko) {
+        const s = document.createElement("script");
+        s.src = src;
+        s.integrity = integrity;
+        s.crossOrigin = "anonymous";
+        s.onload = ok;
+        s.onerror = function () { ko(new Error("Lecteur de code-barres indisponible")); };
+        document.head.appendChild(s);
+      });
+    }
+
+    function enHexa(tampon) {
+      return Array.from(new Uint8Array(tampon)).map(function (o) { return o.toString(16).padStart(2, "0"); }).join("");
+    }
+
+    // Le lecteur du téléphone (Android) s'il existe, sinon celui de secours
+    async function creerDetecteur() {
+      if ("BarcodeDetector" in window) {
+        try {
+          const connus = await BarcodeDetector.getSupportedFormats();
+          const formats = FORMATS.filter(function (f) { return connus.indexOf(f) !== -1; });
+          if (formats.length) return new BarcodeDetector({ formats: formats });
+        } catch (e) {}
+      }
+      if (!window.BarcodeDetectionAPI) await chargerScript(LECTEUR.src, LECTEUR.integrity);
+      const api = window.BarcodeDetectionAPI;
+      // Le moteur de lecture est téléchargé puis vérifié avant d'être utilisé
+      const moteur = await (await fetch(LECTEUR.wasm)).arrayBuffer();
+      if (enHexa(await crypto.subtle.digest("SHA-256", moteur)) !== api.ZXING_WASM_SHA256) {
+        throw new Error("Moteur de lecture altéré");
+      }
+      api.prepareZXingModule({ overrides: { wasmBinary: moteur }, fireImmediately: true });
+      return new api.BarcodeDetector({ formats: FORMATS });
+    }
+
+    function etatScan(texte) {
+      $("scan-etat").textContent = texte;
+    }
+
+    async function ouvrirScanner() {
+      $("scan").hidden = false;
+      document.body.classList.add("sans-defilement");
+      $("scan-code").value = "";
+      $("scan-video").hidden = false;
+      etatScan("Préparation du lecteur…");
+      try {
+        scan.detecteur = scan.detecteur || await creerDetecteur();
+      } catch (e) {
+        $("scan-video").hidden = true;
+        etatScan("Lecture automatique indisponible : tape les chiffres sous le code-barres.");
+        return;
+      }
+      try {
+        scan.flux = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        const video = $("scan-video");
+        video.srcObject = scan.flux;
+        await video.play();
+        etatScan("Vise le code-barres du paquet.");
+        lireEnBoucle();
+      } catch (e) {
+        $("scan-video").hidden = true;
+        etatScan(e && e.name === "NotAllowedError"
+          ? "Accès à la caméra refusé. Autorise-le dans les réglages du navigateur, ou tape le code ci-dessous."
+          : "Caméra indisponible : tape les chiffres sous le code-barres.");
+      }
+    }
+
+    function lireEnBoucle() {
+      let occupe = false;
+      clearInterval(scan.boucle);
+      scan.boucle = setInterval(async function () {
+        const video = $("scan-video");
+        if (occupe || video.readyState < 2) return;
+        occupe = true;
+        try {
+          const codes = await scan.detecteur.detect(video);
+          if (codes.length) {
+            vibrer(40);
+            fermerScanner();
+            chercherProduit(codes[0].rawValue);
+          }
+        } catch (e) {
+        } finally {
+          occupe = false;
+        }
+      }, 250);
+    }
+
+    function fermerScanner() {
+      clearInterval(scan.boucle);
+      if (scan.flux) scan.flux.getTracks().forEach(function (t) { t.stop(); });
+      scan.flux = null;
+      $("scan-video").srcObject = null;
+      $("scan").hidden = true;
+      document.body.classList.remove("sans-defilement");
+    }
+
+    $("btn-scanner").addEventListener("click", ouvrirScanner);
+    $("scan-fermer").addEventListener("click", fermerScanner);
+    $("scan-ok").addEventListener("click", function () {
+      const code = $("scan-code").value.replace(/\D/g, "");
+      if (code.length < 8) {
+        $("scan-code").focus();
+        return etatScan("Le code-barres fait 8 ou 13 chiffres (ceux écrits sous les barres).");
+      }
+      fermerScanner();
+      chercherProduit(code);
+    });
+    $("scan-code").addEventListener("keydown", function (e) { if (e.key === "Enter") $("scan-ok").click(); });
+
+    /* ---------- Produit trouvé dans Open Food Facts ---------- */
+
+    function valeur(n) {
+      return n === undefined || n === null || n === "" || isNaN(Number(n)) ? null : Number(n);
+    }
+
+    async function chercherProduit(code) {
+      const zone = $("produit");
+      zone.hidden = false;
+      zone.innerHTML = "";
+      zone.appendChild(el("div", "squelette petit"));
+      try {
+        const reponse = await fetch("https://world.openfoodfacts.org/api/v2/product/" + encodeURIComponent(code) +
+          ".json?fields=product_name,product_name_fr,brands,nutriments,serving_quantity,image_front_small_url");
+        const d = await reponse.json();
+        if (d.status !== 1 || !d.product) {
+          oublierProduit();
+          return informer("Produit introuvable (code " + code + ").\nTu peux saisir les valeurs de l’emballage à la main.");
+        }
+        const p = d.product, n = p.nutriments || {};
+        let kcal = valeur(n["energy-kcal_100g"]);
+        if (kcal === null && valeur(n.energy_100g) !== null) kcal = valeur(n.energy_100g) / 4.184;   // kJ → kcal
+        const nom = (p.product_name_fr || p.product_name || "Produit " + code).trim();
+        const marque = (p.brands || "").split(",")[0].trim();
+        produit = {
+          nom: marque && nom.toLowerCase().indexOf(marque.toLowerCase()) === -1 ? nom + " (" + marque + ")" : nom,
+          image: p.image_front_small_url || "",
+          kcal: kcal,
+          p: valeur(n.proteins_100g),
+          g: valeur(n.carbohydrates_100g),
+          l: valeur(n.fat_100g),
+          portion: valeur(p.serving_quantity)
+        };
+        afficherProduit(produit.portion && produit.portion > 0 ? produit.portion : 100);
+      } catch (e) {
+        oublierProduit();
+        informer(navigator.onLine
+          ? "Recherche du produit impossible pour le moment. Réessaie dans un instant."
+          : "Pas de réseau : la recherche du produit a besoin d’internet.");
+      }
+    }
+
+    function oublierProduit() {
+      produit = null;
+      $("produit").hidden = true;
+      $("produit").innerHTML = "";
+    }
+
+    // Remplit le formulaire pour la quantité choisie (en grammes)
+    function remplirDepuisProduit(grammes) {
+      const f = grammes / 100;
+      function arrondi(v) { return v === null ? "" : String(Math.round(v * f * 10) / 10); }
+      $("repas-nom").value = (produit.nom + " · " + nb(grammes) + " g").slice(0, 80);
+      $("repas-kcal").value = produit.kcal === null ? "" : Math.round(produit.kcal * f);
+      $("repas-p").value = arrondi(produit.p);
+      $("repas-g").value = arrondi(produit.g);
+      $("repas-l").value = arrondi(produit.l);
+      $("detail-macros").open = produit.p !== null || produit.g !== null || produit.l !== null;
+    }
+
+    function afficherProduit(grammes) {
+      const zone = $("produit");
+      zone.innerHTML = "";
+      zone.hidden = false;
+
+      const tete = el("div", "produit-tete");
+      if (produit.image) {
+        const img = document.createElement("img");
+        img.src = produit.image;
+        img.alt = "";
+        img.className = "produit-image";
+        img.onerror = function () { img.remove(); };
+        tete.appendChild(img);
+      }
+      const infos = el("div", "produit-infos");
+      infos.appendChild(el("strong", "", produit.nom));
+      infos.appendChild(el("span", "mut", produit.kcal === null
+        ? "Calories non renseignées : complète à la main."
+        : "Pour 100 g : " + Math.round(produit.kcal) + " kcal" +
+          (produit.p !== null ? " · P " + nb(produit.p) : "") +
+          (produit.g !== null ? " · G " + nb(produit.g) : "") +
+          (produit.l !== null ? " · L " + nb(produit.l) : "")));
+      tete.appendChild(infos);
+      const retirer = el("button", "btn-mini", "✕");
+      retirer.type = "button";
+      retirer.setAttribute("aria-label", "Retirer le produit scanné");
+      retirer.addEventListener("click", function () {
+        oublierProduit();
+        ["repas-nom", "repas-kcal", "repas-p", "repas-g", "repas-l"].forEach(function (id) { $(id).value = ""; });
+      });
+      tete.appendChild(retirer);
+      zone.appendChild(tete);
+
+      // Quantité mangée : boutons rapides ou saisie libre
+      const ligne = el("div", "produit-quantite");
+      const champ = document.createElement("input");
+      champ.type = "number";
+      champ.min = "1";
+      champ.step = "1";
+      champ.inputMode = "numeric";
+      champ.value = Math.round(grammes);
+      champ.setAttribute("aria-label", "Quantité mangée en grammes");
+      const choix = [];
+      if (produit.portion && produit.portion > 0) choix.push([produit.portion, "1 portion"]);
+      [50, 100, 200].forEach(function (g) { if (g !== produit.portion) choix.push([g, g + " g"]); });
+      const chips = el("div", "chips");
+      choix.forEach(function (c) {
+        const b = el("button", "chip", c[1]);
+        b.type = "button";
+        b.addEventListener("click", function () {
+          champ.value = Math.round(c[0]);
+          remplirDepuisProduit(c[0]);
+        });
+        chips.appendChild(b);
+      });
+      ligne.appendChild(chips);
+      const unite = el("div", "champ-unite");
+      unite.appendChild(champ);
+      unite.appendChild(el("span", "", "g"));
+      ligne.appendChild(unite);
+      champ.addEventListener("input", function () {
+        const g = parseFloat(champ.value);
+        if (g > 0) remplirDepuisProduit(g);
+      });
+      zone.appendChild(ligne);
+
+      remplirDepuisProduit(grammes);
     }
 
     async function ouvrirFormulaire() {

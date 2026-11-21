@@ -438,3 +438,192 @@
   margin: 8px 0 0;
   font-size: 13px;
 }
+
+/* ---------- Scanner un code-barres ---------- */
+.btn-scanner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin: 4px 0 0;
+}
+
+.btn-scanner svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Produit trouvé */
+.produit {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--carte-douce);
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  animation: monter 0.3s ease both;
+}
+
+.produit .squelette {
+  margin: 0;
+}
+
+.produit-tete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.produit-image {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 10px;
+}
+
+.produit-infos {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.produit-infos .mut {
+  font-size: 13px;
+}
+
+.produit .btn-mini {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  width: 32px;
+  height: 32px;
+  font: inherit;
+  color: var(--gris);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.produit-quantite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.produit-quantite .chips {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.produit-quantite .champ-unite {
+  flex: 0 0 110px;
+}
+
+/* Fenêtre caméra */
+body.sans-defilement {
+  overflow: hidden;
+}
+
+.scan-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.scan-carte {
+  width: min(100%, 420px);
+  padding: 18px;
+  text-align: center;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: 22px;
+  box-shadow: var(--ombre);
+}
+
+.scan-carte h2 {
+  margin: 0 0 12px;
+}
+
+.scan-video {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  border-radius: 16px;
+}
+
+.scan-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scan-video:has(video[hidden]) {
+  display: none;
+}
+
+/* Cadre de visée avec une ligne qui balaie */
+.scan-cadre {
+  position: absolute;
+  inset: 28% 10%;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  border-radius: 14px;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35);
+}
+
+.scan-cadre::after {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 50%;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+  animation: balayer 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes balayer {
+  from { top: 12%; }
+  to   { top: 88%; }
+}
+
+#scan-etat {
+  min-height: 1.4em;
+  margin: 12px 0;
+}
+
+.scan-manuel {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.scan-manuel .btn {
+  margin: 0;
+}
+
+#scan-fermer {
+  width: 100%;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-cadre::after {
+    animation: none;
+  }
+}
