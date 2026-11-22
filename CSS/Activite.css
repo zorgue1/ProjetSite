@@ -255,28 +255,6 @@
 }
 
 /* ---------- Historique rangé par mois ---------- */
-.mois {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 24px 0 10px;
-  font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 24px;
-  font-weight: 800;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.mois .compte {
-  padding: 2px 10px;
-  font-family: Manrope, "Segoe UI", system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--gris);
-  background: var(--carte-douce);
-  border-radius: 999px;
-}
-
 .seance-ligne {
   margin-bottom: 10px;
   overflow: hidden;
@@ -965,4 +943,103 @@ body.sans-defilement {
 .replier .chips {
   margin: 0;
   padding: 0 14px 14px;
+}
+
+/* ---------- Historique : un bloc par mois, séances regroupées par nom ---------- */
+.mois-bloc {
+  margin-bottom: 12px;
+}
+
+.mois-resume {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  list-style: none;
+  cursor: pointer;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+}
+
+.mois-resume::-webkit-details-marker,
+.groupe-seances summary::-webkit-details-marker {
+  display: none;
+}
+
+.mois-titre {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mois-titre strong {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.mois-titre .mut {
+  overflow: hidden;
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mois-bloc[open] > .mois-resume {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--bordure));
+}
+
+.mois-bloc[open] > .mois-resume .chevron,
+.groupe-seances[open] > summary .chevron {
+  transform: rotate(90deg);
+}
+
+.mois-corps {
+  padding: 10px 0 0 10px;
+  border-left: 2px solid var(--bordure);
+  margin-left: 14px;
+}
+
+/* Groupe de séances du même nom dans le mois */
+.groupe-seances {
+  margin-bottom: 10px;
+  overflow: hidden;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+}
+
+.groupe-seances summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.groupe-infos {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.groupe-contenu {
+  padding: 0 10px 2px;
+  border-top: 1px solid var(--bordure);
+}
+
+.groupe-contenu .seance-ligne {
+  margin: 10px 0;
+  background: var(--carte-douce);
+}
+
+.mois-resume .chevron,
+.groupe-seances .chevron {
+  transition: transform 0.2s;
 }

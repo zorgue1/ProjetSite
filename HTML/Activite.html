@@ -125,7 +125,6 @@
     let blocs = [];              // exercices de la séance : { exercice, series: [{ rep, charge }], indice, ouvert }
     let seances = [];            // toutes les séances
     let filtre = "Tous";         // filtre de l'historique
-    let limite = 30;             // nombre de séances affichées
     let rechercheMuscle = "Tous";
     let programme = PROGRAMME_DEFAUT;
 
@@ -852,7 +851,6 @@
         bouton.setAttribute("aria-pressed", f === filtre ? "true" : "false");
         bouton.addEventListener("click", function () {
           filtre = f;
-          limite = 30;
           afficherFiltres();
           majResumeReplie();
           afficherHistorique(false);
@@ -864,6 +862,10 @@
     /* ---------- Historique rangé par mois ---------- */
 
     // recharger = false : on réutilise les séances déjà chargées (simple changement de filtre)
+    // Mois dépliés (gardés quand on change de filtre ou qu'on supprime une séance)
+    let moisOuverts = null;
+
+    // L'historique : un bloc par mois (repliable), et dans chaque mois les séances regroupées par nom
     async function afficherHistorique(recharger) {
       if (recharger !== false) {
         seances = await chargerSeances();
@@ -885,78 +887,150 @@
         return;
       }
 
-      const visibles = filtrees.slice(0, limite);
-      const parSeance = grouperSeries(await chargerSeries(visibles.map(function (s) { return s.id; })));
-
-      let moisCourant = null;
-      visibles.forEach(function (s) {
+      // Séances rangées par mois (du plus récent au plus ancien)
+      const mois = [];
+      const parMois = {};
+      filtrees.forEach(function (s) {
         const cle = s.date.slice(0, 7);
-        const d = new Date(s.date + "T12:00:00");
-
-        // Titre du mois
-        if (cle !== moisCourant) {
-          moisCourant = cle;
-          const nomMois = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-          const titre = el("h3", "mois", nomMois.charAt(0).toUpperCase() + nomMois.slice(1));
-          const nb = filtrees.filter(function (x) { return x.date.slice(0, 7) === cle; }).length;
-          titre.appendChild(el("span", "compte", String(nb)));
-          zone.appendChild(titre);
+        if (!parMois[cle]) {
+          parMois[cle] = [];
+          mois.push(cle);
         }
+        parMois[cle].push(s);
+      });
+      if (!moisOuverts) moisOuverts = new Set([mois[0]]);     // au début, seul le mois le plus récent est ouvert
 
-        // Ligne compacte qui s'ouvre au clic
-        const exos = parSeance[s.id] || [];
-        const nbSeries = exos.reduce(function (a, e) { return a + e.series.length; }, 0);
+      mois.forEach(function (cle) {
+        const liste = parMois[cle];
+        const bloc = el("details", "mois-bloc");
+        bloc.open = moisOuverts.has(cle);
 
-        const ligne = el("details", "seance-ligne");
-        const resume = el("summary");
-
-        const bloc = el("span", "date-bloc");
-        bloc.appendChild(el("strong", null, String(d.getDate())));
-        bloc.appendChild(el("small", null, d.toLocaleDateString("fr-FR", { weekday: "short" })));
-        resume.appendChild(bloc);
-
-        const infos = el("span", "seance-infos");
-        infos.appendChild(el("span", "tag " + categorie(s.type).toLowerCase(), s.type));
-        infos.appendChild(el("span", "mut", exos.length
-          ? exos.length + " exercice" + (exos.length > 1 ? "s" : "") + " · " + nbSeries + " série" + (nbSeries > 1 ? "s" : "")
-          : (s.notes ? "Notes uniquement" : "Aucun détail")));
-        resume.appendChild(infos);
+        const resume = el("summary", "mois-resume");
+        const nomMois = new Date(cle + "-15T12:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+        const titre = el("span", "mois-titre");
+        titre.appendChild(el("strong", "", nomMois.charAt(0).toUpperCase() + nomMois.slice(1)));
+        // Petit résumé : « 8 séances · Push 3 · Pull 3 · Leg 2 »
+        const parType = {};
+        liste.forEach(function (s) { parType[s.type] = (parType[s.type] || 0) + 1; });
+        titre.appendChild(el("span", "mut", liste.length + " séance" + (liste.length > 1 ? "s" : "") + " · " +
+          Object.keys(parType).map(function (t) { return t + " " + parType[t]; }).join(" · ")));
+        resume.appendChild(titre);
         resume.appendChild(el("span", "chevron", "›"));
-        ligne.appendChild(resume);
+        bloc.appendChild(resume);
 
-        // Détail
-        const detail = el("div", "seance-detail");
-        exos.forEach(function (ex) { detail.appendChild(creerLigneExercice(ex)); });
-        if (s.notes) detail.appendChild(el("div", "notes-seance", s.notes));
+        const corps = el("div", "mois-corps");
+        bloc.appendChild(corps);
 
-        const actions = el("div", "seance-actions");
-
-        const modifier = el("button", "btn-suppr", "Modifier");
-        modifier.type = "button";
-        modifier.addEventListener("click", function () { ouvrirEdition(s, exos); });
-        actions.appendChild(modifier);
-
-        const supprimer = el("button", "btn-suppr", "Supprimer");
-        supprimer.type = "button";
-        supprimer.addEventListener("click", function () {
-          supprimerAvecAnnulation("Séance du " + dateFr(s.date) + " supprimée", ligne,
-            function () { return supprimerSeance(s.id); }, afficherHistorique);
+        // Les détails d'un mois ne sont chargés qu'à son ouverture
+        let charge = false;
+        async function remplir() {
+          if (charge) return;
+          charge = true;
+          corps.innerHTML = '<div class="squelette petit"></div><div class="squelette petit"></div>';
+          try {
+            const parSeance = grouperSeries(await chargerSeries(liste.map(function (s) { return s.id; })));
+            corps.innerHTML = "";
+            remplirMois(corps, liste, parSeance);
+          } catch (e) {
+            charge = false;
+            corps.innerHTML = "";
+            corps.appendChild(el("p", "mut", navigator.onLine ? "Détails indisponibles pour le moment." : "Pas de réseau : les détails reviendront avec la connexion."));
+          }
+        }
+        bloc.addEventListener("toggle", function () {
+          if (bloc.open) {
+            moisOuverts.add(cle);
+            remplir();
+          } else {
+            moisOuverts.delete(cle);
+          }
         });
-        actions.appendChild(supprimer);
+        if (bloc.open) remplir();
+        zone.appendChild(bloc);
+      });
+    }
 
-        detail.appendChild(actions);
-        ligne.appendChild(detail);
-        zone.appendChild(ligne);
+    // Dans un mois : les séances qui portent le même nom sont regroupées (« Leg · 3 séances »)
+    function remplirMois(corps, liste, parSeance) {
+      const groupes = [];
+      const index = {};
+      liste.forEach(function (s) {
+        const cle = normaliser(s.type);
+        if (!(cle in index)) {
+          index[cle] = groupes.length;
+          groupes.push({ type: s.type, seances: [] });
+        }
+        groupes[index[cle]].seances.push(s);
       });
 
-      if (filtrees.length > limite) {
-        const plus = el("button", "btn-suppr plus", "Afficher plus de séances");
-        plus.addEventListener("click", function () {
-          limite += 30;
-          afficherHistorique(false);
-        });
-        zone.appendChild(plus);
-      }
+      groupes.forEach(function (g) {
+        // Une seule séance de ce type dans le mois : on l'affiche directement
+        if (g.seances.length === 1) {
+          corps.appendChild(ligneSeance(g.seances[0], parSeance[g.seances[0].id] || []));
+          return;
+        }
+        const groupe = el("details", "groupe-seances");
+        const resume = el("summary");
+        resume.appendChild(el("span", "tag " + categorie(g.type).toLowerCase(), g.type));
+        const infos = el("span", "groupe-infos");
+        infos.appendChild(el("strong", "", g.seances.length + " séances"));
+        infos.appendChild(el("span", "mut", "Les " + g.seances.map(function (s) {
+          return new Date(s.date + "T12:00:00").getDate();
+        }).reverse().join(", ")));
+        resume.appendChild(infos);
+        resume.appendChild(el("span", "chevron", "›"));
+        groupe.appendChild(resume);
+
+        const contenu = el("div", "groupe-contenu");
+        g.seances.forEach(function (s) { contenu.appendChild(ligneSeance(s, parSeance[s.id] || [])); });
+        groupe.appendChild(contenu);
+        corps.appendChild(groupe);
+      });
+    }
+
+    // Une séance : ligne compacte qui s'ouvre pour montrer les exercices, les notes et les actions
+    function ligneSeance(s, exos) {
+      const d = new Date(s.date + "T12:00:00");
+      const nbSeries = exos.reduce(function (a, e) { return a + e.series.length; }, 0);
+
+      const ligne = el("details", "seance-ligne");
+      const resume = el("summary");
+
+      const bloc = el("span", "date-bloc");
+      bloc.appendChild(el("strong", null, String(d.getDate())));
+      bloc.appendChild(el("small", null, d.toLocaleDateString("fr-FR", { weekday: "short" })));
+      resume.appendChild(bloc);
+
+      const infos = el("span", "seance-infos");
+      infos.appendChild(el("span", "tag " + categorie(s.type).toLowerCase(), s.type));
+      infos.appendChild(el("span", "mut", exos.length
+        ? exos.length + " exercice" + (exos.length > 1 ? "s" : "") + " · " + nbSeries + " série" + (nbSeries > 1 ? "s" : "")
+        : (s.notes ? "Notes uniquement" : "Aucun détail")));
+      resume.appendChild(infos);
+      resume.appendChild(el("span", "chevron", "›"));
+      ligne.appendChild(resume);
+
+      const detail = el("div", "seance-detail");
+      exos.forEach(function (ex) { detail.appendChild(creerLigneExercice(ex)); });
+      if (s.notes) detail.appendChild(el("div", "notes-seance", s.notes));
+
+      const actions = el("div", "seance-actions");
+      const modifier = el("button", "btn-suppr", "Modifier");
+      modifier.type = "button";
+      modifier.addEventListener("click", function () { ouvrirEdition(s, exos); });
+      actions.appendChild(modifier);
+
+      const supprimer = el("button", "btn-suppr", "Supprimer");
+      supprimer.type = "button";
+      supprimer.addEventListener("click", function () {
+        supprimerAvecAnnulation("Séance du " + dateFr(s.date) + " supprimée", ligne,
+          function () { return supprimerSeance(s.id); }, afficherHistorique);
+      });
+      actions.appendChild(supprimer);
+
+      detail.appendChild(actions);
+      ligne.appendChild(detail);
+      return ligne;
     }
 
     /* ---------- Chrono de repos ---------- */

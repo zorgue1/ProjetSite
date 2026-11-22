@@ -136,6 +136,16 @@
       <label id="label-objectif">Objectif</label>
       <div class="onglets trois" id="choix-objectif" role="group" aria-labelledby="label-objectif"></div>
 
+      <label id="label-kcal">Calories par jour</label>
+      <div class="onglets" id="choix-kcal" role="group" aria-labelledby="label-kcal">
+        <button type="button" class="onglet" data-mode="auto">Calculées pour moi</button>
+        <button type="button" class="onglet" data-mode="perso">Je choisis</button>
+      </div>
+      <div class="champ-unite grand kcal-perso" id="zone-kcal-perso" hidden>
+        <input id="kcal-perso" type="number" min="800" max="6000" step="10" inputmode="numeric" placeholder="Ex. : 2500" aria-label="Calories par jour">
+        <span>kcal</span>
+      </div>
+
       <div class="calcul" id="calcul"></div>
 
       <div class="actions">
@@ -878,6 +888,32 @@
       });
     }
 
+    // « Calculées pour moi » ou « Je choisis » (calories saisies à la main)
+    let modeKcal = "auto";
+    function marquerModeKcal() {
+      document.querySelectorAll("#choix-kcal .onglet").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.mode === modeKcal));
+      });
+      $("zone-kcal-perso").hidden = modeKcal !== "perso";
+    }
+    document.querySelectorAll("#choix-kcal .onglet").forEach(function (b) {
+      b.addEventListener("click", function () {
+        modeKcal = b.dataset.mode;
+        marquerModeKcal();
+        if (modeKcal === "perso" && !$("kcal-perso").value) {
+          const calcul = calculerBesoins(Object.assign({}, profilSaisi(), { kcal_perso: null }));
+          if (calcul.calories) $("kcal-perso").value = calcul.calories;     // on part du calcul
+          $("kcal-perso").focus();
+        }
+        apercu();
+      });
+    });
+
+    function kcalSaisies() {
+      const v = parseInt($("kcal-perso").value, 10);
+      return modeKcal === "perso" && v >= 800 && v <= 6000 ? v : null;
+    }
+
     function marquerObjectif() {
       document.querySelectorAll("#choix-objectif .onglet").forEach(function (b) {
         b.setAttribute("aria-pressed", String(b.dataset.cle === objectifChoisi));
@@ -888,7 +924,8 @@
     function profilSaisi() {
       return Object.assign({}, profil, {
         activite: $("activite").value,
-        objectif: objectifChoisi
+        objectif: objectifChoisi,
+        kcal_perso: kcalSaisies()
       });
     }
 
@@ -905,6 +942,15 @@
         zone.appendChild(p);
         return;
       }
+      // Calories choisies à la main
+      if (b.perso) {
+        const calcul = calculerBesoins(Object.assign({}, profilSaisi(), { kcal_perso: null }));
+        zone.innerHTML =
+          (calcul.calories ? '<div class="calcul-ligne"><span>Calcul automatique</span><strong>' + entier(calcul.calories) + ' kcal</strong></div>' : "") +
+          '<div class="calcul-ligne total"><span>Ton objectif choisi</span><strong>' + entier(b.calories) + ' kcal</strong></div>' +
+          '<p class="mut">Protéines ' + b.proteines + ' g · Glucides ' + b.glucides + ' g · Lipides ' + b.lipides + ' g</p>';
+        return;
+      }
       const obj = OBJECTIFS[objectifChoisi];
       zone.innerHTML =
         '<div class="calcul-ligne"><span>Métabolisme de base</span><strong>' + entier(b.base) + ' kcal</strong></div>' +
@@ -918,6 +964,9 @@
       $("activite").value = profil.activite;
       objectifChoisi = profil.objectif;
       marquerObjectif();
+      modeKcal = profil.kcal_perso ? "perso" : "auto";
+      $("kcal-perso").value = profil.kcal_perso || "";
+      marquerModeKcal();
 
       const infos = [];
       if (profil.taille) infos.push(profil.taille + " cm");
@@ -936,18 +985,24 @@
         $("besoins-resume").textContent = "à compléter";
         $("besoins").open = true;
       } else {
-        $("besoins-resume").textContent = entier(besoins.calories) + " kcal / jour";
+        $("besoins-resume").textContent = entier(besoins.calories) + " kcal / jour" + (besoins.perso ? " · choisi" : "");
       }
       apercu();
     }
 
     $("activite").addEventListener("change", apercu);
+    $("kcal-perso").addEventListener("input", apercu);
 
     $("btn-besoins").addEventListener("click", async function () {
       const bouton = this;
       bouton.disabled = true;
       try {
-        await sauverBesoins($("activite").value, objectifChoisi);
+        if (modeKcal === "perso" && !kcalSaisies()) {
+          $("kcal-perso").focus();
+          informer("Choisis un nombre de calories entre 800 et 6 000 kcal par jour.");
+          return;
+        }
+        await sauverBesoins($("activite").value, objectifChoisi, kcalSaisies());
         profil = profilSaisi();
         afficherBesoins();
         afficherBilan();

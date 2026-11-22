@@ -649,3 +649,12 @@ body.sans-defilement {
   margin: 0 0 6px;
   font-size: 14px;
 }
+
+/* Calories choisies à la main */
+#choix-kcal {
+  grid-template-columns: 1fr 1fr;
+}
+
+.kcal-perso {
+  margin-top: 10px;
+}

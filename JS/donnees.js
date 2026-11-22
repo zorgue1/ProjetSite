@@ -244,6 +244,7 @@ async function chargerProfil() {
     taille: data && data.taille ? String(data.taille) : "",
     activite: (data && data.activite) || "modere",
     objectif: (data && data.objectif) || "maintien",
+    kcal_perso: (data && data.kcal_perso) || null,
     pseudo: (data && data.pseudo) || "",
     partage_prs: !!(data && data.partage_prs),
     partage_activite: !(data && data.partage_activite === false),
@@ -302,6 +303,19 @@ function calculerBesoins(p) {
   const manque = [];
   const poids = parseFloat(p.poids);
   const taille = parseFloat(p.taille);
+  const perso = parseInt(p.kcal_perso, 10) > 0 ? parseInt(p.kcal_perso, 10) : 0;
+  const objectifPerso = OBJECTIFS[p.objectif] || OBJECTIFS.maintien;
+
+  // Calories choisies à la main : pas besoin du profil complet
+  if (perso) {
+    const prot = poids > 0 ? Math.round(poids * objectifPerso.proteinesKg) : Math.round(perso * 0.25 / 4);
+    const lip = Math.round(perso * 0.25 / 9);
+    return {
+      manque: [], perso: true, calories: perso, proteines: prot, lipides: lip,
+      glucides: Math.max(0, Math.round((perso - prot * 4 - lip * 9) / 4))
+    };
+  }
+
   if (!(poids > 0)) manque.push("poids");
   if (!(taille > 0)) manque.push("taille");
   if (!p.naissance) manque.push("date de naissance");
@@ -326,12 +340,14 @@ function calculerBesoins(p) {
   };
 }
 
-async function sauverBesoins(activite, objectif) {
+// kcalPerso : nombre de calories choisi à la main, ou null pour le calcul automatique
+async function sauverBesoins(activite, objectif, kcalPerso) {
   const { data: { user } } = await client.auth.getUser();
   const { error } = await client.from("profils").upsert({
     user_id: user.id,
     activite: activite,
-    objectif: objectif
+    objectif: objectif,
+    kcal_perso: kcalPerso || null
   });
   if (error) throw error;
 }
