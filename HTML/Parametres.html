@@ -158,6 +158,19 @@
       </div>
     </details>
 
+    <!-- Aide -->
+    <details class="card reglage" name="reglages" id="r-aide">
+      <summary>
+        <span class="reglage-icone" aria-hidden="true">❓</span>
+        <span class="reglage-titre"><strong>Aide</strong><span class="mut">Revoir le tutoriel de l’appli</span></span>
+        <span class="chevron" aria-hidden="true">›</span>
+      </summary>
+      <div class="reglage-corps">
+        <p class="mut">Le tour complet de SportApp : séances, records, nutrition, progression, défis, amis et notifications.</p>
+        <button class="btn" id="btn-tutoriel" type="button">Revoir le tutoriel</button>
+      </div>
+    </details>
+
     <!-- Compte -->
     <details class="card reglage" name="reglages" id="r-compte">
       <summary>
@@ -194,6 +207,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ" crossorigin="anonymous"></script>
   <script src="../JS/supabase.js"></script>
   <script src="../JS/donnees.js"></script>
+  <script src="../JS/tutoriel.js"></script>
   <script>
     const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
     const TYPES = ["Push", "Pull", "Leg", "Repos"];
@@ -510,6 +524,10 @@
       } finally {
         bouton.disabled = false;
       }
+    });
+
+    document.getElementById("btn-tutoriel").addEventListener("click", function () {
+      lancerTutoriel(profilCharge && profilCharge.prenom);
     });
 
     document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);

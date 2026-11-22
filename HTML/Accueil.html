@@ -166,6 +166,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ" crossorigin="anonymous"></script>
   <script src="../JS/supabase.js"></script>
   <script src="../JS/donnees.js"></script>
+  <script src="../JS/tutoriel.js"></script>
   <script>
     const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
     const LETTRES = ["L", "M", "M", "J", "V", "S", "D"];
@@ -491,59 +492,6 @@
     }
     document.addEventListener("installation-possible", afficherInstallation);
 
-    /* ---------- Premier lancement : 3 écrans pour découvrir l'appli ---------- */
-
-    function afficherBienvenue(prenom, seanceDuJour, nbSeances) {
-      if (localStorage.getItem("sportapp:bienvenue")) return;
-      localStorage.setItem("sportapp:bienvenue", "1");
-      if (nbSeances > 0) return;          // tu connais déjà l'appli
-
-      const etapes = [
-        ["👋", "Bienvenue" + (prenom ? ", " + prenom : "") + " !",
-          "SportApp suit tes séances, tes records, ta nutrition et ta progression. " +
-          (estRepos(seanceDuJour) ? "Aujourd’hui c’est repos : profites-en !" : "Ton programme est prêt : aujourd’hui, c’est " + seanceDuJour + ".")],
-        ["🏋️", "Note ta séance",
-          "Touche « Commencer la séance », ajoute tes exercices et valide chaque série : le chrono de repos démarre tout seul et tes records sont fêtés."],
-        ["🤝", "Défie tes potes",
-          "Dans Profil, choisis ton pseudo et cherche celui de tes amis pour comparer vos PR et grimper au classement. Ton programme se change dans Paramètres."]
-      ];
-      let i = 0;
-      const fond = el("div", "dialogue-fond");
-      const boite = el("div", "dialogue bienvenue");
-      boite.setAttribute("role", "dialog");
-      boite.setAttribute("aria-modal", "true");
-      fond.appendChild(boite);
-
-      function fermer() { fond.remove(); }
-      function montrer() {
-        const e = etapes[i];
-        boite.innerHTML = "";
-        boite.appendChild(el("div", "bienvenue-emoji", e[0]));
-        boite.appendChild(el("h2", "", e[1]));
-        boite.appendChild(el("p", "", e[2]));
-        const points = el("div", "bienvenue-points");
-        etapes.forEach(function (_, j) { points.appendChild(el("span", j === i ? "actif" : "")); });
-        boite.appendChild(points);
-        const boutons = el("div", "dialogue-boutons");
-        const passer = el("button", "btn secondaire", i === etapes.length - 1 ? "Fermer" : "Passer");
-        passer.type = "button";
-        passer.addEventListener("click", fermer);
-        const suivant = el("button", "btn", i === etapes.length - 1 ? "C’est parti 💪" : "Suivant");
-        suivant.type = "button";
-        suivant.addEventListener("click", function () {
-          if (i === etapes.length - 1) return fermer();
-          i++;
-          montrer();
-        });
-        boutons.appendChild(passer);
-        boutons.appendChild(suivant);
-        boite.appendChild(boutons);
-        suivant.focus();
-      }
-      montrer();
-      document.body.appendChild(fond);
-    }
-
     /* ---------- Chargement ---------- */
 
     async function afficher() {
@@ -588,7 +536,8 @@
       afficherProfil(p, seances, poids);
       await Promise.all([afficherCartePR(), afficherCarteNiveau(), afficherCarteFil()]);
       afficherInstallation();
-      afficherBienvenue(p.prenom, seance, seances.length);
+      // Nouveau compte : le tutoriel complet se lance une seule fois (il se revoit dans Paramètres → Aide)
+      if (!tutorielDejaVu() && seances.length === 0) lancerTutoriel(p.prenom, seance);
     }
 
     document.getElementById("mois-prec").addEventListener("click", function () {
