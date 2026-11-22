@@ -73,11 +73,17 @@
     <!-- Séances enregistrées sans réseau, pas encore envoyées -->
     <p class="vide attente" id="attente" hidden></p>
 
-    <!-- Bilan -->
-    <section class="bilan" id="bilan"></section>
+    <!-- Bilan et filtres : repliés sur une ligne pour voir tout de suite l'historique -->
+    <details class="replier" id="replier">
+      <summary>
+        <span class="replier-resume" id="replier-resume">Bilan et filtres</span>
+        <span class="replier-action">Filtrer</span>
+      </summary>
+      <section class="bilan" id="bilan"></section>
+      <div class="chips" id="filtres-historique"></div>
+    </details>
 
     <!-- Historique -->
-    <div class="chips" id="filtres-historique"></div>
     <section id="historique"><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div></section>
 
   </main>
@@ -816,12 +822,22 @@
       }).length;
       const ceMois = seances.filter(function (s) { return s.date.slice(0, 7) === mois; }).length;
 
+      majResumeReplie(semaine, ceMois);
+
       [["Cette semaine", semaine], ["Ce mois-ci", ceMois], ["Au total", seances.length]].forEach(function (b) {
         const carte = el("div", "mini-bilan");
         carte.appendChild(el("div", "t", b[0]));
         carte.appendChild(el("div", "v", String(b[1])));
         zone.appendChild(carte);
       });
+    }
+
+    // La ligne repliée résume le bilan et le filtre choisi : « 2 cette semaine · 8 ce mois · Push »
+    let resumeBilan = "";
+    function majResumeReplie(semaine, ceMois) {
+      if (semaine !== undefined) resumeBilan = semaine + " cette semaine · " + ceMois + " ce mois";
+      document.getElementById("replier-resume").textContent = resumeBilan + (filtre !== "Tous" ? " · " + filtre : "");
+      document.getElementById("replier").classList.toggle("filtre-actif", filtre !== "Tous");
     }
 
     function afficherFiltres() {
@@ -838,6 +854,7 @@
           filtre = f;
           limite = 30;
           afficherFiltres();
+          majResumeReplie();
           afficherHistorique(false);
         });
         zone.appendChild(bouton);
@@ -1236,6 +1253,15 @@
       }
     });
 
+    // Lien « Activite.html#nouvelle » (bouton ＋ ou séance du jour) : ouvre une nouvelle séance
+    function ouvrirSiDemande() {
+      if (location.hash !== "#nouvelle") return;
+      history.replaceState(null, "", location.pathname);
+      if (document.getElementById("formulaire").hidden) ouvrirNouvelle();
+      else document.getElementById("formulaire").scrollIntoView({ behavior: "smooth" });
+    }
+    window.addEventListener("hashchange", ouvrirSiDemande);
+
     /* ---------- Démarrage ---------- */
 
     (async function () {
@@ -1259,7 +1285,8 @@
         programme = lireLocal("programme", PROGRAMME_DEFAUT);
       }
       afficherChoix();
-      restaurerBrouillon();          // reprend la séance commencée avant de quitter la page
+      // Reprend la séance commencée avant de quitter la page ; sinon « ＋ Séance » en ouvre une nouvelle
+      if (!restaurerBrouillon()) ouvrirSiDemande();
       afficherAttente();
       try {
         await afficherHistorique();

@@ -46,7 +46,7 @@
 }
 
 .vedette-etiquette {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -222,7 +222,7 @@
 }
 
 .histo-centre .mut {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .histo-ligne.record strong {
@@ -341,7 +341,7 @@
 }
 
 .serie-chiffres span {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--gris);
 }
@@ -353,7 +353,7 @@
   place-items: center;
   min-width: 20px;
   padding: 1px 7px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--gris);
   background: var(--carte-douce);

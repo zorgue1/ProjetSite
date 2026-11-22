@@ -12,7 +12,7 @@
   --carte: #121923;
   --carte-douce: #0c121a;
   --texte: #f1f4f8;
-  --gris: #8c99aa;
+  --gris: #98a4b4;
   --bordure: #202b3a;
   --ombre: 0 10px 40px rgba(0, 0, 0, 0.45);
 
@@ -52,7 +52,7 @@
     --carte: #ffffff;
     --carte-douce: #f3f0ea;
     --texte: #16191f;
-    --gris: #66707c;
+    --gris: #545d68;
     --bordure: #e3ddd3;
     --ombre: 0 8px 30px rgba(22, 25, 31, 0.08);
 
@@ -89,7 +89,7 @@
   --carte: #ffffff;
   --carte-douce: #f3f0ea;
   --texte: #16191f;
-  --gris: #66707c;
+  --gris: #545d68;
   --bordure: #e3ddd3;
   --ombre: 0 8px 30px rgba(22, 25, 31, 0.08);
 

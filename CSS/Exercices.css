@@ -166,7 +166,7 @@ input[type="file"] {
 .exo-corps .mini-select {
   align-self: stretch;
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .mini-select select {
@@ -268,7 +268,7 @@ input[type="file"] {
 
 .badge-commun {
   padding: 1px 10px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;

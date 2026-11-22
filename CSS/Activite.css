@@ -152,7 +152,7 @@
   position: sticky;
   top: 0;
   padding: 6px 14px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -240,7 +240,7 @@
 }
 
 .mini-bilan .t {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -319,7 +319,7 @@
 }
 
 .date-bloc small {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--gris);
@@ -493,7 +493,7 @@
 
 .badge-record {
   padding: 2px 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   color: #b97700;
   background: color-mix(in srgb, #ffb020 22%, transparent);
@@ -501,7 +501,7 @@
 }
 
 .serie-modifier {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--gris);
 }
 
@@ -549,7 +549,7 @@
 .stepper-libelle {
   display: block;
   margin-bottom: 4px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -694,7 +694,7 @@
 }
 
 .chrono-titre {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -834,7 +834,7 @@ body.sans-defilement {
 }
 
 .recap-chiffre span {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--gris);
 }
@@ -914,4 +914,55 @@ body.sans-defilement {
   .chrono.fini {
     animation: none;
   }
+}
+
+/* ---------- Bilan et filtres repliés ---------- */
+.replier {
+  margin-bottom: 14px;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: 14px;
+}
+
+.replier summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.replier summary::-webkit-details-marker {
+  display: none;
+}
+
+.replier-resume {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.replier-action {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.replier-action::after {
+  content: " ▾";
+}
+
+.replier[open] .replier-action::after {
+  content: " ▴";
+}
+
+.replier.filtre-actif {
+  border-color: var(--accent);
+}
+
+.replier .bilan,
+.replier .chips {
+  margin: 0;
+  padding: 0 14px 14px;
 }

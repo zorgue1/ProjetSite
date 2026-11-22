@@ -61,7 +61,7 @@
 }
 
 .tuile-titre {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -89,7 +89,7 @@
 
 .tuile-sous {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--gris);
 }
 
@@ -164,7 +164,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--gris);
 }
@@ -364,7 +364,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--gris);
 }
@@ -444,7 +444,7 @@
 }
 
 .donut-centre span {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--gris);
@@ -639,7 +639,7 @@
 }
 
 .progres span {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--gris);

@@ -121,6 +121,131 @@
     }).join("");
     document.body.appendChild(barre);
     document.body.classList.add("avec-barre");
+    creerAjoutRapide();
+    activerRetourGlisse();
+  }
+
+
+  /* ---------- Bouton ＋ : ajout rapide depuis n'importe quelle page ---------- */
+  const ACTIONS = [
+    ["🏋️", "Séance", "Activite.html#nouvelle"],
+    ["🥗", "Repas", "Nutrition.html#ajout"],
+    ["⚖️", "Pesée", null],
+    ["🏆", "PR", "Records.html#nouveau"]
+  ];
+
+  function aller(cible) {
+    const morceaux = cible.split("#");
+    if (morceaux[0] === page) {
+      // Déjà sur la bonne page : on relance l'action sans recharger
+      history.replaceState(null, "", "#" + morceaux[1]);
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    } else {
+      location.href = cible;
+    }
+  }
+
+  function creerAjoutRapide() {
+    const bouton = document.createElement("button");
+    bouton.type = "button";
+    bouton.className = "ajout-rapide";
+    bouton.setAttribute("aria-label", "Ajouter une séance, un repas, une pesée ou un PR");
+    bouton.setAttribute("aria-expanded", "false");
+    bouton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
+    const fond = document.createElement("div");
+    fond.className = "ajout-fond";
+    fond.hidden = true;
+    const menu = document.createElement("div");
+    menu.className = "ajout-menu";
+    menu.setAttribute("role", "dialog");
+    menu.setAttribute("aria-label", "Ajout rapide");
+    menu.innerHTML = '<div class="ajout-titre">Ajouter</div><div class="ajout-grille"></div>' +
+      '<div class="ajout-pesee" hidden>' +
+        '<label for="ajout-poids">Ton poids aujourd’hui</label>' +
+        '<div class="ajout-pesee-ligne">' +
+          '<div class="champ-unite"><input id="ajout-poids" type="number" step="0.1" min="20" max="400" inputmode="decimal"><span>kg</span></div>' +
+          '<button type="button" class="btn" id="ajout-poids-ok">Enregistrer</button>' +
+        '</div>' +
+      '</div>';
+    fond.appendChild(menu);
+
+    function fermer() {
+      fond.hidden = true;
+      bouton.setAttribute("aria-expanded", "false");
+      bouton.classList.remove("ouvert");
+    }
+    function ouvrir() {
+      fond.hidden = false;
+      menu.querySelector(".ajout-pesee").hidden = true;
+      bouton.setAttribute("aria-expanded", "true");
+      bouton.classList.add("ouvert");
+    }
+    bouton.addEventListener("click", function () { if (fond.hidden) ouvrir(); else fermer(); });
+    fond.addEventListener("click", function (e) { if (e.target === fond) fermer(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !fond.hidden) fermer(); });
+
+    const grille = menu.querySelector(".ajout-grille");
+    ACTIONS.forEach(function (a) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "ajout-action";
+      b.innerHTML = '<span class="ajout-emoji" aria-hidden="true">' + a[0] + '</span><span>' + a[1] + '</span>';
+      b.addEventListener("click", function () {
+        if (a[2]) {
+          fermer();
+          aller(a[2]);
+        } else {
+          // Pesée : directement ici, sans changer de page
+          menu.querySelector(".ajout-pesee").hidden = false;
+          menu.querySelector("#ajout-poids").focus();
+        }
+      });
+      grille.appendChild(b);
+    });
+
+    menu.querySelector("#ajout-poids-ok").addEventListener("click", async function () {
+      const champ = menu.querySelector("#ajout-poids");
+      const valeur = parseFloat(champ.value.replace(",", "."));
+      if (!(valeur > 0) || typeof ajouterPoids !== "function") return champ.focus();
+      this.disabled = true;
+      try {
+        await ajouterPoids(valeur);
+        champ.value = "";
+        fermer();
+        if (typeof confirmer === "function") confirmer("Pesée enregistrée : " + String(valeur).replace(".", ",") + " kg");
+        window.dispatchEvent(new Event("pesee-ajoutee"));
+      } catch (e) {
+        if (typeof informer === "function") informer("Erreur : " + e.message);
+      } finally {
+        this.disabled = false;
+      }
+    });
+    menu.querySelector("#ajout-poids").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") menu.querySelector("#ajout-poids-ok").click();
+    });
+
+    document.body.appendChild(fond);
+    document.body.appendChild(bouton);
+  }
+
+  /* ---------- Glisser depuis le bord gauche pour revenir en arrière (vues internes) ---------- */
+  function activerRetourGlisse() {
+    let depart = null;
+    document.addEventListener("touchstart", function (e) {
+      const t = e.touches[0];
+      depart = t.clientX < 24 ? { x: t.clientX, y: t.clientY } : null;
+    }, { passive: true });
+    document.addEventListener("touchend", function (e) {
+      if (!depart) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - depart.x, dy = Math.abs(t.clientY - depart.y);
+      depart = null;
+      if (dx < 80 || dy > 60) return;
+      // Seulement s'il y a un lien « ‹ Retour » visible sur la vue
+      const retour = Array.prototype.find.call(document.querySelectorAll(".retour"), function (r) { return r.offsetParent !== null; });
+      if (retour) retour.click();
+    }, { passive: true });
   }
 
   // La barre est ajoutée une fois la page chargée (à la fin du document)

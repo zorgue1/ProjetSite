@@ -129,8 +129,9 @@
     <!-- Installer l'appli (seulement si elle n'est pas déjà installée) -->
     <div id="zone-installer"></div>
 
-    <!-- Raccourci vers les PR -->
-    <a class="carte-menu carte-pr charge" id="carte-pr" href="Records.html">
+    <!-- Deux tuiles côte à côte : mes PR et l'activité des amis -->
+    <div class="tuiles-accueil">
+    <a class="carte-menu tuile charge" id="carte-pr" href="Records.html">
       <span class="carte-icone" aria-hidden="true">
         <svg viewBox="0 0 24 24">
           <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/>
@@ -142,11 +143,9 @@
         <small id="pr-resume">Tes records sur 1 répétition</small>
       </span>
       <span class="pr-max" id="pr-max"></span>
-      <span class="carte-fleche" aria-hidden="true">›</span>
     </a>
 
-    <!-- Activité des amis -->
-    <a class="carte-menu carte-pr" id="carte-fil" href="Profil.html#fil" hidden>
+    <a class="carte-menu tuile" id="carte-fil" href="Profil.html#fil" hidden>
       <span class="carte-icone" aria-hidden="true">
         <svg viewBox="0 0 24 24">
           <circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/>
@@ -154,12 +153,12 @@
         </svg>
       </span>
       <span class="carte-texte">
-        <strong>Activité de tes amis</strong>
+        <strong>Amis</strong>
         <small id="fil-resume"></small>
       </span>
       <span class="pastille-fil" id="fil-nouveau" hidden></span>
-      <span class="carte-fleche" aria-hidden="true">›</span>
     </a>
+    </div>
 
 
   </main>
@@ -570,8 +569,22 @@
 
       await afficherRecap(seance, seances);
 
-      document.getElementById("cta-seance").textContent =
-        (await seanceEnCours()) ? "Reprendre ma séance en cours" : "Commencer la séance";
+      // Le bouton s'adapte : séance en cours, déjà faite, jour de repos ou séance prévue
+      const cta = document.getElementById("cta-seance");
+      cta.classList.remove("faite");
+      cta.href = "Activite.html#nouvelle";
+      if (await seanceEnCours()) {
+        cta.textContent = "Reprendre ma séance en cours";
+        cta.href = "Activite.html";
+      } else if (datesFaites.has(aujourdhui())) {
+        cta.textContent = "✓ Séance faite · voir le détail";
+        cta.href = "Activite.html";
+        cta.classList.add("faite");
+      } else if (estRepos(seance)) {
+        cta.textContent = "Faire une séance libre";
+      } else {
+        cta.textContent = "Commencer la séance " + seance;
+      }
       afficherProfil(p, seances, poids);
       await Promise.all([afficherCartePR(), afficherCarteNiveau(), afficherCarteFil()]);
       afficherInstallation();
@@ -592,6 +605,9 @@
       zone.hidden = !zone.hidden;
       if (!zone.hidden) document.getElementById("nouveau-poids").focus();
     });
+
+    // Pesée ajoutée avec le bouton ＋ : on met la carte à jour
+    window.addEventListener("pesee-ajoutee", function () { afficher().catch(function () {}); });
 
     document.getElementById("btn-poids").addEventListener("click", async function () {
       const champ = document.getElementById("nouveau-poids");

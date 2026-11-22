@@ -165,7 +165,7 @@ a.ami-ligne:hover .ami-nom {
   place-items: center;
   width: 24px;
   height: 24px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
   color: #1a0d06;
   border-radius: 50%;
@@ -250,7 +250,7 @@ a.ami-ligne:hover .ami-nom {
 
 .duel-rang.gagne .duel-kg::before {
   content: "👑 ";
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .duel-score {
@@ -337,7 +337,7 @@ a.ami-ligne:hover .ami-nom {
 
 .defi-compte {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--gris);
   font-variant-numeric: tabular-nums;
@@ -456,7 +456,7 @@ a.ami-ligne:hover .ami-nom {
 
 .histo-date {
   flex: 0 0 auto;
-  font-size: 12px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -559,7 +559,7 @@ a.ami-ligne:hover .ami-nom {
   bottom: -4px;
   left: 50%;
   padding: 2px 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
   white-space: nowrap;
   color: var(--texte-bouton);
@@ -601,7 +601,7 @@ a.compteur:hover {
 }
 
 .compteur span {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--gris);
 }
@@ -631,7 +631,7 @@ a.compteur:hover {
 
 .tag {
   padding: 1px 8px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--gris);
   background: var(--carte-douce);
@@ -894,4 +894,30 @@ a.fil-qui:hover {
   text-decoration: none;
   color: var(--accent);
   border-top: 1px solid var(--bordure);
+}
+
+/* Très petits écrans : les compteurs du profil se resserrent */
+.compteur {
+  min-width: 0;
+}
+
+@media (max-width: 340px) {
+  .bulle {
+    width: 84px;
+    height: 84px;
+  }
+
+  .bulle .avatar.grand {
+    width: 64px;
+    height: 64px;
+    font-size: 30px;
+  }
+
+  .compteur strong {
+    font-size: 20px;
+  }
+
+  .compteur span {
+    font-size: 10px;
+  }
 }

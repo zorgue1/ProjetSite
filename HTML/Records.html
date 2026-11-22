@@ -401,6 +401,7 @@
       }
       await chargerPRsEtAfficher();
       if (location.hash === "#nouveau") ouvrirFormulaire();
+      window.addEventListener("hashchange", function () { if (location.hash === "#nouveau") ouvrirFormulaire(); });
     })();
   </script>
 </body>

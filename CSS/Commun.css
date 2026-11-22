@@ -179,7 +179,7 @@ summary:focus-visible {
 label {
   display: block;
   margin: 16px 0 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -526,7 +526,7 @@ body.avec-barre {
   align-items: center;
   gap: 3px;
   padding: 7px 2px 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-decoration: none;
   color: var(--bandeau-texte);
@@ -1000,4 +1000,137 @@ body.avec-barre {
 .interrupteur-texte .mut {
   font-size: 13px;
   font-weight: 500;
+}
+
+/* ---------- Bouton ＋ d'ajout rapide ---------- */
+.ajout-rapide {
+  position: fixed;
+  right: 16px;
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  z-index: 36;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  background: var(--degrade);
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 8px 24px var(--accent-halo), 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.22, 1.4, 0.36, 1);
+  touch-action: manipulation;
+}
+
+.ajout-rapide svg {
+  width: 26px;
+  height: 26px;
+  stroke: var(--texte-bouton);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+.ajout-rapide.ouvert {
+  transform: rotate(45deg);
+}
+
+.ajout-rapide:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Le chrono de repos prend la place en bas de l'écran pendant une séance */
+body.avec-chrono .ajout-rapide {
+  display: none;
+}
+
+.ajout-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: fondu 0.15s ease both;
+}
+
+.ajout-menu {
+  position: absolute;
+  right: 12px;
+  bottom: calc(156px + env(safe-area-inset-bottom, 0px));
+  width: min(calc(100vw - 24px), 340px);
+  padding: 16px;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: 20px;
+  box-shadow: var(--ombre);
+  animation: dialogue-entree 0.22s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+
+.ajout-titre {
+  margin-bottom: 12px;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ajout-grille {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.ajout-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 4px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--texte);
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.ajout-action:active {
+  transform: scale(0.96);
+}
+
+.ajout-emoji {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.ajout-pesee label {
+  margin-top: 14px;
+}
+
+.ajout-pesee-ligne {
+  display: flex;
+  gap: 8px;
+}
+
+.ajout-pesee-ligne .champ-unite {
+  flex: 1;
+}
+
+.ajout-pesee-ligne .btn {
+  margin: 0;
+}
+
+@media (min-width: 900px) {
+  .ajout-rapide {
+    right: calc(50% - 280px - 72px);
+    bottom: 24px;
+  }
+
+  .ajout-menu {
+    right: calc(50% - 280px - 72px);
+    bottom: 90px;
+  }
 }

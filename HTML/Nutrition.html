@@ -66,6 +66,9 @@
     <section class="card" id="formulaire" hidden>
       <h2>Ajouter un repas</h2>
 
+      <!-- Recopier en un geste les repas de la veille -->
+      <button class="btn secondaire btn-refaire" id="btn-refaire" type="button" hidden></button>
+
       <div id="zone-recents" hidden>
         <label>Déjà mangé récemment</label>
         <div class="chips" id="recents"></div>
@@ -743,10 +746,54 @@
           zone.appendChild(c);
         });
         $("zone-recents").hidden = recents.length === 0;
+        proposerRefaire();
       } catch (e) {
         $("zone-recents").hidden = true;
       }
     }
+
+    /* ---------- Refaire les repas de la veille ---------- */
+
+    let repasVeille = [];
+
+    function veilleDe(texte) {
+      const d = enDate(texte);
+      d.setDate(d.getDate() - 1);
+      return versTexte(d);
+    }
+
+    async function proposerRefaire() {
+      const bouton = $("btn-refaire");
+      bouton.hidden = true;
+      try { repasVeille = await chargerRepas(veilleDe(jour)); } catch (e) { repasVeille = []; }
+      if (!repasVeille.length) return;
+      const total = repasVeille.reduce(function (s, r) { return s + Number(r.calories || 0); }, 0);
+      bouton.textContent = "↺ Refaire la veille · " + repasVeille.length + " repas · " + entier(total) + " kcal";
+      bouton.hidden = false;
+    }
+
+    $("btn-refaire").addEventListener("click", async function () {
+      const liste = repasVeille.map(function (r) { return "• " + r.nom + " (" + entier(r.calories) + " kcal)"; }).join("\n");
+      if (!(await demander("Ajouter ces repas à " + (jour === aujourdhui() ? "aujourd’hui" : "ce jour") + " ?\n\n" + liste,
+        { ok: "Tout ajouter" }))) return;
+      const bouton = this;
+      bouton.disabled = true;
+      try {
+        for (const r of repasVeille) {
+          await ajouterRepas({
+            date: jour, moment: r.moment, nom: r.nom, calories: r.calories,
+            proteines: r.proteines, glucides: r.glucides, lipides: r.lipides
+          });
+        }
+        fermerFormulaire();
+        confirmer(repasVeille.length + " repas ajoutés");
+        await chargerJour();
+      } catch (e) {
+        informer(erreurLisible(e));
+      } finally {
+        bouton.disabled = false;
+      }
+    });
 
     function fermerFormulaire() {
       $("formulaire").hidden = true;
@@ -755,6 +802,16 @@
     }
 
     $("btn-ajout").addEventListener("click", ouvrirFormulaire);
+
+    // Lien « Nutrition.html#ajout » (bouton ＋) : ouvre directement le formulaire
+    function ouvrirSiDemande() {
+      if (location.hash !== "#ajout") return;
+      history.replaceState(null, "", location.pathname);
+      if ($("formulaire").hidden) ouvrirFormulaire();
+      $("formulaire").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    window.addEventListener("hashchange", ouvrirSiDemande);
+    ouvrirSiDemande();
     $("btn-annuler").addEventListener("click", fermerFormulaire);
 
     $("btn-enregistrer").addEventListener("click", async function () {

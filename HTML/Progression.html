@@ -298,7 +298,14 @@
 
     function afficherVue() {
       const hash = location.hash.slice(1);
+      // Sans onglet précisé (barre du bas), on rouvre le dernier onglet consulté
+      const derniere = localStorage.getItem("sportapp:progression-vue");
+      if (!hash && derniere && derniere !== "seances" && VUES.indexOf(derniere) !== -1) {
+        location.replace("#" + derniere);
+        return;
+      }
       const vue = VUES.indexOf(hash) !== -1 ? hash : "seances";
+      localStorage.setItem("sportapp:progression-vue", vue);
       VUES.forEach(function (v) { $("vue-" + v).hidden = v !== vue; });
       $("zone-periode").hidden = vue === "exercices";
     }

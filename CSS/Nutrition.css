@@ -160,7 +160,7 @@
 }
 
 .trio span {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -339,7 +339,7 @@
 
 .repas-kcal::after {
   content: " kcal";
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--gris);
 }
@@ -641,4 +641,11 @@ body.sans-defilement {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   border-radius: 12px;
+}
+
+/* Refaire les repas de la veille */
+.btn-refaire {
+  width: 100%;
+  margin: 0 0 6px;
+  font-size: 14px;
 }
