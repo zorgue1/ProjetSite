@@ -806,13 +806,6 @@ async function sauverProfilSocial(pseudo, partage) {
   if (error) throw error;
 }
 
-// Vrai si le pseudo a le bon format et que personne ne l'a (fonctionne aussi sans être connecté)
-async function pseudoLibre(pseudo) {
-  const { data, error } = await client.rpc("pseudo_libre", { p: pseudo });
-  if (error) throw error;
-  return data === true;
-}
-
 async function trouverPseudo(pseudo) {
   const { data, error } = await client.rpc("trouver_pseudo", { p: pseudo });
   if (error) throw error;

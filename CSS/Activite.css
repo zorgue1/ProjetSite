@@ -49,15 +49,7 @@
   border-color: var(--gris);
 }
 
-/* ---------- Choix d'un exercice ---------- */
-.choix-exo {
-  display: flex;
-  gap: 10px;
-}
 
-.choix-exo select {
-  flex: 1;
-}
 
 .mut a {
   color: var(--accent);
@@ -124,11 +116,6 @@
   margin-top: 12px;
 }
 
-/* ---------- Historique détaillé ---------- */
-.seance-corps {
-  flex: 1;
-  min-width: 0;
-}
 
 .btn-suppr.plus {
   display: block;

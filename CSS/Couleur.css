@@ -9,6 +9,7 @@
 
   --fond: #090d13;
   --halo: rgba(255, 106, 61, 0.16);
+  --halo-2: transparent;
   --carte: #121923;
   --carte-douce: #0c121a;
   --texte: #f1f4f8;
@@ -42,76 +43,41 @@
   --rayon: 18px;
 }
 
-/* ---------- Thème clair : automatique si l'appareil est en mode clair ---------- */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme]) {
-    color-scheme: light;
-
-    --fond: #f4f2ee;
-    --halo: rgba(217, 64, 15, 0.10);
-    --carte: #ffffff;
-    --carte-douce: #f3f0ea;
-    --texte: #16191f;
-    --gris: #545d68;
-    --bordure: #e3ddd3;
-    --ombre: 0 8px 30px rgba(22, 25, 31, 0.08);
-
-    --accent: #d9400f;
-    --accent-halo: rgba(217, 64, 15, 0.25);
-    --degrade: linear-gradient(135deg, #d9400f, #e8560f);
-    --texte-bouton: #ffffff;
-
-    --push: #d9400f;
-    --pull: #0b8f84;
-    --leg: #6d4ce0;
-    --repos: #8b8f96;
-
-    --danger: #d92d3a;
-    --anneau-1: #0b8f84;
-    --anneau-2: #3fae5a;
-    --proteines: #0b8f84;
-    --glucides: #c98a00;
-    --lipides: #6d4ce0;
-
-    --bandeau-fond: rgba(244, 242, 238, 0.82);
-    --bandeau-texte: #66707c;
-    --bandeau-actif: #16191f;
-    --bandeau-survol: rgba(22, 25, 31, 0.06);
-  }
-}
-
-/* ---------- Thème clair choisi à la main (Paramètres → Apparence) ---------- */
+/* ---------- Thème clair « énergie » (choisi, ou automatique si le téléphone est en mode clair) ----------
+   Inspiré de Strava (orange vif) et d'Apple Fitness (turquoise, vert) : fond chaud, deux lueurs de couleur,
+   cartes blanches avec une ombre légèrement orangée. theme.js pose data-theme="light" quand il le faut. */
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --fond: #f4f2ee;
-  --halo: rgba(217, 64, 15, 0.10);
+  --fond: #fbf7f3;
+  --halo: rgba(252, 76, 2, 0.13);
+  --halo-2: rgba(16, 185, 170, 0.10);
   --carte: #ffffff;
-  --carte-douce: #f3f0ea;
-  --texte: #16191f;
+  --carte-douce: #fbf2ea;
+  --texte: #151821;
   --gris: #545d68;
-  --bordure: #e3ddd3;
-  --ombre: 0 8px 30px rgba(22, 25, 31, 0.08);
+  --bordure: #f0e1d4;
+  --ombre: 0 10px 30px rgba(234, 88, 12, 0.08), 0 2px 6px rgba(21, 24, 33, 0.05);
 
-  --accent: #d9400f;
-  --accent-halo: rgba(217, 64, 15, 0.25);
-  --degrade: linear-gradient(135deg, #d9400f, #e8560f);
+  --accent: #e2470c;
+  --accent-halo: rgba(252, 76, 2, 0.24);
+  --degrade: linear-gradient(135deg, #e5470d, #f9692a);
   --texte-bouton: #ffffff;
 
-  --push: #d9400f;
-  --pull: #0b8f84;
-  --leg: #6d4ce0;
+  --push: #e2470c;
+  --pull: #0d9488;
+  --leg: #7c3aed;
   --repos: #8b8f96;
 
-  --danger: #d92d3a;
-  --anneau-1: #0b8f84;
-  --anneau-2: #3fae5a;
-  --proteines: #0b8f84;
-  --glucides: #c98a00;
-  --lipides: #6d4ce0;
+  --danger: #dc2638;
+  --anneau-1: #0d9488;
+  --anneau-2: #22c55e;
+  --proteines: #0d9488;
+  --glucides: #d97706;
+  --lipides: #7c3aed;
 
-  --bandeau-fond: rgba(244, 242, 238, 0.82);
+  --bandeau-fond: rgba(255, 250, 246, 0.85);
   --bandeau-texte: #66707c;
-  --bandeau-actif: #16191f;
-  --bandeau-survol: rgba(22, 25, 31, 0.06);
+  --bandeau-actif: #151821;
+  --bandeau-survol: rgba(226, 71, 12, 0.07);
 }

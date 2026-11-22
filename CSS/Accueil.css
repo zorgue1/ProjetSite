@@ -321,14 +321,6 @@
   white-space: pre-wrap;
 }
 
-/* ---------- Menu : trois grandes cartes ---------- */
-.menu-tuiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
 .carte-menu {
   display: flex;
   align-items: center;
@@ -400,10 +392,6 @@
 }
 
 /* Raccourci « Mes PR » */
-.carte-pr {
-  margin-bottom: 16px;
-  animation: monter 0.4s ease both;
-}
 
 .pr-max {
   font-family: "Big Shoulders Display", Impact, sans-serif;
