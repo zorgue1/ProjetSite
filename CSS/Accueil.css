@@ -541,3 +541,15 @@
   margin-bottom: 16px;
   animation: monter 0.4s ease both;
 }
+
+/* Nombre de nouvelles activités des amis */
+.pastille-fil {
+  min-width: 24px;
+  padding: 2px 8px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--texte-bouton);
+  background: var(--accent);
+  border-radius: 999px;
+}

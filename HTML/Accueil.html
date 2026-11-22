@@ -116,6 +116,22 @@
       <span class="carte-fleche" aria-hidden="true">›</span>
     </a>
 
+    <!-- Activité des amis -->
+    <a class="carte-menu carte-pr" id="carte-fil" href="Profil.html#fil" hidden>
+      <span class="carte-icone" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/>
+          <circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 4.8"/>
+        </svg>
+      </span>
+      <span class="carte-texte">
+        <strong>Activité de tes amis</strong>
+        <small id="fil-resume"></small>
+      </span>
+      <span class="pastille-fil" id="fil-nouveau" hidden></span>
+      <span class="carte-fleche" aria-hidden="true">›</span>
+    </a>
+
     <!-- Profil -->
     <section class="card profil charge">
       <div class="profil-tete">
@@ -392,6 +408,30 @@
       max.title = nomDe(plusLourd.exercice_id);
     }
 
+    /* ---------- Raccourci « Activité de tes amis » ---------- */
+
+    async function afficherCarteFil() {
+      let liste = [];
+      try { liste = await chargerFil(20); } catch (e) { return; }   // script SQL pas encore lancé
+      const amis = liste.filter(function (a) { return !a.moi; });
+      const carte = document.getElementById("carte-fil");
+      carte.hidden = false;
+      if (!amis.length) {
+        document.getElementById("fil-resume").textContent = "Suis tes potes pour voir leurs séances et leurs PR";
+        carte.href = "Profil.html";
+        return;
+      }
+      const a = amis[0];
+      document.getElementById("fil-resume").textContent =
+        (a.prenom || "@" + a.pseudo) + " · " + (a.type === "pr" ? "PR " + a.titre : "séance " + a.titre) + " · " + depuis(a.quand);
+      // Pastille : nombre d'activités depuis ta dernière visite du fil
+      const vu = localStorage.getItem("sportapp:fil-vu") || "";
+      const nouveaux = amis.filter(function (x) { return x.quand > vu; }).length;
+      const pastille = document.getElementById("fil-nouveau");
+      pastille.textContent = nouveaux > 9 ? "9+" : nouveaux;
+      pastille.hidden = !nouveaux;
+    }
+
     /* ---------- Raccourci « Défis » ---------- */
 
     async function afficherCarteNiveau() {
@@ -537,7 +577,7 @@
       document.getElementById("cta-seance").textContent =
         (await seanceEnCours()) ? "Reprendre ma séance en cours" : "Commencer la séance";
       afficherProfil(p, seances, poids);
-      await Promise.all([afficherCartePR(), afficherCarteNiveau()]);
+      await Promise.all([afficherCartePR(), afficherCarteNiveau(), afficherCarteFil()]);
       afficherInstallation();
       afficherBienvenue(p.prenom, seance, seances.length);
     }

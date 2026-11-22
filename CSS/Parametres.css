@@ -39,3 +39,20 @@
 .mdp .btn {
   margin-top: 14px;
 }
+
+/* Notifications */
+.notifications .interrupteur:first-child {
+  margin-top: 4px;
+}
+
+.notif-heure {
+  margin-top: 6px;
+}
+
+.notif-heure label {
+  margin-top: 10px;
+}
+
+.notifications .actions {
+  margin-top: 18px;
+}

@@ -246,6 +246,11 @@ async function chargerProfil() {
     objectif: (data && data.objectif) || "maintien",
     pseudo: (data && data.pseudo) || "",
     partage_prs: !!(data && data.partage_prs),
+    partage_activite: !(data && data.partage_activite === false),
+    notif_rappel: !!(data && data.notif_rappel),
+    notif_heure: (data && data.notif_heure) || "18:00",
+    notif_amis: !(data && data.notif_amis === false),
+    notif_reactions: !(data && data.notif_reactions === false),
     photo_url: (data && data.photo_url) || "",
     photo_chemin: (data && data.photo_chemin) || ""
   };
@@ -821,6 +826,39 @@ async function nePlusSuivre(id) {
   const { data: { user } } = await client.auth.getUser();
   const { error } = await client.from("abonnements").delete().eq("suiveur", user.id).eq("suivi", id);
   if (error) throw error;
+}
+
+/* ---------- Fil d'activité des amis ---------- */
+
+// Séances et PR récents : les miens et ceux des gens que je suis
+async function chargerFil(nb) {
+  const { data, error } = await client.rpc("fil_activite", { nb: nb || 40 });
+  if (error) throw error;
+  return data;
+}
+
+// Met ou retire un 💪 ; renvoie le nouveau nombre de réactions
+async function reagir(type, id) {
+  const { data, error } = await client.rpc("reagir", { t: type, i: String(id) });
+  if (error) throw error;
+  return data;
+}
+
+async function sauverPartageActivite(partage) {
+  const { data: { user } } = await client.auth.getUser();
+  const { error } = await client.from("profils").upsert({ user_id: user.id, partage_activite: partage });
+  if (error) throw error;
+}
+
+// « à l'instant », « il y a 5 min », « il y a 3 h », « hier », « il y a 4 j », sinon la date
+function depuis(quand) {
+  const s = (Date.now() - new Date(quand).getTime()) / 1000;
+  if (s < 60) return "à l’instant";
+  if (s < 3600) return "il y a " + Math.floor(s / 60) + " min";
+  if (s < 86400) return "il y a " + Math.floor(s / 3600) + " h";
+  if (s < 2 * 86400) return "hier";
+  if (s < 7 * 86400) return "il y a " + Math.floor(s / 86400) + " j";
+  return dateFr(versTexte(new Date(quand)));
 }
 
 /* ---------- Photo de profil ---------- */

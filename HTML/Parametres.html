@@ -86,6 +86,51 @@
       <p class="mut aide-theme">« Auto » suit le réglage de ton téléphone ou de ton ordinateur. Ce choix est mémorisé sur cet appareil.</p>
     </section>
 
+    <!-- Notifications -->
+    <section class="card compte notifications">
+      <h2>Notifications</h2>
+      <p class="mut" id="notif-etat">Reçois un rappel pour ta séance et les nouvelles de tes amis, même appli fermée.</p>
+      <button class="btn" id="btn-notif" type="button">Activer les notifications</button>
+
+      <div id="notif-reglages" hidden>
+        <label class="interrupteur">
+          <input type="checkbox" id="notif-rappel">
+          <span class="interrupteur-piste" aria-hidden="true"></span>
+          <span class="interrupteur-texte">
+            <strong>Rappel de séance</strong>
+            <span class="mut petit">Les jours de séance de ton programme, si tu ne l’as pas encore faite.</span>
+          </span>
+        </label>
+        <div class="notif-heure" id="zone-heure" hidden>
+          <label for="notif-heure">Heure du rappel</label>
+          <select id="notif-heure"></select>
+        </div>
+
+        <label class="interrupteur">
+          <input type="checkbox" id="notif-amis">
+          <span class="interrupteur-piste" aria-hidden="true"></span>
+          <span class="interrupteur-texte">
+            <strong>PR de mes amis</strong>
+            <span class="mut petit">Quand quelqu’un que tu suis (et qui te suit) bat un record.</span>
+          </span>
+        </label>
+
+        <label class="interrupteur">
+          <input type="checkbox" id="notif-reactions">
+          <span class="interrupteur-piste" aria-hidden="true"></span>
+          <span class="interrupteur-texte">
+            <strong>Encouragements 💪</strong>
+            <span class="mut petit">Quand un ami encourage une de tes séances ou un de tes PR.</span>
+          </span>
+        </label>
+
+        <div class="actions">
+          <button class="btn secondaire" id="btn-notif-test" type="button">M’envoyer un test</button>
+          <button class="btn secondaire" id="btn-notif-off" type="button">Désactiver sur cet appareil</button>
+        </div>
+      </div>
+    </section>
+
     <!-- Compte -->
     <section class="card">
       <h2>Compte</h2>
@@ -251,6 +296,160 @@
 
     /* ---------- Compte ---------- */
 
+    /* ---------- Notifications ---------- */
+
+    // Clé publique des notifications (la clé privée, elle, reste dans les secrets de Supabase)
+    const CLE_PUBLIQUE_PUSH = "BONYXDOh1ubMB16Wv_LFtz0jDJ82ET722rEvx-Fkmna9r6DNTa1muuSTDrCa8T8THPKih1SA7vklF4yxpRJJSag";
+
+    function enOctets(base64url) {
+      const b64 = (base64url + "===".slice((base64url.length + 3) % 4)).replace(/-/g, "+").replace(/_/g, "/");
+      return Uint8Array.from(atob(b64), function (c) { return c.charCodeAt(0); });
+    }
+
+    function etatNotif(texte) {
+      document.getElementById("notif-etat").textContent = texte;
+    }
+
+    // Heures proposées pour le rappel : toutes les 15 min de 6 h à 22 h 45
+    function construireHeures(choisie) {
+      const select = document.getElementById("notif-heure");
+      select.innerHTML = "";
+      for (let h = 6; h <= 22; h++) {
+        ["00", "15", "30", "45"].forEach(function (m) {
+          const v = String(h).padStart(2, "0") + ":" + m;
+          const o = document.createElement("option");
+          o.value = v;
+          o.textContent = h + " h " + m;
+          select.appendChild(o);
+        });
+      }
+      select.value = choisie || "18:00";
+    }
+
+    async function abonnementActuel() {
+      const reg = await navigator.serviceWorker.ready;
+      return reg.pushManager.getSubscription();
+    }
+
+    async function sauverReglagesNotif(champs) {
+      const { data: { user } } = await client.auth.getUser();
+      const { error } = await client.from("profils").upsert(Object.assign({ user_id: user.id }, champs));
+      if (error) throw error;
+    }
+
+    function afficherReglagesNotif(actif) {
+      document.getElementById("btn-notif").hidden = actif;
+      document.getElementById("notif-reglages").hidden = !actif;
+      if (actif) etatNotif("✓ Notifications activées sur cet appareil.");
+    }
+
+    async function initialiserNotifications() {
+      const iphone = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const installee = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+        document.getElementById("btn-notif").hidden = true;
+        etatNotif(iphone && !installee
+          ? "Sur iPhone, installe d’abord l’appli : bouton Partager ⬆️ puis « Sur l’écran d’accueil ». Ouvre-la ensuite depuis son icône et reviens ici."
+          : "Ce navigateur ne permet pas les notifications.");
+        return;
+      }
+      if (Notification.permission === "denied") {
+        etatNotif("Les notifications sont bloquées pour SportApp : autorise-les dans les réglages du navigateur (ou du téléphone), puis recharge la page.");
+        document.getElementById("btn-notif").hidden = true;
+        return;
+      }
+      // Réglages enregistrés dans le profil
+      const p = profilCharge || {};
+      document.getElementById("notif-rappel").checked = !!p.notif_rappel;
+      document.getElementById("notif-amis").checked = p.notif_amis !== false;
+      document.getElementById("notif-reactions").checked = p.notif_reactions !== false;
+      document.getElementById("zone-heure").hidden = !p.notif_rappel;
+      construireHeures(p.notif_heure);
+      afficherReglagesNotif(!!(await abonnementActuel()));
+    }
+
+    document.getElementById("btn-notif").addEventListener("click", async function () {
+      const bouton = this;
+      bouton.disabled = true;
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          etatNotif("Tu n’as pas autorisé les notifications. Tu peux changer d’avis dans les réglages du navigateur.");
+          return;
+        }
+        const reg = await navigator.serviceWorker.ready;
+        const abo = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: enOctets(CLE_PUBLIQUE_PUSH)
+        });
+        const j = abo.toJSON();
+        const { error } = await client.rpc("enregistrer_push", { e: j.endpoint, cle: j.keys.p256dh, secret: j.keys.auth });
+        if (error) throw error;
+        afficherReglagesNotif(true);
+        confirmer("Notifications activées");
+      } catch (e) {
+        informer(/enregistrer_push|42883|PGRST20/.test((e && e.message) + " " + (e && e.code))
+          ? "Les notifications ne sont pas encore activées côté serveur : exécute le script SQL « notifications » dans Supabase."
+          : "Activation impossible : " + ((e && e.message) || e));
+      } finally {
+        bouton.disabled = false;
+      }
+    });
+
+    document.getElementById("btn-notif-off").addEventListener("click", async function () {
+      try {
+        const abo = await abonnementActuel();
+        if (abo) {
+          await client.rpc("supprimer_push", { e: abo.endpoint });
+          await abo.unsubscribe();
+        }
+        afficherReglagesNotif(false);
+        etatNotif("Notifications désactivées sur cet appareil.");
+      } catch (e) {
+        informer("Erreur : " + e.message);
+      }
+    });
+
+    // Chaque réglage est enregistré dès qu'on le touche
+    [["notif-rappel", "notif_rappel"], ["notif-amis", "notif_amis"], ["notif-reactions", "notif_reactions"]].forEach(function (r) {
+      document.getElementById(r[0]).addEventListener("change", async function () {
+        const champs = {};
+        champs[r[1]] = this.checked;
+        if (r[0] === "notif-rappel") document.getElementById("zone-heure").hidden = !this.checked;
+        try {
+          await sauverReglagesNotif(champs);
+          confirmer("Réglage enregistré");
+        } catch (e) {
+          this.checked = !this.checked;
+          informer("Erreur : " + e.message);
+        }
+      });
+    });
+
+    document.getElementById("notif-heure").addEventListener("change", async function () {
+      try {
+        await sauverReglagesNotif({ notif_heure: this.value });
+        confirmer("Rappel à " + this.options[this.selectedIndex].text);
+      } catch (e) {
+        informer("Erreur : " + e.message);
+      }
+    });
+
+    // Test : le serveur envoie une notification à tous tes appareils
+    document.getElementById("btn-notif-test").addEventListener("click", async function () {
+      const bouton = this;
+      bouton.disabled = true;
+      try {
+        const { error } = await client.functions.invoke("notifier", { body: { test: true } });
+        if (error) throw error;
+        etatNotif("Notification de test envoyée : elle doit arriver dans quelques secondes.");
+      } catch (e) {
+        informer("Envoi impossible : la fonction « notifier » n’est pas encore installée dans Supabase, ou ses secrets manquent.");
+      } finally {
+        bouton.disabled = false;
+      }
+    });
+
     document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);
 
     // Mot de passe solide : 8 caractères minimum, avec au moins une lettre et un chiffre
@@ -296,6 +495,7 @@
       } catch (e) {
         informer("Erreur de chargement : " + e.message);
       }
+      initialiserNotifications().catch(function () {});
     })();
   </script>
 </body>

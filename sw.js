@@ -64,3 +64,36 @@ self.addEventListener("fetch", function (event) {
       .catch(function () { return caches.match(requete); })
   );
 });
+/* ---------- Notifications ---------- */
+
+// Message envoyé par Supabase : { titre, texte, url }
+self.addEventListener("push", function (event) {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (e) { d = { texte: event.data && event.data.text() }; }
+  event.waitUntil(
+    self.registration.showNotification(d.titre || "SportApp", {
+      body: d.texte || "",
+      icon: "Image/icon-192.png",
+      badge: "Image/icon-192.png",
+      tag: d.tag || undefined,
+      data: { url: d.url || "HTML/Accueil.html" }
+    })
+  );
+});
+
+// Toucher la notification ouvre la bonne page (ou la réutilise si l'appli est déjà ouverte)
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
+  const cible = new URL(event.notification.data.url, self.registration.scope).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (fenetres) {
+      for (const f of fenetres) {
+        if (f.url.indexOf(self.registration.scope) === 0 && "focus" in f) {
+          f.navigate(cible);
+          return f.focus();
+        }
+      }
+      return self.clients.openWindow(cible);
+    })
+  );
+});

@@ -931,3 +931,73 @@ body.avec-barre {
     animation: none;
   }
 }
+
+/* ---------- Interrupteur (oui / non) ---------- */
+.interrupteur {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0 0;
+  padding-top: 16px;
+  font-size: 15px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--texte);
+  border-top: 1px solid var(--bordure);
+  cursor: pointer;
+}
+
+.interrupteur input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.interrupteur-piste {
+  position: relative;
+  flex: 0 0 auto;
+  width: 50px;
+  height: 30px;
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.interrupteur-piste::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  background: var(--gris);
+  border-radius: 50%;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s;
+}
+
+.interrupteur input:checked + .interrupteur-piste {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.interrupteur input:checked + .interrupteur-piste::after {
+  background: #fff;
+  transform: translateX(20px);
+}
+
+.interrupteur input:focus-visible + .interrupteur-piste {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.interrupteur-texte {
+  display: flex;
+  flex-direction: column;
+}
+
+.interrupteur-texte .mut {
+  font-size: 13px;
+  font-weight: 500;
+}

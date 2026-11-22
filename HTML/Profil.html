@@ -60,6 +60,15 @@
             <span class="mut petit">Visibles seulement par les gens que tu suis et qui te suivent.</span>
           </span>
         </label>
+
+        <label class="interrupteur">
+          <input type="checkbox" id="partage-activite">
+          <span class="interrupteur-piste" aria-hidden="true"></span>
+          <span class="interrupteur-texte">
+            <strong>Montrer mes séances à mes abonnés</strong>
+            <span class="mut petit">Elles apparaissent dans leur fil d’activité (type de séance, séries, tonnage).</span>
+          </span>
+        </label>
       </section>
 
       <!-- Trouver quelqu'un -->
@@ -70,6 +79,9 @@
         </div>
         <button class="btn" id="btn-recherche" type="button">Voir</button>
       </section>
+
+      <h3 class="titre-section">Activité <span class="mut">· toi et les gens que tu suis</span></h3>
+      <section class="card fil" id="fil-apercu"><div class="squelette petit"></div><div class="squelette petit"></div></section>
 
       <h3 class="titre-section">Défis de la semaine <span class="mut" id="jours-restants"></span></h3>
       <section class="card defis" id="defis"><div class="squelette petit"></div><div class="squelette petit"></div></section>
@@ -94,6 +106,13 @@
         </ul>
         <p class="mut">Pour que ça reste juste : une séance notée plus de 2 jours après, ou datée dans le futur, ne compte pas. Un PR est <strong>✓ vérifié</strong> s’il reste cohérent avec tes séries des 60 derniers jours (pas plus de 15 % au-dessus de ton 1RM estimé). Tout est calculé par le serveur.</p>
       </details>
+    </div>
+
+    <!-- ===================== Fil d'activité complet ===================== -->
+    <div id="vue-fil" hidden>
+      <a class="retour" href="Profil.html">‹ Mon profil</a>
+      <div class="entete-page"><h2>Activité</h2></div>
+      <section class="card fil" id="fil-complet"></section>
     </div>
 
     <!-- ===================== Abonnés / abonnements ===================== -->
@@ -254,6 +273,7 @@
       construireHero($("hero-moi"), profil, stats, true, [modifier, reglages]);
       $("pseudo").value = profil.pseudo || "";
       $("partage").checked = !!profil.partage_prs;
+      $("partage-activite").checked = profil.partage_activite !== false;
       $("btn-suppr-photo").hidden = !profil.photo_url;
       if (!profil.pseudo) $("moi-formulaire").hidden = false;   // compte sans pseudo : on le demande
     }
@@ -322,6 +342,100 @@
         informer(erreurLisible(e));
       }
     });
+
+    $("partage-activite").addEventListener("change", async function () {
+      const coche = this.checked;
+      try {
+        await sauverPartageActivite(coche);
+        profil.partage_activite = coche;
+        confirmer(coche ? "Tes abonnés voient tes séances dans leur fil" : "Tes séances n’apparaissent plus dans le fil de tes abonnés");
+      } catch (e) {
+        this.checked = !coche;
+        informer(erreurLisible(e));
+      }
+    });
+
+    /* ---------- Fil d'activité ---------- */
+
+    function ligneFil(a) {
+      const ligne = el("div", "fil-ligne");
+      const avatar = creerAvatar(a, "mini");
+      if (!a.moi) {
+        const lien = el("a", "fil-avatar");
+        lien.href = "#u=" + a.auteur;
+        lien.appendChild(avatar);
+        ligne.appendChild(lien);
+      } else {
+        ligne.appendChild(avatar);
+      }
+
+      const corps = el("div", "fil-corps");
+      const phrase = el("div", "fil-phrase");
+      const qui = el(a.moi ? "strong" : "a", "fil-qui", a.moi ? "Toi" : nomDe(a));
+      if (!a.moi) qui.href = "#u=" + a.auteur;
+      phrase.appendChild(qui);
+      if (a.type === "pr") {
+        phrase.appendChild(document.createTextNode(" · nouveau PR "));
+        phrase.appendChild(el("span", "fil-badge pr", "🏆 " + a.titre));
+      } else {
+        phrase.appendChild(document.createTextNode(" · séance "));
+        phrase.appendChild(el("span", "fil-badge " + classeSeance(a.titre), a.titre));
+      }
+      corps.appendChild(phrase);
+      corps.appendChild(el("div", "mut petit", a.detail + " · " + depuis(a.quand)));
+      ligne.appendChild(corps);
+
+      // 💪 : un appui pour encourager (pas sur ses propres séances)
+      const bouton = el("button", "fil-reaction" + (a.j_ai_reagi ? " actif" : ""), "💪 " + (a.reactions || ""));
+      bouton.type = "button";
+      if (a.moi) {
+        bouton.disabled = true;
+        bouton.title = a.reactions ? a.reactions + " encouragement" + (a.reactions > 1 ? "s" : "") : "Pas encore d’encouragement";
+        if (!a.reactions) bouton.hidden = true;
+      } else {
+        bouton.setAttribute("aria-label", "Encourager " + nomDe(a));
+        bouton.addEventListener("click", async function () {
+          bouton.disabled = true;
+          try {
+            a.reactions = await reagir(a.type, a.id);
+            a.j_ai_reagi = !a.j_ai_reagi;
+            bouton.textContent = "💪 " + (a.reactions || "");
+            bouton.classList.toggle("actif", a.j_ai_reagi);
+            if (a.j_ai_reagi) vibrer(25);
+          } catch (e) {
+            informer(erreurLisible(e));
+          } finally {
+            bouton.disabled = false;
+          }
+        });
+      }
+      ligne.appendChild(bouton);
+      return ligne;
+    }
+
+    async function afficherFil(zone, nb) {
+      let liste;
+      try {
+        liste = await chargerFil(nb);
+      } catch (e) {
+        zone.innerHTML = "";
+        zone.appendChild(el("p", "mut", /fil_activite|42883|PGRST20/.test((e && e.message) + " " + (e && e.code))
+          ? "Le fil n’est pas encore activé : exécute le script SQL « fil » dans Supabase."
+          : "Fil indisponible pour le moment."));
+        return;
+      }
+      zone.innerHTML = "";
+      if (!liste.length) {
+        zone.appendChild(el("p", "mut", "Rien pour l’instant. Suis des amis (recherche leur pseudo juste au-dessus) : leurs séances et leurs PR apparaîtront ici."));
+        return;
+      }
+      liste.forEach(function (a) { zone.appendChild(ligneFil(a)); });
+      if (zone.id === "fil-apercu") {
+        const tout = el("a", "fil-tout", "Voir toute l’activité ›");
+        tout.href = "#fil";
+        zone.appendChild(tout);
+      }
+    }
 
     $("btn-recherche").addEventListener("click", async function () {
       const pseudo = $("recherche").value.trim().replace(/^@/, "");
@@ -621,12 +735,19 @@
       const h = location.hash.slice(1);
       const u = h.match(/^u=(.+)$/);
       const liste = h === "abonnes" || h === "abonnements";
-      $("vue-moi").hidden = !!u || liste;
+      const fil = h === "fil";
+      $("vue-moi").hidden = !!u || liste || fil;
       $("vue-liste").hidden = !liste;
       $("vue-user").hidden = !u;
+      $("vue-fil").hidden = !fil;
       window.scrollTo(0, 0);
       if (u) afficherUser(decodeURIComponent(u[1]));
       else if (liste) afficherListe(h);
+      else if (fil) {
+        localStorage.setItem("sportapp:fil-vu", new Date().toISOString());   // pour la pastille de l'accueil
+        $("fil-complet").innerHTML = '<div class="squelette petit"></div><div class="squelette petit"></div><div class="squelette petit"></div>';
+        afficherFil($("fil-complet"), 60);
+      }
       else afficherMoi();
     }
     window.addEventListener("hashchange", afficherVue);
@@ -657,6 +778,7 @@
       afficherDefis(stats.semaine);
       afficherBadges($("badges"), $("badges-compte"), stats, false);
       afficherHistorique(stats.historique);
+      afficherFil($("fil-apercu"), 5);
       await afficherClassement();
     })();
   </script>
