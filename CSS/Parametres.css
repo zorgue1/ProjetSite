@@ -15,9 +15,6 @@
   word-break: break-all;
 }
 
-.compte {
-  margin-top: 24px;
-}
 /* Changer le mot de passe */
 .mdp {
   margin-bottom: 16px;
@@ -54,5 +51,89 @@
 }
 
 .notifications .actions {
+  margin-top: 18px;
+}
+
+/* ---------- Menus repliables (une ligne par rubrique) ---------- */
+.reglage {
+  margin: 0 0 12px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.reglage summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.reglage summary::-webkit-details-marker {
+  display: none;
+}
+
+.reglage-icone {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  font-size: 20px;
+  background: var(--carte-douce);
+  border-radius: 12px;
+}
+
+.reglage-titre {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.reglage-titre strong {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.reglage-titre .mut {
+  margin: 2px 0 0;
+  overflow: hidden;
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.reglage .chevron {
+  font-size: 26px;
+  color: var(--gris);
+  transition: transform 0.2s;
+}
+
+.reglage[open] .chevron {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+
+.reglage[open] {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--bordure));
+}
+
+.reglage-corps {
+  padding: 4px 18px 18px;
+  border-top: 1px solid var(--bordure);
+  animation: monter 0.25s ease both;
+}
+
+.reglage-corps > .row:first-child label,
+.reglage-corps > .mut:first-child {
+  margin-top: 14px;
+}
+
+.reglage-corps .actions {
   margin-top: 18px;
 }

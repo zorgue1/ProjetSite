@@ -421,15 +421,6 @@
   color: var(--gris);
 }
 
-.carte-niveau.avec-niveau {
-  font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 26px;
-  font-weight: 900;
-  color: var(--texte-bouton);
-  background: var(--degrade);
-  box-shadow: 0 4px 14px var(--accent-halo);
-}
-
 .niveau-piste {
   display: block;
   height: 6px;
@@ -552,4 +543,64 @@
   color: var(--texte-bouton);
   background: var(--accent);
   border-radius: 999px;
+}
+
+/* Niveau et XP dans la carte profil */
+.profil-niveau {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  color: var(--texte);
+  text-decoration: none;
+  background:
+    radial-gradient(220px 120px at 0% 0%, var(--accent-halo), transparent 70%),
+    var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 14px;
+  transition: border-color 0.15s;
+}
+
+.profil-niveau:hover {
+  border-color: var(--accent);
+}
+
+.niveau-badge {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--texte-bouton);
+  background: var(--degrade);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px var(--accent-halo);
+}
+
+.niveau-texte {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.niveau-texte strong {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.niveau-texte small {
+  font-size: 12px;
+  color: var(--gris);
+}
+
+.profil-niveau .niveau-piste {
+  margin-top: 6px;
 }
