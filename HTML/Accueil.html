@@ -185,20 +185,18 @@
 
     /* ---------- Série ---------- */
 
-    // Jours d'entraînement de suite, selon le programme :
-    // un repos prévu ne casse pas la série, un jour d'entraînement prévu manqué la casse,
-    // et aujourd'hui ne compte pas comme manqué tant que la journée n'est pas finie.
+    // Séances d'affilée : la série tient tant qu'on ne reste pas plus de 2 jours sans s'entraîner
+    // (le programme suit l'ordre des séances, pas les jours : on ne sait pas quels jours sont des repos).
+    const PAUSE_MAX = 3;      // écart maximal en jours entre deux séances
+
     function calculerSerie() {
-      let serie = 0;
-      const base = new Date();
-      base.setHours(12, 0, 0, 0);
-      for (let i = 0; i < 400; i++) {
-        const d = new Date(base);
-        d.setDate(base.getDate() - i);
-        const prevu = !estRepos(programme[(d.getDay() + 6) % 7]);
-        if (datesFaites.has(versTexte(d))) serie++;
-        else if (i === 0) continue;
-        else if (prevu) break;
+      const dates = Array.from(datesFaites).sort().reverse();
+      if (!dates.length || joursDepuis(dates[0]) > PAUSE_MAX) return 0;
+      let serie = 1;
+      for (let i = 1; i < dates.length; i++) {
+        const ecart = Math.round((enDate(dates[i - 1]) - enDate(dates[i])) / 86400000);
+        if (ecart > PAUSE_MAX) break;
+        serie++;
       }
       return serie;
     }
@@ -215,14 +213,13 @@
     // Une case du calendrier : flamme si séance faite, sinon le numéro du jour
     function creerJour(texte, lettre) {
       const d = new Date(texte + "T12:00:00");
-      const prevu = programme[(d.getDay() + 6) % 7];
       const fait = datesFaites.has(texte);
       const auj = texte === aujourdhui();
       const futur = texte > aujourdhui();
 
       const cellule = el("div", "jour" + (fait ? " fait" : "") + (auj ? " auj" : "") + (futur ? " futur" : ""));
       const longue = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-      cellule.title = longue + (fait ? " : séance faite" : !estRepos(prevu) ? " : " + prevu + " prévu" : " : repos");
+      cellule.title = longue + (fait ? " : séance faite" : "");
 
       if (lettre) cellule.appendChild(el("span", "jour-lettre", lettre));
 
@@ -231,8 +228,6 @@
       else rond.textContent = String(d.getDate());
       cellule.appendChild(rond);
 
-      // Petit point de la couleur de la séance prévue (si elle n'est pas encore faite)
-      cellule.appendChild(el("span", "jour-point " + (!estRepos(prevu) && !fait ? classeSeance(prevu) : "")));
       return cellule;
     }
 
@@ -276,16 +271,21 @@
       document.getElementById("serie-nombre").textContent = serie;
       document.getElementById("serie-label").textContent = serie === 0
         ? "Lance ta série aujourd’hui"
-        : (serie === 1 ? "jour d’entraînement de suite" : "jours d’entraînement de suite");
+        : (serie === 1 ? "séance d’affilée" : "séances d’affilée");
       document.getElementById("serie-flamme").setAttribute("class", "serie-flamme" + (serie === 0 ? " eteinte" : ""));
 
-      const indexAuj = (new Date().getDay() + 6) % 7;
-      const prevuAuj = programme[indexAuj];
-      document.getElementById("serie-message").textContent = datesFaites.has(aujourdhui())
-        ? "Séance du jour validée, bravo !"
-        : (estRepos(prevuAuj)
-            ? "Jour de repos : ta série est préservée."
-            : "Il reste ta séance " + prevuAuj + " pour continuer la série.");
+      // Jusqu'à quand la série tient sans nouvelle séance
+      const derniere = Array.from(datesFaites).sort().pop();
+      let message = "Fais une séance pour lancer ta série.";
+      if (datesFaites.has(aujourdhui())) message = "Séance du jour validée, bravo !";
+      else if (serie > 0) {
+        const limite = enDate(derniere);
+        limite.setDate(limite.getDate() + PAUSE_MAX);
+        message = joursDepuis(derniere) < PAUSE_MAX
+          ? "Repos possible : ta série tient jusqu'à " + limite.toLocaleDateString("fr-FR", { weekday: "long" }) + "."
+          : "Dernier jour pour garder ta série : fais une séance aujourd'hui !";
+      }
+      document.getElementById("serie-message").textContent = message;
 
       afficherSemaine();
       afficherMois();
@@ -295,7 +295,7 @@
 
     async function afficherRecap(seance, liste) {
       const bloc = document.getElementById("recap");
-      if (estRepos(seance)) {
+      if (!seance || estRepos(seance)) {
         bloc.hidden = true;
         return;
       }
@@ -502,18 +502,20 @@
       datesFaites = new Set(seances.map(function (s) { return s.date; }));
       afficherSerie();
 
-      // Séance du jour
+      // Prochaine séance : la suite logique du programme (pas le jour de la semaine), sinon séance libre
       const maintenant = new Date();
       const indexJour = (maintenant.getDay() + 6) % 7; // lundi = 0
-      const seance = programme[indexJour];
+      const seance = prochaineSeance(programme, seances);
       document.getElementById("date-jour").textContent =
         JOURS[indexJour] + " " +
-        maintenant.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
-            const titre = document.getElementById("seance-jour");
-      titre.textContent = seance.toUpperCase();
+        maintenant.toLocaleDateString("fr-FR", { day: "numeric", month: "long" }) +
+        (seance ? (datesFaites.has(aujourdhui()) ? " · prochaine séance" : " · ta séance") : "");
+      const titre = document.getElementById("seance-jour");
+      const nomSeance = seance || "Libre";
+      titre.textContent = nomSeance.toUpperCase();
       // Les noms longs s'affichent un peu plus petits pour tenir dans la carte
-      titre.className = seance.length > 14 ? "tres-long" : (seance.length > 7 ? "long" : "");
-      document.getElementById("hero").className = "hero " + classeSeance(seance);
+      titre.className = nomSeance.length > 14 ? "tres-long" : (nomSeance.length > 7 ? "long" : "");
+      document.getElementById("hero").className = "hero " + (seance ? classeSeance(seance) : "repos");
 
       await afficherRecap(seance, seances);
 
@@ -528,7 +530,7 @@
         cta.textContent = "✓ Séance faite · voir le détail";
         cta.href = "Activite.html";
         cta.classList.add("faite");
-      } else if (estRepos(seance)) {
+      } else if (!seance) {
         cta.textContent = "Faire une séance libre";
       } else {
         cta.textContent = "Commencer la séance " + seance;

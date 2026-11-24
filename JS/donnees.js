@@ -1,4 +1,5 @@
-const PROGRAMME_DEFAUT = ["Push", "Pull", "Leg", "Push", "Pull", "Repos", "Repos"];
+// Pas de programme par défaut : sans programme, chaque séance est une séance libre
+const PROGRAMME_DEFAUT = [];
 
 /* ---------- Outils communs à toutes les pages ---------- */
 
@@ -240,7 +241,7 @@ async function chargerProfil() {
     naissance: (data && data.naissance) || "",
     poids: data && data.poids !== null ? String(data.poids) : "",
     sexe: (data && data.sexe) || "",
-    programme: (data && data.programme) || PROGRAMME_DEFAUT,
+    programme: Array.isArray(data && data.programme) ? data.programme : [],
     taille: data && data.taille ? String(data.taille) : "",
     activite: (data && data.activite) || "modere",
     objectif: (data && data.objectif) || "maintien",
@@ -755,6 +756,35 @@ async function chargerDernierExerciceUtilise() {
 // Vrai si le jour est un jour de repos (quelle que soit la façon dont c'est écrit)
 function estRepos(nom) {
   return normaliser(nom || "") === "repos";
+}
+
+// Les séances du programme, dans l'ordre (les jours « Repos » et vides sont sautés)
+function seancesDuProgramme(programme) {
+  return (programme || []).filter(function (s) { return s && String(s).trim() && !estRepos(s); });
+}
+
+// Prochaine séance à faire : on suit l'ordre du programme, pas le jour de la semaine.
+// On rejoue les séances déjà faites (de la plus ancienne à la plus récente) pour savoir où on en est :
+// chaque séance du programme fait avancer le curseur, les séances libres ne comptent pas.
+// seances : liste triée de la plus récente à la plus ancienne (comme chargerSeances).
+// Renvoie null s'il n'y a pas de programme (séance libre).
+function prochaineSeance(programme, seances) {
+  const liste = seancesDuProgramme(programme);
+  if (!liste.length) return null;
+  const cles = liste.map(normaliser);
+  let curseur = -1;
+  (seances || []).slice(0, 120).reverse().forEach(function (s) {
+    const cle = normaliser(s.type || "");
+    // La prochaine place de ce type dans le cycle, à partir de la position actuelle
+    for (let pas = 1; pas <= cles.length; pas++) {
+      const j = (curseur + pas) % cles.length;
+      if (cles[j] === cle) {
+        curseur = j;
+        return;
+      }
+    }
+  });
+  return liste[(curseur + 1) % liste.length];
 }
 
 // Classe de couleur d'une séance : push, pull, leg, repos, ou autre (texte libre)

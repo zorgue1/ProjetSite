@@ -76,12 +76,13 @@
     <details class="card reglage" name="reglages" id="r-programme">
       <summary>
         <span class="reglage-icone" aria-hidden="true">📅</span>
-        <span class="reglage-titre"><strong>Programme de la semaine</strong><span class="mut" id="resume-programme">Ta séance prévue chaque jour</span></span>
+        <span class="reglage-titre"><strong>Programme de la semaine</strong><span class="mut" id="resume-programme">Aucun · séances libres</span></span>
         <span class="chevron" aria-hidden="true">›</span>
       </summary>
       <div class="reglage-corps">
-      <p class="mut">Choisis la séance prévue pour chaque jour, ou écris ce que tu veux avec « Autre » (hand, natation…). Elle s’affichera sur la page d’accueil.</p>
-      <div class="row" id="programme"></div>
+        <p class="mut aide-programme">L’ordre compte, pas la date : l’appli te propose toujours <strong>la séance qui suit ta dernière séance faite</strong>. Si tu sautes un jour, tu reprends là où tu t’étais arrêté. Les jours « Repos » sont simplement sautés. Laisse tout sur Repos pour faire des séances libres.</p>
+        <div class="chips modeles" id="modeles"></div>
+        <div class="row" id="programme"></div>
         <div class="actions">
           <button class="btn btn-enregistrer" type="button">Enregistrer le programme</button>
         </div>
@@ -123,7 +124,7 @@
           <span class="interrupteur-piste" aria-hidden="true"></span>
           <span class="interrupteur-texte">
             <strong>Rappel de séance</strong>
-            <span class="mut petit">Les jours de séance de ton programme, si tu ne l’as pas encore faite.</span>
+            <span class="mut petit">Chaque jour à l’heure choisie, si tu n’as pas encore fait ta séance (avec la prochaine séance de ton programme).</span>
           </span>
         </label>
         <div class="notif-heure" id="zone-heure" hidden>
@@ -210,7 +211,15 @@
   <script src="../JS/tutoriel.js"></script>
   <script>
     const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-    const TYPES = ["Push", "Pull", "Leg", "Repos"];
+    const TYPES = ["Push", "Pull", "Leg", "Upper", "Lower", "Full body", "Pecs", "Dos", "Jambes", "Épaules", "Bras", "Cardio", "Repos"];
+
+    // Programmes prêts à l'emploi (un clic remplit les 7 jours, modifiables ensuite)
+    const MODELES = [
+      ["Push / Pull / Leg", ["Push", "Pull", "Leg", "Push", "Pull", "Leg", "Repos"]],
+      ["Upper / Lower", ["Upper", "Lower", "Repos", "Upper", "Lower", "Repos", "Repos"]],
+      ["Full body", ["Full body", "Repos", "Full body", "Repos", "Full body", "Repos", "Repos"]],
+      ["Aucun (libre)", ["Repos", "Repos", "Repos", "Repos", "Repos", "Repos", "Repos"]]
+    ];
     const AUTRE = "__autre";
     let profilCharge = null;
 
@@ -265,6 +274,18 @@
         zone.appendChild(bloc);
       });
     }
+
+    function afficherModeles() {
+      const zone = document.getElementById("modeles");
+      zone.innerHTML = "";
+      MODELES.forEach(function (m) {
+        const b = el("button", "chip", m[0]);
+        b.type = "button";
+        b.addEventListener("click", function () { construireProgramme(m[1]); });
+        zone.appendChild(b);
+      });
+    }
+    afficherModeles();
 
     // Lit le programme saisi : un texte par jour
     function lireProgramme() {
@@ -341,10 +362,9 @@
       // Les jours de séance, en abrégé : « Push, Pull, Leg… · 2 repos »
       const prog = p.programme || [];
       const seances = prog.filter(function (s) { return !estRepos(s); });
-      const repos = prog.length - seances.length;
       document.getElementById("resume-programme").textContent = seances.length
-        ? seances.slice(0, 3).join(", ") + (seances.length > 3 ? "…" : "") + " · " + repos + " repos"
-        : "Aucune séance prévue";
+        ? seances.slice(0, 4).join(" → ") + (seances.length > 4 ? " → …" : "") + " (en boucle)"
+        : "Aucun · séances libres";
 
       const theme = window.themeSportApp.lire();
       document.getElementById("resume-apparence").textContent =

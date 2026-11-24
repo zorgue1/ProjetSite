@@ -12,9 +12,7 @@ function tutorielDejaVu() {
 function lancerTutoriel(prenom, seanceDuJour) {
   try { localStorage.setItem(CLE_TUTORIEL, "1"); } catch (e) {}
 
-  const aujourdhuiTexte = !seanceDuJour ? "" : estRepos(seanceDuJour)
-    ? "Aujourd’hui c’est repos : profites-en pour découvrir l’appli."
-    : "Aujourd’hui, ton programme prévoit une séance " + seanceDuJour + ".";
+  const aujourdhuiTexte = seanceDuJour ? "Ta prochaine séance : " + seanceDuJour + "." : "";
 
   // [emoji, couleur, titre, texte, astuces]
   const ETAPES = [
@@ -23,8 +21,8 @@ function lancerTutoriel(prenom, seanceDuJour) {
       "Voici le tour complet en une minute. " + aujourdhuiTexte,
       ["Tu peux passer à tout moment", "Le tuto se revoit dans Paramètres → Aide"]],
     ["🏠", "orange", "L’accueil",
-      "Ta séance du jour s’affiche selon ton programme de la semaine, avec ta série de jours d’entraînement 🔥.",
-      ["Ta carte profil montre ton niveau, ton poids et ton évolution", "Tes PR et l’activité de tes amis sont juste en dessous"]],
+      "Ta prochaine séance s’affiche ici. Sans programme, c’est une séance libre ; avec un programme, l’appli suit l’ordre de tes séances, pas le calendrier.",
+      ["Tu as sauté un jour ? Tu reprends là où tu t’étais arrêté", "Crée ton programme dans Paramètres (modèles Push / Pull / Leg, Upper / Lower…)", "Ta série 🔥 tient tant que tu ne restes pas plus de 2 jours sans t’entraîner"]],
     ["➕", "orange", "Le bouton ＋",
       "En bas à droite, sur toutes les pages : il ajoute en un geste une séance, un repas, une pesée ou un PR.",
       ["La pesée se note directement dans le menu", "Pas besoin de chercher la bonne page"]],

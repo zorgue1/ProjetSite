@@ -352,7 +352,8 @@
       const total = dansPeriode.length;
       const moyenne = total / N;
       const cetteSemaine = semaines[N - 1].n;
-      const objectif = programme.filter(function (j) { return !estRepos(j); }).length || 1;
+      // Objectif de la semaine : le nombre de séances du programme (3 sans programme)
+      const objectif = seancesDuProgramme(programme).length || 3;
 
       $("stat-semaine").innerHTML = "";
       $("stat-semaine").append(String(cetteSemaine));

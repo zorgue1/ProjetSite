@@ -137,3 +137,13 @@
 .reglage-corps .actions {
   margin-top: 18px;
 }
+
+/* Programme : explication et modèles prêts à l'emploi */
+.aide-programme {
+  margin-top: 14px;
+  line-height: 1.5;
+}
+
+.modeles {
+  margin: 4px 0 6px;
+}

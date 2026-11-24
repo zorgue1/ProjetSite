@@ -321,9 +321,8 @@
       debutSeance = Date.now();
       prendreXPAvant();
 
-      // La séance prévue aujourd'hui est proposée d'office (tu peux la changer)
-      const prevu = programme[(new Date().getDay() + 6) % 7];
-      document.getElementById("type").value = estRepos(prevu) ? "" : prevu;
+      // La suite logique du programme est proposée d'office (tu peux la changer) ; sans programme : séance libre
+      document.getElementById("type").value = prochaineSeance(programme, seances) || "";
 
       fermerPanneau();
       afficherChipsType();
