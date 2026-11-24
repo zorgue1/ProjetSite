@@ -661,7 +661,9 @@ body.sans-defilement {
 
 /* ---------- Comprendre la nutrition (fiches repliables) ---------- */
 .guide {
-  margin-top: 26px;
+  margin-top: 22px;
+  padding: 0;
+  overflow: hidden;
 }
 
 .fiche {
@@ -830,24 +832,6 @@ body.sans-defilement {
   line-height: 1.5;
 }
 
-.guide .titre-section {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 8px;
-  margin: 0 0 12px;
-  font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 24px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.guide .titre-section .mut {
-  font-family: Manrope, "Segoe UI", sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  text-transform: none;
-}
 
 /* ---------- Hydratation ---------- */
 .eau {
@@ -999,4 +983,85 @@ body.sans-defilement {
   .eau-niveau::before {
     animation: none;
   }
+}
+
+/* Le guide entier est replié derrière une seule carte */
+.guide-entree {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.guide-entree::-webkit-details-marker {
+  display: none;
+}
+
+.guide-icone {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  font-size: 24px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: 14px;
+}
+
+.guide-titre {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.guide-titre strong {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.guide-titre .mut {
+  font-size: 13px;
+}
+
+.guide > .guide-entree .chevron {
+  font-size: 26px;
+  color: var(--gris);
+  transition: transform 0.2s;
+}
+
+.guide[open] > .guide-entree .chevron {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+
+.guide[open] {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--bordure));
+}
+
+.guide-contenu {
+  padding: 4px 12px 14px;
+  border-top: 1px solid var(--bordure);
+  animation: monter 0.25s ease both;
+}
+
+.guide-contenu .fiche {
+  margin-top: 10px;
+  background: var(--carte-douce);
+  box-shadow: none;
+}
+
+.guide-contenu .fiche-icone {
+  background: var(--carte);
+}
+
+.guide-contenu .fiche-chiffres div,
+.guide-contenu .tuto-astuces {
+  background: var(--carte);
 }

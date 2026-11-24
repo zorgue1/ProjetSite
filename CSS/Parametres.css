@@ -148,28 +148,37 @@
   margin: 4px 0 6px;
 }
 
-/* Mes données : export et suppression du compte */
-.mes-donnees {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--bordure);
-}
-
-.mes-donnees h3 {
-  margin: 0 0 4px;
-  font-size: 16px;
-}
-
+/* Mes données : sous-partie repliée du compte */
 .mes-donnees .actions {
-  margin: 10px 0 0;
+  margin: 10px 0 4px;
 }
 
-.zone-danger-titre {
-  margin-top: 22px !important;
-  color: var(--danger);
+/* Suppression du compte : volontairement discrète, repliée dans « Mes données » */
+.zone-sensible {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--bordure);
 }
 
-#btn-supprimer-compte {
+.zone-sensible summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gris);
+  cursor: pointer;
+}
+
+.zone-sensible[open] summary {
+  margin-bottom: 6px;
+}
+
+.zone-sensible .mut {
+  font-size: 13px;
+}
+
+.btn.btn-supprimer {
   width: 100%;
-  margin-top: 6px;
+  margin: 4px 0 2px;
+  font-size: 14px;
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--bordure));
 }

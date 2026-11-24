@@ -200,20 +200,22 @@
         <button class="btn" id="btn-mdp" type="button">Changer le mot de passe</button>
       </details>
 
-      <button class="btn secondaire" id="btn-deconnexion" type="button">Se déconnecter</button>
-
-      <div class="mes-donnees">
-        <h3>Mes données</h3>
+      <details class="mdp mes-donnees">
+        <summary>Mes données</summary>
         <p class="mut">Télécharge une copie de tout ce que tu as enregistré dans SportApp.</p>
         <div class="actions">
           <button class="btn secondaire" id="btn-export-csv" type="button">📄 Mes séances (CSV)</button>
           <button class="btn secondaire" id="btn-export-json" type="button">📦 Tout (JSON)</button>
         </div>
 
-        <h3 class="zone-danger-titre">Supprimer mon compte</h3>
-        <p class="mut">Efface définitivement ton compte et toutes tes données : séances, PR, repas, poids, photos, abonnements. Impossible de revenir en arrière.</p>
-        <button class="btn danger" id="btn-supprimer-compte" type="button">Supprimer mon compte</button>
-      </div>
+        <details class="zone-sensible">
+          <summary>Supprimer mon compte…</summary>
+          <p class="mut">Efface définitivement ton compte et toutes tes données : séances, PR, repas, poids, photos, abonnements. Impossible de revenir en arrière.</p>
+          <button class="btn secondaire btn-supprimer" id="btn-supprimer-compte" type="button">Supprimer définitivement mon compte</button>
+        </details>
+      </details>
+
+      <button class="btn secondaire" id="btn-deconnexion" type="button">Se déconnecter</button>
       </div>
     </details>
 

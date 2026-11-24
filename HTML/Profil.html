@@ -84,8 +84,19 @@
       <h3 class="titre-section">Activité <span class="mut">· toi et les gens que tu suis</span></h3>
       <section class="card fil" id="fil-apercu"><div class="squelette petit"></div><div class="squelette petit"></div></section>
 
-      <h3 class="titre-section">Défi du mois <span class="mut" id="defi-mois-titre"></span></h3>
-      <section class="card defi-mois" id="defi-mois">
+      <!-- Défis : la semaine (XP) et le mois (entre amis), dans une seule rubrique à onglets -->
+      <h3 class="titre-section">Défis</h3>
+      <div class="onglets onglets-defis" id="onglets-defis" role="group" aria-label="Défis">
+        <button type="button" class="onglet" data-panneau="semaine" aria-pressed="true">Cette semaine</button>
+        <button type="button" class="onglet" data-panneau="mois" aria-pressed="false">Ce mois · amis</button>
+      </div>
+      <div class="panneau-defis" id="panneau-semaine">
+        <p class="mut petit panneau-info" id="jours-restants"></p>
+        <section class="card defis" id="defis"><div class="squelette petit"></div><div class="squelette petit"></div></section>
+      </div>
+      <div class="panneau-defis" id="panneau-mois" hidden>
+        <p class="mut petit panneau-info" id="defi-mois-titre"></p>
+        <section class="card defi-mois" id="defi-mois">
         <div class="onglets" id="defi-mois-onglets" role="group" aria-label="Critère du classement">
           <button type="button" class="onglet" data-critere="seances" aria-pressed="true">Séances</button>
           <button type="button" class="onglet" data-critere="tonnage" aria-pressed="false">Tonnes soulevées</button>
@@ -93,9 +104,7 @@
         <div id="defi-mois-classement"><div class="squelette petit"></div><div class="squelette petit"></div></div>
         <p class="mut petit defi-mois-pied" id="defi-mois-pied"></p>
       </section>
-
-      <h3 class="titre-section">Défis de la semaine <span class="mut" id="jours-restants"></span></h3>
-      <section class="card defis" id="defis"><div class="squelette petit"></div><div class="squelette petit"></div></section>
+      </div>
 
       <h3 class="titre-section">Badges <span class="mut" id="badges-compte"></span></h3>
       <section class="badges" id="badges"><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div></section>
@@ -366,6 +375,21 @@
       }
     });
 
+    /* ---------- Rubrique « Défis » : onglets Cette semaine / Ce mois ---------- */
+
+    function montrerPanneauDefis(nom) {
+      document.querySelectorAll("#onglets-defis .onglet").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.panneau === nom));
+      });
+      $("panneau-semaine").hidden = nom !== "semaine";
+      $("panneau-mois").hidden = nom !== "mois";
+      try { localStorage.setItem("sportapp:onglet-defis", nom); } catch (e) {}
+    }
+    document.querySelectorAll("#onglets-defis .onglet").forEach(function (b) {
+      b.addEventListener("click", function () { montrerPanneauDefis(b.dataset.panneau); });
+    });
+    try { if (localStorage.getItem("sportapp:onglet-defis") === "mois") montrerPanneauDefis("mois"); } catch (e) {}
+
     /* ---------- Défi du mois entre amis ---------- */
 
     let defiMois = [];
@@ -444,7 +468,8 @@
     async function chargerLeDefiMois() {
       const fin = new Date();
       const joursRestants = new Date(fin.getFullYear(), fin.getMonth() + 1, 0).getDate() - fin.getDate();
-      $("defi-mois-titre").textContent = "· " + nomMois(0) + (joursRestants ? " · encore " + pluriel(joursRestants, "jour") : " · dernier jour !");
+      $("defi-mois-titre").textContent = "Classement " + deMois(0) + " entre toi et les gens que tu suis · " +
+        (joursRestants ? "encore " + pluriel(joursRestants, "jour") : "dernier jour !");
       try {
         const r = await Promise.all([chargerDefiMois(0), chargerDefiMois(1)]);
         defiMois = r[0];
@@ -572,9 +597,9 @@
 
     function afficherDefis(sem) {
       const restants = 6 - (new Date().getDay() + 6) % 7;
-      $("jours-restants").textContent = restants
-        ? "· encore " + pluriel(restants, "jour")
-        : "· dernier jour !";
+      $("jours-restants").textContent = "Gagne de l'XP en plus · " + (restants
+        ? "encore " + pluriel(restants, "jour") + " pour les réussir"
+        : "dernier jour pour les réussir !");
 
       const objectifVolume = Math.round(Number(sem.tonnage_prec) * 1.1);
       const defis = [
@@ -615,6 +640,8 @@
     // seulementGagnes : sur le profil d'un autre, on ne montre que ses badges obtenus
     function afficherBadges(zone, compte, s, seulementGagnes) {
       const liste = listeBadges(s);
+      // Les badges obtenus d'abord, puis ceux à débloquer (chacun garde son ordre)
+      liste.sort(function (a, b) { return (b[3] >= b[4]) - (a[3] >= a[4]); });
       zone.innerHTML = "";
       let gagnes = 0;
       liste.forEach(function (b) {

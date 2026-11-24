@@ -986,3 +986,12 @@ a.fil-qui:hover {
   font-weight: 800;
   color: #e09400;
 }
+
+/* Rubrique « Défis » : onglets Cette semaine / Ce mois */
+.onglets-defis {
+  margin-bottom: 8px;
+}
+
+.panneau-info {
+  margin: 0 4px 8px;
+}

@@ -171,8 +171,13 @@
 
 
     <!-- Comprendre la nutrition : fiches repliables -->
-    <section class="guide" aria-labelledby="titre-guide">
-      <h3 class="titre-section" id="titre-guide">Comprendre la nutrition <span class="mut">· les bases pour progresser</span></h3>
+    <details class="card guide" id="guide">
+      <summary class="guide-entree">
+        <span class="guide-icone" aria-hidden="true">📚</span>
+        <span class="guide-titre"><strong>Tu veux comprendre la nutrition ?</strong><span class="mut">Calories, protéines, sèche, maintien, prise de masse… les bases en 11 fiches</span></span>
+        <span class="chevron" aria-hidden="true">›</span>
+      </summary>
+      <div class="guide-contenu">
 
       <details class="card fiche" name="guide">
         <summary><span class="fiche-icone" aria-hidden="true">⚖️</span><span class="fiche-titre"><strong>Les calories : la base de tout</strong><span class="mut">Pourquoi on prend ou on perd du poids</span></span><span class="chevron" aria-hidden="true">›</span></summary>
@@ -334,8 +339,9 @@
         </div>
       </details>
 
-      <p class="mut guide-avertissement">Ces conseils sont généraux et ne remplacent pas l’avis d’un professionnel de santé. En cas de grossesse, de maladie ou de troubles du comportement alimentaire, parles-en à un médecin ou à un diététicien.</p>
-    </section>
+        <p class="mut guide-avertissement">Ces conseils sont généraux et ne remplacent pas l’avis d’un professionnel de santé. En cas de grossesse, de maladie ou de troubles du comportement alimentaire, parles-en à un médecin ou à un diététicien.</p>
+      </div>
+    </details>
   </main>
 
   <!-- Lecture du code-barres avec la caméra -->
@@ -441,10 +447,10 @@
     let eauBue = 0;
     let minuteurEau = null;
 
-    // Objectif : 35 ml par kilo (2 L si le poids n'est pas renseigné), arrondi à 100 ml
+    // Objectif : 35 ml par kilo, arrondi à 100 ml et plafonné à 3 L (2 L si le poids n'est pas renseigné)
     function objectifEau() {
       const poids = parseFloat(profil && profil.poids);
-      return poids > 0 ? Math.round(poids * 35 / 100) * 100 : 2000;
+      return poids > 0 ? Math.min(3000, Math.round(poids * 35 / 100) * 100) : 2000;
     }
 
     function litres(ml) {
