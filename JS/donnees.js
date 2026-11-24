@@ -388,6 +388,21 @@ async function supprimerRepas(id) {
   if (error) throw error;
 }
 
+/* ---------- Hydratation ---------- */
+
+// Eau bue un jour donné, en millilitres
+async function chargerEau(date) {
+  const { data, error } = await client.from("eau").select("ml").eq("date", date).maybeSingle();
+  if (error) throw error;
+  return data ? data.ml : 0;
+}
+
+async function sauverEau(date, ml) {
+  const { data: { user } } = await client.auth.getUser();
+  const { error } = await client.from("eau").upsert({ user_id: user.id, date: date, ml: ml }, { onConflict: "user_id,date" });
+  if (error) throw error;
+}
+
 /* ---------- Séances ---------- */
 
 async function chargerSeances() {
@@ -872,6 +887,13 @@ async function nePlusSuivre(id) {
 // Séances et PR récents : les miens et ceux des gens que je suis
 async function chargerFil(nb) {
   const { data, error } = await client.rpc("fil_activite", { nb: nb || 40 });
+  if (error) throw error;
+  return data;
+}
+
+// Défi du mois : moi et les gens que je suis (séances et tonnage du mois). decalage 1 = le mois dernier
+async function chargerDefiMois(decalage) {
+  const { data, error } = await client.rpc("defi_du_mois", { decalage: decalage || 0 });
   if (error) throw error;
   return data;
 }

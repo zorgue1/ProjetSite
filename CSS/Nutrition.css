@@ -848,3 +848,155 @@ body.sans-defilement {
   font-weight: 700;
   text-transform: none;
 }
+
+/* ---------- Hydratation ---------- */
+.eau {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Bouteille qui se remplit */
+.eau-bouteille {
+  position: relative;
+  flex: 0 0 auto;
+  width: 46px;
+  height: 92px;
+  overflow: hidden;
+  background: var(--carte-douce);
+  border: 2px solid color-mix(in srgb, var(--eau) 45%, var(--bordure));
+  border-radius: 14px 14px 16px 16px;
+}
+
+.eau-bouteille::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  z-index: 2;
+  width: 18px;
+  height: 8px;
+  background: color-mix(in srgb, var(--eau) 45%, var(--bordure));
+  border-radius: 0 0 4px 4px;
+  transform: translateX(-50%);
+}
+
+.eau-niveau {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--eau) 75%, #fff), var(--eau));
+  transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Petite vague à la surface */
+.eau-niveau::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: -50%;
+  width: 200%;
+  height: 10px;
+  background: radial-gradient(circle at 10px -4px, transparent 9px, color-mix(in srgb, var(--eau) 75%, #fff) 10px) 0 0 / 20px 10px repeat-x;
+  animation: vague 2.5s linear infinite;
+}
+
+@keyframes vague {
+  to { transform: translateX(20px); }
+}
+
+.eau-infos {
+  flex: 1;
+  min-width: 0;
+}
+
+.eau-titre {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.eau-chiffres {
+  margin: 2px 0 6px;
+}
+
+.eau-chiffres strong {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--eau);
+}
+
+.eau-chiffres span {
+  font-weight: 700;
+  color: var(--gris);
+}
+
+.eau-verres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.verre {
+  width: 10px;
+  height: 14px;
+  border: 2px solid color-mix(in srgb, var(--eau) 50%, var(--bordure));
+  border-top: 0;
+  border-radius: 0 0 4px 4px;
+}
+
+.verre.plein {
+  background: var(--eau);
+  border-color: var(--eau);
+}
+
+.eau-boutons {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-eau {
+  flex: 1;
+  height: 40px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--eau);
+  background: color-mix(in srgb, var(--eau) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--eau) 35%, transparent);
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.btn-eau.moins {
+  flex: 0 0 40px;
+  padding: 0;
+}
+
+.btn-eau:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn-eau:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.eau.atteint {
+  border-color: color-mix(in srgb, var(--eau) 60%, var(--bordure));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eau-niveau::before {
+    animation: none;
+  }
+}

@@ -84,6 +84,16 @@
       <h3 class="titre-section">Activité <span class="mut">· toi et les gens que tu suis</span></h3>
       <section class="card fil" id="fil-apercu"><div class="squelette petit"></div><div class="squelette petit"></div></section>
 
+      <h3 class="titre-section">Défi du mois <span class="mut" id="defi-mois-titre"></span></h3>
+      <section class="card defi-mois" id="defi-mois">
+        <div class="onglets" id="defi-mois-onglets" role="group" aria-label="Critère du classement">
+          <button type="button" class="onglet" data-critere="seances" aria-pressed="true">Séances</button>
+          <button type="button" class="onglet" data-critere="tonnage" aria-pressed="false">Tonnes soulevées</button>
+        </div>
+        <div id="defi-mois-classement"><div class="squelette petit"></div><div class="squelette petit"></div></div>
+        <p class="mut petit defi-mois-pied" id="defi-mois-pied"></p>
+      </section>
+
       <h3 class="titre-section">Défis de la semaine <span class="mut" id="jours-restants"></span></h3>
       <section class="card defis" id="defis"><div class="squelette petit"></div><div class="squelette petit"></div></section>
 
@@ -355,6 +365,112 @@
         informer(erreurLisible(e));
       }
     });
+
+    /* ---------- Défi du mois entre amis ---------- */
+
+    let defiMois = [];
+    let critereMois = "seances";
+
+    function nomMois(decalage) {
+      const d = new Date();
+      d.setDate(1);
+      d.setMonth(d.getMonth() - decalage);
+      return d.toLocaleDateString("fr-FR", { month: "long" });
+    }
+
+    // « de novembre », mais « d'octobre », « d'avril », « d'août »
+    function deMois(decalage) {
+      const m = nomMois(decalage);
+      return (/^[aeiouyéh]/i.test(m) ? "d'" : "de ") + m;
+    }
+
+    function valeurDefi(g, critere) {
+      return critere === "seances" ? Number(g.seances) : Number(g.tonnage);
+    }
+
+    function texteDefi(g, critere) {
+      if (critere === "seances") return pluriel(Number(g.seances), "séance");
+      const t = Number(g.tonnage);
+      return t >= 1000 ? nb(t / 1000) + " t" : Math.round(t) + " kg";
+    }
+
+    function classerDefi(liste, critere) {
+      return liste.slice().sort(function (a, b) {
+        return valeurDefi(b, critere) - valeurDefi(a, critere) ||
+          valeurDefi(b, critere === "seances" ? "tonnage" : "seances") - valeurDefi(a, critere === "seances" ? "tonnage" : "seances");
+      });
+    }
+
+    function afficherDefiMois() {
+      const zone = $("defi-mois-classement");
+      zone.innerHTML = "";
+      document.querySelectorAll("#defi-mois-onglets .onglet").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.critere === critereMois));
+      });
+      const classement = classerDefi(defiMois, critereMois);
+      const max = Math.max(1, valeurDefi(classement[0] || {}, critereMois));
+
+      classement.forEach(function (g, i) {
+        const ligne = el(g.moi ? "div" : "a", "defi-ligne" + (g.moi ? " moi" : ""));
+        if (!g.moi) ligne.href = "#u=" + g.id;
+        ligne.appendChild(el("span", "rang-place" + (i < 3 && valeurDefi(g, critereMois) > 0 ? " m" + (i + 1) : ""), String(i + 1)));
+        ligne.appendChild(creerAvatar(g, "mini"));
+        const corps = el("div", "defi-corps-ligne");
+        const haut = el("div", "defi-haut");
+        haut.appendChild(el("strong", "", (g.moi ? "Toi" : nomDe(g)) + (i === 0 && valeurDefi(g, critereMois) > 0 ? " 👑" : "")));
+        haut.appendChild(el("span", "defi-valeur", texteDefi(g, critereMois)));
+        corps.appendChild(haut);
+        const piste = el("div", "piste");
+        const rempli = el("span", "rempli");
+        piste.appendChild(rempli);
+        corps.appendChild(piste);
+        ligne.appendChild(corps);
+        zone.appendChild(ligne);
+        setTimeout(function () { rempli.style.width = (valeurDefi(g, critereMois) / max * 100) + "%"; }, 80);
+      });
+
+      if (defiMois.length < 2) {
+        zone.appendChild(el("p", "mut petit", "Suis des amis (recherche leur pseudo plus haut) pour te mesurer à eux chaque mois."));
+      }
+    }
+
+    document.querySelectorAll("#defi-mois-onglets .onglet").forEach(function (b) {
+      b.addEventListener("click", function () {
+        critereMois = b.dataset.critere;
+        afficherDefiMois();
+      });
+    });
+
+    async function chargerLeDefiMois() {
+      const fin = new Date();
+      const joursRestants = new Date(fin.getFullYear(), fin.getMonth() + 1, 0).getDate() - fin.getDate();
+      $("defi-mois-titre").textContent = "· " + nomMois(0) + (joursRestants ? " · encore " + pluriel(joursRestants, "jour") : " · dernier jour !");
+      try {
+        const r = await Promise.all([chargerDefiMois(0), chargerDefiMois(1)]);
+        defiMois = r[0];
+        afficherDefiMois();
+
+        // Le champion du mois dernier (au nombre de séances), s'il y avait des amis
+        const precedent = classerDefi(r[1], "seances");
+        const champion = precedent.length > 1 && Number(precedent[0].seances) > 0 ? precedent[0] : null;
+        const pied = $("defi-mois-pied");
+        pied.textContent = "";
+        if (champion) {
+          if (champion.moi) {
+            pied.appendChild(el("span", "champion-moi", "🏅 Tu es le champion " + deMois(1) + " avec " + texteDefi(champion, "seances") + " !"));
+          } else {
+            pied.textContent = "👑 Champion " + deMois(1) + " : " + nomDe(champion) + " (" + texteDefi(champion, "seances") + ").";
+          }
+        } else {
+          pied.textContent = "Une seule séance par jour compte. Le premier à la fin du mois devient champion 👑";
+        }
+      } catch (e) {
+        $("defi-mois-classement").innerHTML = "";
+        $("defi-mois-classement").appendChild(el("p", "mut", /defi_du_mois|42883|PGRST20/.test((e && e.message) + " " + (e && e.code))
+          ? "Le défi du mois n’est pas encore activé : exécute le script SQL dans Supabase."
+          : "Défi indisponible pour le moment."));
+      }
+    }
 
     /* ---------- Fil d'activité ---------- */
 
@@ -780,6 +896,7 @@
       afficherBadges($("badges"), $("badges-compte"), stats, false);
       afficherHistorique(stats.historique);
       afficherFil($("fil-apercu"), 5);
+      chargerLeDefiMois();
       await afficherClassement();
     })();
   </script>

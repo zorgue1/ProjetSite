@@ -33,6 +33,7 @@
   --proteines: #2fd9c5;
   --glucides: #ffb020;
   --lipides: #a78bfa;
+  --eau: #38bdf8;
 
   --bandeau-fond: rgba(9, 13, 19, 0.78);
   --bandeau-texte: #8c99aa;
@@ -75,6 +76,7 @@
   --proteines: #0d9488;
   --glucides: #d97706;
   --lipides: #7c3aed;
+  --eau: #0284c7;
 
   --bandeau-fond: rgba(255, 250, 246, 0.85);
   --bandeau-texte: #66707c;

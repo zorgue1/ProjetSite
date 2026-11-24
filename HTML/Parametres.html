@@ -201,6 +201,19 @@
       </details>
 
       <button class="btn secondaire" id="btn-deconnexion" type="button">Se déconnecter</button>
+
+      <div class="mes-donnees">
+        <h3>Mes données</h3>
+        <p class="mut">Télécharge une copie de tout ce que tu as enregistré dans SportApp.</p>
+        <div class="actions">
+          <button class="btn secondaire" id="btn-export-csv" type="button">📄 Mes séances (CSV)</button>
+          <button class="btn secondaire" id="btn-export-json" type="button">📦 Tout (JSON)</button>
+        </div>
+
+        <h3 class="zone-danger-titre">Supprimer mon compte</h3>
+        <p class="mut">Efface définitivement ton compte et toutes tes données : séances, PR, repas, poids, photos, abonnements. Impossible de revenir en arrière.</p>
+        <button class="btn danger" id="btn-supprimer-compte" type="button">Supprimer mon compte</button>
+      </div>
       </div>
     </details>
 
@@ -549,6 +562,117 @@
 
     document.getElementById("btn-tutoriel").addEventListener("click", function () {
       lancerTutoriel(profilCharge && profilCharge.prenom);
+    });
+
+    /* ---------- Mes données : export et suppression du compte ---------- */
+
+    // Lit toute une table, par paquets de 1 000 lignes (limite de Supabase par requête)
+    async function toutLire(table, colonnes) {
+      const lignes = [];
+      for (let debut = 0; ; debut += 1000) {
+        const { data, error } = await client.from(table).select(colonnes || "*").range(debut, debut + 999);
+        if (error) throw error;
+        lignes.push.apply(lignes, data);
+        if (data.length < 1000) return lignes;
+      }
+    }
+
+    function telecharger(nom, contenu, type) {
+      const lien = document.createElement("a");
+      lien.href = URL.createObjectURL(new Blob([contenu], { type: type }));
+      lien.download = nom;
+      document.body.appendChild(lien);
+      lien.click();
+      lien.remove();
+      setTimeout(function () { URL.revokeObjectURL(lien.href); }, 2000);
+    }
+
+    // Une valeur de tableur : entre guillemets si elle contient « ; », « " » ou un retour à la ligne
+    function caseCsv(v) {
+      const t = v === null || v === undefined ? "" : String(v);
+      return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+    }
+
+    // Toutes les séries, une ligne par série (s'ouvre directement dans Excel ou Google Sheets)
+    document.getElementById("btn-export-csv").addEventListener("click", async function () {
+      const bouton = this;
+      bouton.disabled = true;
+      try {
+        const series = await toutLire("series", "numero, repetitions, charge, seances(date, type, notes), exercices(nom)");
+        series.sort(function (a, b) {
+          return (a.seances.date > b.seances.date ? 1 : a.seances.date < b.seances.date ? -1 : 0) || a.numero - b.numero;
+        });
+        const lignes = [["Date", "Séance", "Exercice", "Série", "Répétitions", "Charge (kg)", "Notes"]];
+        series.forEach(function (s) {
+          lignes.push([s.seances.date, s.seances.type, s.exercices ? s.exercices.nom : "", s.numero,
+            s.repetitions, String(s.charge).replace(".", ","), s.seances.notes || ""]);
+        });
+        telecharger("sportapp-seances-" + aujourdhui() + ".csv",
+          "﻿" + lignes.map(function (l) { return l.map(caseCsv).join(";"); }).join("\n"), "text/csv;charset=utf-8");
+        confirmer(series.length + " séries exportées");
+      } catch (e) {
+        informer("Export impossible : " + e.message);
+      } finally {
+        bouton.disabled = false;
+      }
+    });
+
+    // Tout ce qui est enregistré, dans un seul fichier
+    document.getElementById("btn-export-json").addEventListener("click", async function () {
+      const bouton = this;
+      bouton.disabled = true;
+      try {
+        const { data: { user } } = await client.auth.getUser();
+        const tout = { exporte_le: new Date().toISOString(), compte: { email: user.email } };
+        const tables = ["profils", "seances", "series", "exercices", "prs", "poids", "repas", "eau", "abonnements"];
+        for (const t of tables) {
+          try { tout[t] = await toutLire(t); } catch (e) { tout[t] = []; }
+        }
+        // Seulement mes exercices (pas ceux de la bibliothèque commune)
+        tout.exercices = tout.exercices.filter(function (e) { return e.user_id === user.id; });
+        telecharger("sportapp-donnees-" + aujourdhui() + ".json", JSON.stringify(tout, null, 2), "application/json");
+        confirmer("Données exportées");
+      } catch (e) {
+        informer("Export impossible : " + e.message);
+      } finally {
+        bouton.disabled = false;
+      }
+    });
+
+    document.getElementById("btn-supprimer-compte").addEventListener("click", async function () {
+      if (!(await demander("Supprimer définitivement ton compte et toutes tes données ?\n\nPense à exporter tes données avant : cette action est irréversible.",
+        { ok: "Continuer", danger: true }))) return;
+      if (!(await demander("Dernière confirmation : ton compte, tes séances, tes PR, tes repas, ton poids, tes photos et tes abonnements vont être effacés tout de suite.",
+        { ok: "Tout supprimer", annuler: "Garder mon compte", danger: true }))) return;
+
+      const bouton = this;
+      bouton.disabled = true;
+      try {
+        const { data: { user } } = await client.auth.getUser();
+        // Les photos (stockage) d'abord : elles sont rangées dans un dossier à ton nom
+        for (const dossier of ["avatars", "exercices"]) {
+          try {
+            const { data } = await client.storage.from(dossier).list(user.id, { limit: 1000 });
+            if (data && data.length) {
+              await client.storage.from(dossier).remove(data.map(function (f) { return user.id + "/" + f.name; }));
+            }
+          } catch (e) {}
+        }
+        // Puis toutes les données et le compte, par la base
+        const { error } = await client.rpc("supprimer_mon_compte");
+        if (error) throw error;
+
+        Object.keys(localStorage).forEach(function (k) {
+          if (/^sportapp:|^sb-/.test(k)) localStorage.removeItem(k);
+        });
+        try { await client.auth.signOut(); } catch (e) {}
+        location.replace("../index.html");
+      } catch (e) {
+        bouton.disabled = false;
+        informer(/supprimer_mon_compte|42883|PGRST20/.test((e && e.message) + " " + (e && e.code))
+          ? "La suppression n’est pas encore activée : exécute le script SQL dans Supabase."
+          : "Suppression impossible : " + e.message);
+      }
     });
 
     document.getElementById("btn-deconnexion").addEventListener("click", deconnexion);

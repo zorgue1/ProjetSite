@@ -61,6 +61,21 @@
       <div class="macros" id="macros"></div>
     </section>
 
+    <!-- Hydratation du jour -->
+    <section class="card eau" id="carte-eau">
+      <div class="eau-bouteille" aria-hidden="true"><span class="eau-niveau" id="eau-niveau"></span></div>
+      <div class="eau-infos">
+        <div class="eau-titre">💧 Eau</div>
+        <div class="eau-chiffres"><strong id="eau-bu">0</strong> <span id="eau-objectif">/ 2 L</span></div>
+        <div class="eau-verres" id="eau-verres" aria-hidden="true"></div>
+        <div class="eau-boutons">
+          <button class="btn-eau moins" id="eau-moins" type="button" aria-label="Retirer un verre">−</button>
+          <button class="btn-eau" id="eau-verre" type="button">+ 1 verre</button>
+          <button class="btn-eau" id="eau-500" type="button">+ 500 ml</button>
+        </div>
+      </div>
+    </section>
+
     <button class="btn ajout-repas" id="btn-ajout" type="button">+ Ajouter un repas</button>
 
     <!-- Formulaire d'ajout d'un repas -->
@@ -417,7 +432,69 @@
       }
       afficherBilan();
       afficherJournal();
+      chargerEauDuJour();
     }
+
+    /* ---------- Hydratation ---------- */
+
+    const VERRE = 250;            // un verre = 250 ml
+    let eauBue = 0;
+    let minuteurEau = null;
+
+    // Objectif : 35 ml par kilo (2 L si le poids n'est pas renseigné), arrondi à 100 ml
+    function objectifEau() {
+      const poids = parseFloat(profil && profil.poids);
+      return poids > 0 ? Math.round(poids * 35 / 100) * 100 : 2000;
+    }
+
+    function litres(ml) {
+      return String(Math.round(ml / 10) / 100).replace(".", ",") + " L";
+    }
+
+    function afficherEau() {
+      const objectif = objectifEau();
+      const part = Math.min(1, eauBue / objectif);
+      $("eau-bu").textContent = litres(eauBue);
+      $("eau-objectif").textContent = "/ " + litres(objectif);
+      $("eau-niveau").style.height = (part * 100) + "%";
+      $("carte-eau").classList.toggle("atteint", eauBue >= objectif);
+      $("eau-moins").disabled = eauBue <= 0;
+
+      // Un petit verre par tranche de 250 ml de l'objectif
+      const zone = $("eau-verres");
+      zone.innerHTML = "";
+      const total = Math.ceil(objectif / VERRE);
+      for (let i = 0; i < total; i++) {
+        zone.appendChild(el("span", "verre" + (i < Math.floor(eauBue / VERRE) ? " plein" : "")));
+      }
+    }
+
+    async function chargerEauDuJour() {
+      try { eauBue = await chargerEau(jour); } catch (e) { eauBue = 0; }
+      afficherEau();
+    }
+
+    // Les clics rapides sont regroupés : un seul enregistrement après une petite pause
+    function ajouterEau(ml) {
+      const avant = eauBue;
+      eauBue = Math.max(0, Math.min(10000, eauBue + ml));
+      afficherEau();
+      vibrer(15);
+      if (avant < objectifEau() && eauBue >= objectifEau()) confirmer("💧 Objectif d’eau atteint, bravo !");
+      clearTimeout(minuteurEau);
+      const date = jour, valeur = eauBue;
+      minuteurEau = setTimeout(function () {
+        sauverEau(date, valeur).catch(function (e) {
+          informer(/eau|42P01|PGRST20/.test((e && e.message) + " " + (e && e.code))
+            ? "Le suivi de l’eau n’est pas encore activé : exécute le script SQL « eau » dans Supabase."
+            : "Enregistrement impossible : " + e.message);
+        });
+      }, 600);
+    }
+
+    $("eau-verre").addEventListener("click", function () { ajouterEau(VERRE); });
+    $("eau-500").addEventListener("click", function () { ajouterEau(500); });
+    $("eau-moins").addEventListener("click", function () { ajouterEau(-VERRE); });
 
     /* ---------- Le cercle et les macros ---------- */
 
@@ -1156,6 +1233,7 @@
       objectifChoisi = profil.objectif;
       marquerObjectif();
       marquerGuide();
+      afficherEau();          // l'objectif d'eau dépend du poids
       modeKcal = profil.kcal_perso ? "perso" : "auto";
       $("kcal-perso").value = profil.kcal_perso || "";
       marquerModeKcal();

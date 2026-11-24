@@ -921,3 +921,68 @@ a.fil-qui:hover {
     font-size: 10px;
   }
 }
+
+/* ---------- Défi du mois ---------- */
+.defi-mois {
+  padding: 14px 16px;
+}
+
+.defi-mois .onglets {
+  margin-bottom: 8px;
+}
+
+.defi-ligne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  color: var(--texte);
+  text-decoration: none;
+}
+
+.defi-ligne + .defi-ligne {
+  border-top: 1px solid var(--bordure);
+}
+
+.defi-ligne.moi strong {
+  color: var(--accent);
+}
+
+.defi-corps-ligne {
+  flex: 1;
+  min-width: 0;
+}
+
+.defi-haut {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.defi-haut strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.defi-valeur {
+  flex: 0 0 auto;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.defi-ligne .piste {
+  height: 6px;
+  margin-top: 6px;
+}
+
+.defi-mois-pied {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--bordure);
+}
+
+.champion-moi {
+  font-weight: 800;
+  color: #e09400;
+}
