@@ -620,109 +620,6 @@
   to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
 
-/* ---------- Chrono de repos (au-dessus de la barre du bas) ---------- */
-.chrono {
-  position: fixed;
-  left: 10px;
-  right: 10px;
-  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow: hidden;
-  padding: 10px 10px 10px 16px;
-  background: var(--carte);
-  border: 1px solid var(--accent);
-  border-radius: 18px;
-  box-shadow: var(--ombre);
-}
-
-.chrono[hidden] {
-  display: none;
-}
-
-.chrono-barre {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 4px;
-  background: var(--degrade);
-  transition: width 0.25s linear;
-}
-
-.chrono-texte {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.chrono-titre {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--gris);
-}
-
-#chrono-temps {
-  font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 32px;
-  font-weight: 900;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.chrono-btn {
-  min-width: 46px;
-  height: 42px;
-  padding: 0 10px;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--texte);
-  background: var(--carte-douce);
-  border: 1px solid var(--bordure);
-  border-radius: 12px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.chrono-btn.passer {
-  color: var(--texte-bouton);
-  background: var(--degrade);
-  border: 0;
-}
-
-.chrono.fini {
-  border-color: var(--pull);
-  animation: chrono-fin 0.5s ease 3;
-}
-
-@keyframes chrono-fin {
-  50% { transform: scale(1.03); }
-}
-
-/* Le chrono ne doit pas cacher le bas de la page */
-body.avec-chrono {
-  padding-bottom: calc(160px + env(safe-area-inset-bottom, 0px));
-}
-
-@media (min-width: 900px) {
-  .chrono {
-    left: 50%;
-    right: auto;
-    bottom: 96px;
-    width: 520px;
-    transform: translateX(-50%);
-  }
-
-  .chrono.fini {
-    animation: none;
-  }
-}
-
 /* ---------- Récap de fin de séance ---------- */
 body.sans-defilement {
   overflow: hidden;
@@ -875,8 +772,7 @@ body.sans-defilement {
 @media (prefers-reduced-motion: reduce) {
   .confetti,
   .annonce-record.visible,
-  .recap-carte,
-  .chrono.fini {
+  .recap-carte {
     animation: none;
   }
 }

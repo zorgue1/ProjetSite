@@ -17,6 +17,7 @@
 <body>
   <header class="bandeau" id="entete"></header>
   <script src="../JS/entete.js"></script>
+  <script src="../JS/chrono.js"></script>
 
   <main>
 
@@ -90,18 +91,6 @@
 
   <!-- Nouveau record pendant la séance -->
   <div class="annonce-record" id="annonce-record" role="status" hidden></div>
-
-  <!-- Chrono de repos (apparaît après chaque série validée) -->
-  <div class="chrono" id="chrono" hidden>
-    <span class="chrono-barre" id="chrono-barre"></span>
-    <div class="chrono-texte">
-      <span class="chrono-titre" id="chrono-titre">Repos</span>
-      <strong id="chrono-temps">1:30</strong>
-    </div>
-    <button type="button" class="chrono-btn" id="chrono-moins" aria-label="Retirer 15 secondes">−15</button>
-    <button type="button" class="chrono-btn" id="chrono-plus" aria-label="Ajouter 15 secondes">+15</button>
-    <button type="button" class="chrono-btn passer" id="chrono-passer">Passer</button>
-  </div>
 
   <!-- Récap de fin de séance -->
   <div class="recap-fond" id="recap" hidden>
@@ -252,7 +241,6 @@
       afficherBlocs();
       afficherResultats();
       blocs.forEach(chargerIndice);
-      reprendreChrono();
       confirmer("Séance en cours reprise");
       return true;
     }
@@ -645,7 +633,7 @@
         bloc.series.push({ rep: serie.rep, charge: serie.charge, auto: true });
       }
       afficherBlocs();
-      if (editionId === null) demarrerChrono();
+      if (editionId === null && window.chronoSportApp) window.chronoSportApp.demarrer();   // chrono de repos (chrono.js)
     }
 
     // Résumé affiché quand l'exercice est replié
@@ -1032,103 +1020,6 @@
       return ligne;
     }
 
-    /* ---------- Chrono de repos ---------- */
-
-    // L'heure de fin est gardée sur l'appareil : le chrono continue même si tu changes de page
-    let chrono = null;            // { fin: heure de fin (ms), total: durée (s) }
-    let minuteurChrono = null;
-    let sonChrono = null;
-
-    function dureeRepos() {
-      return lireLocal("repos", 90);
-    }
-
-    function demarrerChrono() {
-      const total = dureeRepos();
-      chrono = { fin: Date.now() + total * 1000, total: total };
-      ecrireLocal("chrono", chrono);
-      // Le son doit être préparé pendant un geste de l'utilisateur (règle des navigateurs)
-      try { sonChrono = sonChrono || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
-      afficherChrono();
-    }
-
-    function reprendreChrono() {
-      const c = lireLocal("chrono", null);
-      if (c && c.fin > Date.now()) {
-        chrono = c;
-        afficherChrono();
-      }
-    }
-
-    function arreterChrono() {
-      clearInterval(minuteurChrono);
-      chrono = null;
-      ecrireLocal("chrono", null);
-      document.getElementById("chrono").hidden = true;
-      document.body.classList.remove("avec-chrono");
-    }
-
-    function bip() {
-      if (!sonChrono) return;
-      try {
-        [0, 0.25, 0.5].forEach(function (decalage, i) {
-          const o = sonChrono.createOscillator();
-          const g = sonChrono.createGain();
-          o.frequency.value = i === 2 ? 1046 : 784;
-          g.gain.setValueAtTime(0.25, sonChrono.currentTime + decalage);
-          g.gain.exponentialRampToValueAtTime(0.001, sonChrono.currentTime + decalage + 0.2);
-          o.connect(g).connect(sonChrono.destination);
-          o.start(sonChrono.currentTime + decalage);
-          o.stop(sonChrono.currentTime + decalage + 0.2);
-        });
-      } catch (e) {}
-    }
-
-    function afficherChrono() {
-      const zone = document.getElementById("chrono");
-      zone.hidden = false;
-      zone.classList.remove("fini");
-      document.body.classList.add("avec-chrono");
-      document.getElementById("chrono-titre").textContent = "Repos";
-      clearInterval(minuteurChrono);
-
-      function tic() {
-        if (!chrono) return;
-        const reste = Math.max(0, Math.ceil((chrono.fin - Date.now()) / 1000));
-        document.getElementById("chrono-temps").textContent =
-          Math.floor(reste / 60) + ":" + String(reste % 60).padStart(2, "0");
-        document.getElementById("chrono-barre").style.width = (reste / chrono.total * 100) + "%";
-        if (reste === 0) {
-          clearInterval(minuteurChrono);
-          zone.classList.add("fini");
-          document.getElementById("chrono-titre").textContent = "C’est reparti";
-          document.getElementById("chrono-temps").textContent = "💪";
-          vibrer([300, 150, 300, 150, 500]);
-          bip();
-          chrono = null;
-          ecrireLocal("chrono", null);
-          setTimeout(function () { if (!chrono) arreterChrono(); }, 5000);
-        }
-      }
-      tic();
-      minuteurChrono = setInterval(tic, 250);
-    }
-
-    // ±15 s : modifie le repos en cours et devient ta durée habituelle
-    function ajusterChrono(secondes) {
-      if (!chrono) return;
-      const total = Math.max(15, Math.min(600, chrono.total + secondes));
-      chrono.fin += (total - chrono.total) * 1000;
-      chrono.total = total;
-      ecrireLocal("chrono", chrono);
-      ecrireLocal("repos", total);
-      afficherChrono();
-    }
-
-    document.getElementById("chrono-moins").addEventListener("click", function () { ajusterChrono(-15); });
-    document.getElementById("chrono-plus").addEventListener("click", function () { ajusterChrono(15); });
-    document.getElementById("chrono-passer").addEventListener("click", arreterChrono);
-
     /* ---------- Récap de fin de séance ---------- */
 
     async function prendreXPAvant() {
@@ -1253,7 +1144,7 @@
         ? "Annuler les modifications ?"
         : "Abandonner cette séance ? Les exercices saisis seront perdus.";
       if (contenu && !(await demander(question, { ok: editionId !== null ? "Annuler les modifications" : "Abandonner", annuler: "Continuer", danger: true }))) return;
-      arreterChrono();
+      if (window.chronoSportApp) window.chronoSportApp.arreter();
       fermerFormulaire();
     });
 
@@ -1312,7 +1203,7 @@
             mettreEnAttente(moiId, donnees, lignes);
             horsLigne = true;
           }
-          arreterChrono();
+          if (window.chronoSportApp) window.chronoSportApp.arreter();
           fermerFormulaire();
           afficherAttente();
           afficherRecap(type, stats, horsLigne);

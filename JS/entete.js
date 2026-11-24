@@ -167,6 +167,10 @@
           '<div class="champ-unite"><input id="ajout-poids" type="number" step="0.1" min="20" max="400" inputmode="decimal"><span>kg</span></div>' +
           '<button type="button" class="btn" id="ajout-poids-ok">Enregistrer</button>' +
         '</div>' +
+      '</div>' +
+      '<div class="ajout-chrono">' +
+        '<div class="ajout-chrono-titre">⏱️ Chrono de repos</div>' +
+        '<div class="chips" id="ajout-chrono-durees"></div>' +
       '</div>';
     fond.appendChild(menu);
 
@@ -178,6 +182,7 @@
     function ouvrir() {
       fond.hidden = false;
       menu.querySelector(".ajout-pesee").hidden = true;
+      afficherDurees();
       bouton.setAttribute("aria-expanded", "true");
       bouton.classList.add("ouvert");
     }
@@ -203,6 +208,27 @@
       });
       grille.appendChild(b);
     });
+
+    // Chrono : une durée = le chrono démarre tout de suite (et devient ta durée habituelle)
+    function afficherDurees() {
+      const zone = menu.querySelector("#ajout-chrono-durees");
+      zone.innerHTML = "";
+      if (!window.chronoSportApp) return;
+      const habituelle = window.chronoSportApp.dureeHabituelle();
+      [45, 60, 90, 120, 180].forEach(function (s) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip";
+        b.textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+        b.setAttribute("aria-pressed", String(s === habituelle));
+        b.addEventListener("click", function () {
+          window.chronoSportApp.choisirDuree(s);
+          window.chronoSportApp.demarrer(s);
+          fermer();
+        });
+        zone.appendChild(b);
+      });
+    }
 
     menu.querySelector("#ajout-poids-ok").addEventListener("click", async function () {
       const champ = menu.querySelector("#ajout-poids");

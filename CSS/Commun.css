@@ -1022,11 +1022,6 @@ body.avec-barre {
   outline-offset: 3px;
 }
 
-/* Le chrono de repos prend la place en bas de l'écran pendant une séance */
-body.avec-chrono .ajout-rapide {
-  display: none;
-}
-
 .ajout-fond {
   position: fixed;
   inset: 0;
@@ -1248,4 +1243,216 @@ body.sans-defilement {
 
 .tuto .btn:disabled {
   opacity: 0.4;
+}
+
+/* ---------- Chrono de repos (commun à toutes les pages) ---------- */
+.chrono {
+  position: fixed;
+  left: 10px;
+  right: 10px;
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 8px 8px;
+  background: var(--carte);
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, var(--bordure));
+  border-radius: 22px;
+  box-shadow: var(--ombre), 0 0 0 4px var(--accent-halo);
+  animation: chrono-entree 0.35s cubic-bezier(0.22, 1.4, 0.36, 1) both;
+}
+
+.chrono[hidden] {
+  display: none;
+}
+
+@keyframes chrono-entree {
+  from { opacity: 0; transform: translateY(24px) scale(0.92); }
+}
+
+/* Anneau qui se vide pendant le repos */
+.chrono-anneau {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+}
+
+.chrono-anneau svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.chrono-anneau circle {
+  fill: none;
+  stroke-width: 6;
+}
+
+.chrono-fond {
+  stroke: var(--carte-douce);
+}
+
+.chrono-plein {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.2s linear, stroke 0.3s;
+}
+
+.chrono-emoji {
+  font-size: 22px;
+  animation: chrono-tic 2s ease-in-out infinite;
+}
+
+@keyframes chrono-tic {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
+
+.chrono-texte {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chrono-titre {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+
+.chrono-temps {
+  font-family: "Big Shoulders Display", Impact, sans-serif;
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.chrono-btn {
+  min-width: 46px;
+  height: 42px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--texte);
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.chrono-btn.passer {
+  color: var(--texte-bouton);
+  background: var(--degrade);
+  border: 0;
+}
+
+/* 5 dernières secondes : l'anneau rougit et le chrono bat comme un cœur */
+.chrono.bientot .chrono-plein {
+  stroke: var(--danger);
+}
+
+.chrono.bientot .chrono-temps {
+  color: var(--danger);
+  animation: chrono-battement 1s ease-in-out infinite;
+}
+
+@keyframes chrono-battement {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.18); }
+}
+
+/* Fin : anneau vert plein, rebond et lueur */
+.chrono.fini {
+  border-color: var(--pull);
+  box-shadow: var(--ombre), 0 0 0 4px color-mix(in srgb, var(--pull) 35%, transparent);
+  animation: chrono-fin 0.6s cubic-bezier(0.22, 1.6, 0.36, 1) 3;
+}
+
+.chrono.fini .chrono-plein {
+  stroke: var(--pull);
+}
+
+.chrono.fini .chrono-temps {
+  color: var(--pull);
+}
+
+.chrono.fini .chrono-emoji {
+  animation: chrono-hop 0.6s ease 3;
+}
+
+@keyframes chrono-fin {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.05) rotate(-1deg); }
+  70% { transform: scale(0.98) rotate(1deg); }
+}
+
+@keyframes chrono-hop {
+  50% { transform: translateY(-6px) scale(1.25); }
+}
+
+/* Pendant le chrono, le bouton ＋ remonte au-dessus de lui */
+body.avec-chrono {
+  padding-bottom: calc(170px + env(safe-area-inset-bottom, 0px));
+}
+
+body.avec-chrono .ajout-rapide {
+  bottom: calc(164px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 900px) {
+  .chrono {
+    left: 50%;
+    right: auto;
+    bottom: 96px;
+    width: 520px;
+    margin-left: -260px;
+  }
+
+  body.avec-chrono .ajout-rapide {
+    bottom: 24px;
+  }
+}
+
+/* Durées du chrono dans le menu ＋ */
+.ajout-chrono {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bordure);
+}
+
+.ajout-chrono-titre {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ajout-chrono .chips {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chrono,
+  .chrono-emoji,
+  .chrono.bientot .chrono-temps,
+  .chrono.fini,
+  .chrono.fini .chrono-emoji {
+    animation: none;
+  }
+}
+
+/* Chrono terminé : plus besoin de −15 / +15 */
+.chrono.fini [data-ajout] {
+  display: none;
 }
