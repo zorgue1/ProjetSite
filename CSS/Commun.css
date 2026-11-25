@@ -1734,3 +1734,50 @@ body.avec-chrono .ajout-rapide {
 .dessin-exo .r-banc { fill: var(--d-banc); }
 .dessin-exo .r-sol { fill: var(--d-sol); }
 .dessin-exo .r-cable { fill: var(--d-cable); }
+
+/* ---------- Bouton « œil » des mots de passe (oeil.js) ---------- */
+.champ-mdp {
+  position: relative;
+}
+
+.champ-mdp input {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.oeil {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--gris);
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transform: translateY(-50%);
+  touch-action: manipulation;
+}
+
+.oeil:hover,
+.oeil[aria-pressed="true"] {
+  color: var(--accent);
+}
+
+.oeil:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.oeil svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
