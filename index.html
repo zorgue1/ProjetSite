@@ -53,6 +53,7 @@
       <a class="btn" href="HTML/Connexion.html#inscription">Créer mon compte</a>
       <a class="btn secondaire" href="HTML/Connexion.html">Se connecter</a>
     </div>
+    <button class="btn-installer-vitrine" id="btn-installer" type="button">📲 Installer l’appli sur mon téléphone</button>
     <p class="mut petit">Gratuit · sur téléphone et ordinateur · s’installe comme une appli</p>
   </header>
 
@@ -84,5 +85,13 @@
   <footer class="mut petit">
     SportApp · projet personnel · photo : Victor Freitas (Unsplash)
   </footer>
+  <script src="JS/installer.js"></script>
+  <script>
+    document.getElementById("btn-installer").addEventListener("click", ouvrirGuideInstallation);
+    // Arrivé depuis Insta, Snap… : on explique tout de suite comment ouvrir le vrai navigateur
+    if (appareil().integre && !appliInstallee()) setTimeout(ouvrirGuideInstallation, 600);
+    // Déjà installée : le bouton ne sert à rien
+    if (appliInstallee()) document.getElementById("btn-installer").hidden = true;
+  </script>
 </body>
 </html>

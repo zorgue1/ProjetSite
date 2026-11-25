@@ -168,6 +168,7 @@
   <script src="../JS/supabase.js"></script>
   <script src="../JS/donnees.js"></script>
   <script src="../JS/tutoriel.js"></script>
+  <script src="../JS/installer.js"></script>
   <script>
     const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
     const LETTRES = ["L", "M", "M", "J", "V", "S", "D"];
@@ -453,9 +454,9 @@
     function afficherInstallation() {
       const zone = document.getElementById("zone-installer");
       zone.innerHTML = "";
-      if (estInstallee() || localStorage.getItem("sportapp:installer-ferme")) return;
-      const iphone = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      if (!invitationInstallation && !iphone) return;     // pas proposé par ce navigateur (pour l'instant)
+      if (appliInstallee() || localStorage.getItem("sportapp:installer-ferme")) return;
+      const a = appareil();
+      if (!a.ios && !a.android) return;     // sur ordinateur, pas de carte
 
       const carte = el("div", "installer");
       const icone = document.createElement("img");
@@ -465,22 +466,13 @@
       carte.appendChild(icone);
       const texte = el("div", "installer-texte");
       texte.appendChild(el("strong", "", "Installe SportApp"));
-      texte.appendChild(el("span", "", iphone
-        ? "Touche Partager (le carré avec la flèche ⬆️) puis « Sur l’écran d’accueil »."
-        : "Une icône sur ton écran, en plein écran, sans passer par le navigateur."));
+      texte.appendChild(el("span", "", "Une icône sur ton écran, en plein écran, avec les notifications."));
       carte.appendChild(texte);
 
-      if (!iphone) {
-        const bouton = el("button", "btn", "Installer");
-        bouton.type = "button";
-        bouton.addEventListener("click", async function () {
-          invitationInstallation.prompt();
-          const choix = await invitationInstallation.userChoice;
-          invitationInstallation = null;
-          if (choix.outcome === "accepted") zone.innerHTML = "";
-        });
-        carte.appendChild(bouton);
-      }
+      const bouton = el("button", "btn", "Comment ?");
+      bouton.type = "button";
+      bouton.addEventListener("click", ouvrirGuideInstallation);
+      carte.appendChild(bouton);
       const fermer = el("button", "installer-fermer", "×");
       fermer.type = "button";
       fermer.setAttribute("aria-label", "Ne plus proposer");
@@ -491,7 +483,6 @@
       carte.appendChild(fermer);
       zone.appendChild(carte);
     }
-    document.addEventListener("installation-possible", afficherInstallation);
 
     /* ---------- Chargement ---------- */
 

@@ -1460,3 +1460,214 @@ body.avec-chrono .ajout-rapide {
 .chrono.fini [data-ajout] {
   display: none;
 }
+
+/* ---------- Guide d'installation sur le téléphone ---------- */
+.installation-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 92;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: fondu 0.15s ease both;
+}
+
+.installation {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 520px);
+  max-height: 94vh;
+  max-height: 94dvh;
+  padding: 18px 18px calc(16px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  box-shadow: var(--ombre);
+  animation: installation-entree 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes installation-entree {
+  from { transform: translateY(100%); }
+}
+
+@media (min-width: 600px) {
+  .installation-fond { align-items: center; }
+  .installation { border-bottom: 1px solid var(--bordure); border-radius: 22px; }
+}
+
+.installation-tete {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.installation-icone {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+}
+
+.installation-tete > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.installation-tete h2 {
+  margin: 0;
+}
+
+.installation-tete p {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+
+.installation-fermer {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  font: inherit;
+  color: var(--gris);
+  background: var(--carte-douce);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.installation-corps {
+  margin-top: 14px;
+}
+
+.installation-onglets {
+  margin-bottom: 4px;
+}
+
+.installation-etapes {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.installation-etapes li {
+  display: grid;
+  grid-template-columns: 26px 44px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.installation-etapes li + li {
+  border-top: 1px solid var(--bordure);
+}
+
+.installation-numero {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--texte-bouton);
+  background: var(--degrade);
+  border-radius: 50%;
+}
+
+/* Le pictogramme ressemble au bouton à toucher sur le téléphone */
+.installation-pictogramme {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+}
+
+.installation-pictogramme svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: #0a84ff;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.installation-pictogramme svg circle {
+  fill: #0a84ff;
+  stroke: none;
+}
+
+.installation-texte {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.installation-texte span {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--gris);
+}
+
+.installation-note {
+  margin: 10px 0 0;
+}
+
+.lien-bouton {
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.installation-alerte {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  font-size: 14px;
+  background: color-mix(in srgb, #ffb020 14%, transparent);
+  border: 1px solid color-mix(in srgb, #ffb020 50%, transparent);
+  border-radius: 14px;
+}
+
+.installation-alerte .btn {
+  justify-self: start;
+  margin: 0;
+}
+
+.installation-direct {
+  width: 100%;
+  margin: 0;
+  font-size: 17px;
+}
+
+.installation-ou {
+  margin: 12px 0 6px;
+  text-align: center;
+}
+
+.installation-ok,
+.installation-ordi {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  font-size: 14px;
+  background: var(--carte-douce);
+  border-radius: 14px;
+}
+
+.installation-compris {
+  width: 100%;
+  margin: 16px 0 0;
+}

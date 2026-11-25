@@ -1122,16 +1122,3 @@ verifierSession();
 window.addEventListener("online", envoyerSeancesEnAttente);
 setTimeout(envoyerSeancesEnAttente, 1500);
 
-/* ---------- Installation de l'appli ---------- */
-
-// Android / ordinateur : le navigateur propose l'installation, on la garde pour notre bouton « Installer »
-let invitationInstallation = null;
-window.addEventListener("beforeinstallprompt", function (e) {
-  e.preventDefault();
-  invitationInstallation = e;
-  document.dispatchEvent(new Event("installation-possible"));
-});
-
-function estInstallee() {
-  return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-}
