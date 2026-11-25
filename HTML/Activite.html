@@ -49,6 +49,21 @@
         <option value="Cardio">
       </datalist>
 
+      <!-- Échauffement : facultatif, replié ; il ne compte ni dans les records, ni dans l'XP, ni dans le tonnage -->
+      <details class="echauffement" id="echauffement">
+        <summary>
+          <span class="echauffement-titre">🔥 Échauffement</span>
+          <span class="mut" id="echauffement-resume">facultatif</span>
+          <span class="chevron" aria-hidden="true">›</span>
+        </summary>
+        <div class="echauffement-corps">
+          <textarea id="echauffement-note" rows="2" maxlength="500" placeholder="Ex. : mobilité des épaules, rotations, élastiques…" aria-label="Note d’échauffement"></textarea>
+          <div id="blocs-echauffement" role="group" aria-label="Exercices d’échauffement"></div>
+          <button class="btn secondaire ajout-exo" id="btn-ajout-echauffement" type="button">+ Cardio ou séries d’approche</button>
+          <p class="mut petit">Ne compte pas dans tes records, ton XP ni ton tonnage.</p>
+        </div>
+      </details>
+
       <label id="label-exercices">Exercices</label>
       <div id="blocs" role="group" aria-labelledby="label-exercices"></div>
 
@@ -119,6 +134,7 @@
     let rechercheMuscle = "Tous";
     let programme = PROGRAMME_DEFAUT;
 
+    let pourEchauffement = false; // la liste d'exercices a été ouverte depuis l'échauffement
     let moiId = null;            // identifiant de l'utilisateur connecté
     let editionId = null;        // séance en cours de modification (null = nouvelle séance)
     let debutSeance = null;      // heure de début de la séance (pour le récap)
@@ -136,7 +152,44 @@
       return parseFloat(String(v).replace(",", ".")) || 0;
     }
 
-    const FILTRES = ["Tous", "Push", "Pull", "Leg", "Autres"];
+    const FILTRES = ["Tous", "Push", "Pull", "Leg", "Cardio", "Autres"];
+
+    /* ---------- Cardio : une « série » = durée, distance, vitesse… (textes dans les champs) ---------- */
+
+    function nouvelleSerie(exercice) {
+      return estCardio(exercice)
+        ? { duree: "", distance: "", vitesse: "", inclinaison: "", resistance: "", calories: "" }
+        : { rep: "", charge: "" };
+    }
+
+    // Série saisie (textes) → valeurs pour l'affichage et l'enregistrement
+    function valeursCardio(s) {
+      const v = {
+        duree_s: Math.round(nombre(s.duree) * 60),
+        distance_km: nombre(s.distance),
+        inclinaison: nombre(s.inclinaison),
+        resistance: nombre(s.resistance),
+        calories: Math.round(nombre(s.calories))
+      };
+      v.vitesse = nombre(s.vitesse) || (v.distance_km > 0 && v.duree_s > 0 ? Math.round(v.distance_km / (v.duree_s / 3600) * 10) / 10 : 0);
+      return v;
+    }
+
+    // Série enregistrée (nombres) → champs du formulaire
+    function champsDepuisCardio(s) {
+      function t(v) { return v > 0 ? String(Math.round(v * 10) / 10) : ""; }
+      return {
+        duree: s.duree_s > 0 ? String(Math.round(s.duree_s / 6) / 10) : "",
+        distance: t(s.distance_km), vitesse: t(s.vitesse), inclinaison: t(s.inclinaison),
+        resistance: t(s.resistance), calories: t(s.calories)
+      };
+    }
+
+    function texteSerieSaisie(bloc, s) {
+      return estCardio(bloc.exercice)
+        ? texteCardio(valeursCardio(s))
+        : texteSerie({ repetitions: parseInt(s.rep, 10) || 0, charge: nombre(s.charge) });
+    }
 
     function dateCourte(texte) {
       return new Date(texte + "T12:00:00").toLocaleDateString("fr-FR", {
@@ -162,6 +215,7 @@
       if (t.startsWith("push")) return "Push";
       if (t.startsWith("pull")) return "Pull";
       if (t.startsWith("leg")) return "Leg";
+      if (t.startsWith("cardio")) return "Cardio";
       return "Autres";
     }
 
@@ -188,8 +242,9 @@
     function sauverBrouillon() {
       if (editionId !== null || !moiId) return;
       const notes = document.getElementById("notes").value;
+      const noteEchauffement = document.getElementById("echauffement-note").value;
 
-      if (blocs.length === 0 && notes.trim() === "") {
+      if (blocs.length === 0 && notes.trim() === "" && noteEchauffement.trim() === "") {
         effacerBrouillon();
         return;
       }
@@ -198,6 +253,7 @@
         date: document.getElementById("date").value,
         type: document.getElementById("type").value,
         notes: notes,
+        echauffement: noteEchauffement,
         debut: debutSeance,
         blocs: blocs.map(function (b) {
           return {
@@ -206,7 +262,8 @@
               muscle: b.exercice.muscle, groupe: b.exercice.groupe
             },
             series: b.series,
-            ouvert: b.ouvert
+            ouvert: b.ouvert,
+            echauffement: !!b.echauffement
           };
         })
       };
@@ -216,7 +273,7 @@
     // Reprend la séance commencée avant de quitter la page
     function restaurerBrouillon() {
       const b = lireBrouillon();
-      if (!b || !((b.blocs && b.blocs.length) || b.notes)) return false;
+      if (!b || !((b.blocs && b.blocs.length) || b.notes || b.echauffement)) return false;
 
       editionId = null;
       majTitres();
@@ -225,6 +282,7 @@
       document.getElementById("date").value = b.date || aujourdhui();
       document.getElementById("type").value = b.type || "";
       document.getElementById("notes").value = b.notes || "";
+      document.getElementById("echauffement-note").value = b.echauffement || "";
       debutSeance = b.debut || Date.now();
       prendreXPAvant();
 
@@ -232,12 +290,14 @@
         const biblio = exercices.find(function (e) { return e.id === x.exercice.id; }) || x.exercice;
         return {
           exercice: biblio,
-          series: x.series && x.series.length ? x.series : [{ rep: "", charge: "" }],
+          series: x.series && x.series.length ? x.series : [nouvelleSerie(biblio)],
           indice: null,
           record: null,
-          ouvert: !!x.ouvert
+          ouvert: !!x.ouvert,
+          echauffement: !!x.echauffement
         };
       });
+      majEchauffement(true);
 
       afficherChipsType();
       afficherBlocs();
@@ -251,7 +311,7 @@
 
     // Push, Pull, Leg et ce qui est écrit dans ton programme (hand, natation…)
     function typesProposes() {
-      const liste = ["Push", "Pull", "Leg"];
+      const liste = ["Push", "Pull", "Leg", "Cardio"];
       programme.forEach(function (p) {
         const dejaLa = liste.some(function (t) { return normaliser(t) === normaliser(p); });
         if (!estRepos(p) && !dejaLa) liste.push(p);
@@ -307,7 +367,9 @@
       document.getElementById("btn-nouvelle").hidden = true;
       document.getElementById("date").value = aujourdhui();
       document.getElementById("notes").value = "";
+      document.getElementById("echauffement-note").value = "";
       blocs = [];
+      majEchauffement(true);
       debutSeance = Date.now();
       prendreXPAvant();
 
@@ -325,7 +387,7 @@
     async function peutEditer() {
       if (document.getElementById("formulaire").hidden) return true;
       if (editionId !== null) return demander("Abandonner les modifications en cours ?", { ok: "Abandonner", danger: true });
-      if (blocs.length > 0 || document.getElementById("notes").value.trim() !== "") {
+      if (formulaireRempli()) {
         informer("Termine ou annule d’abord la séance en cours.");
         return false;
       }
@@ -343,20 +405,24 @@
       document.getElementById("date").value = s.date;
       document.getElementById("type").value = s.type;
       document.getElementById("notes").value = s.notes || "";
+      document.getElementById("echauffement-note").value = s.echauffement_note || "";
 
       blocs = exos.map(function (ex) {
         const biblio = exercices.find(function (e) { return e.id === ex.exercice_id; }) ||
-          { id: ex.exercice_id, nom: ex.nom, image_url: ex.image_url, muscle: "", groupe: "" };
+          { id: ex.exercice_id, nom: ex.nom, image_url: ex.image_url, muscle: ex.muscle || "", groupe: "" };
         return {
           exercice: biblio,
           series: ex.series.map(function (x) {
+            if (estCardio(biblio) || x.duree_s > 0) return Object.assign(champsDepuisCardio(x), { faite: true });
             return { rep: String(x.repetitions), charge: x.charge > 0 ? String(x.charge) : "", faite: true };
           }),
           indice: null,
           record: null,
-          ouvert: false
+          ouvert: false,
+          echauffement: !!ex.echauffement
         };
       });
+      majEchauffement(true);
 
       fermerPanneau();
       afficherChipsType();
@@ -371,8 +437,10 @@
       document.getElementById("btn-nouvelle").hidden = false;
       document.getElementById("type").value = "";
       document.getElementById("notes").value = "";
+      document.getElementById("echauffement-note").value = "";
       document.getElementById("recherche-exo").value = "";
       blocs = [];
+      majEchauffement(true);
       fermerPanneau();
       afficherBlocs();
       afficherResultats();
@@ -393,20 +461,57 @@
       afficherResultats();
     }
 
-    function ouvrirPanneau() {
-      document.getElementById("picker-panneau").hidden = false;
-      document.getElementById("btn-ajout-exo").textContent = "Fermer la liste";
+    // La liste d'exercices s'ouvre sous le bouton touché : séance ou échauffement
+    function ouvrirPanneau(echauffement) {
+      pourEchauffement = !!echauffement;
+      const panneau = document.getElementById("picker-panneau");
+      const bouton = document.getElementById(pourEchauffement ? "btn-ajout-echauffement" : "btn-ajout-exo");
+      bouton.insertAdjacentElement("afterend", panneau);
+      panneau.hidden = false;
+      majBoutonsAjout();
+      afficherResultats();
       document.getElementById("recherche-exo").focus();
     }
 
     function fermerPanneau() {
       document.getElementById("picker-panneau").hidden = true;
-      document.getElementById("btn-ajout-exo").textContent = "+ Ajouter un exercice";
+      majBoutonsAjout();
+    }
+
+    function majBoutonsAjout() {
+      const ouvert = !document.getElementById("picker-panneau").hidden;
+      document.getElementById("btn-ajout-exo").textContent = ouvert && !pourEchauffement ? "Fermer la liste" : "+ Ajouter un exercice";
+      document.getElementById("btn-ajout-echauffement").textContent = ouvert && pourEchauffement ? "Fermer la liste" : "+ Cardio ou séries d’approche";
     }
 
     document.getElementById("btn-ajout-exo").addEventListener("click", function () {
-      if (document.getElementById("picker-panneau").hidden) ouvrirPanneau();
+      if (document.getElementById("picker-panneau").hidden || pourEchauffement) ouvrirPanneau(false);
       else fermerPanneau();
+    });
+    document.getElementById("btn-ajout-echauffement").addEventListener("click", function () {
+      if (document.getElementById("picker-panneau").hidden || !pourEchauffement) ouvrirPanneau(true);
+      else fermerPanneau();
+    });
+
+    // Quelque chose de saisi dans le formulaire ?
+    function formulaireRempli() {
+      return blocs.length > 0 || document.getElementById("notes").value.trim() !== "" ||
+        document.getElementById("echauffement-note").value.trim() !== "";
+    }
+
+    // Résumé de l'échauffement (sur la ligne repliée) ; ouvert d'office s'il contient quelque chose
+    function majEchauffement(ouvrirSiRempli) {
+      const nb = blocs.filter(function (b) { return b.echauffement; }).length;
+      const note = document.getElementById("echauffement-note").value.trim();
+      const resume = [];
+      if (nb) resume.push(nb + " exercice" + (nb > 1 ? "s" : ""));
+      if (note) resume.push("note");
+      document.getElementById("echauffement-resume").textContent = resume.length ? resume.join(" · ") : "facultatif";
+      if (ouvrirSiRempli) document.getElementById("echauffement").open = resume.length > 0;
+    }
+    document.getElementById("echauffement-note").addEventListener("input", function () {
+      majEchauffement(false);
+      sauverBrouillon();
     });
 
     // Pastilles : seulement les muscles qui ont au moins un exercice
@@ -459,7 +564,7 @@
           zone.appendChild(el("div", "resultat-titre", ex.muscle));
         }
 
-        const deja = blocs.some(function (b) { return b.exercice.id === ex.id; });
+        const deja = blocs.some(function (b) { return b.exercice.id === ex.id && !!b.echauffement === pourEchauffement; });
         const ligne = el("button", "resultat");
         ligne.type = "button";
         ligne.disabled = deja;
@@ -480,7 +585,7 @@
     // Ce qui avait été fait la dernière fois et les records de l'exercice (pas pour une modification).
     // Une copie est gardée sur l'appareil : sans réseau, on s'en sert.
     async function chargerIndice(bloc) {
-      if (editionId !== null) return;
+      if (editionId !== null || bloc.echauffement) return;
       const copie = lireLocal("infos-exos", {});
       let infos = copie[bloc.exercice.id] || null;
       try {
@@ -491,7 +596,7 @@
       if (!infos || blocs.indexOf(bloc) === -1) return;
       bloc.indice = infos.indice;
       // Les séries déjà validées dans cette séance comptent aussi
-      bloc.record = { charge: infos.record.charge, e1rm: infos.record.e1rm };
+      bloc.record = Object.assign({ charge: 0, e1rm: 0, duree: 0, distance: 0, vitesse: 0 }, infos.record);
       bloc.series.forEach(function (s) { if (s.faite) majRecord(bloc, s); });
       // On ne reconstruit pas la liste si tu es en train de saisir un chiffre
       if (document.getElementById("blocs").contains(document.activeElement)) return;
@@ -499,20 +604,22 @@
     }
 
     function ajouterBloc(exercice) {
-      if (blocs.some(function (b) { return b.exercice.id === exercice.id; })) return;
+      const echauffement = pourEchauffement;
+      if (blocs.some(function (b) { return b.exercice.id === exercice.id && !!b.echauffement === echauffement; })) return;
 
       // Les exercices précédents se replient, le nouveau s'ouvre
       blocs.forEach(function (b) { b.ouvert = false; });
-      const bloc = { exercice: exercice, series: [{ rep: "", charge: "" }], indice: null, record: null, ouvert: true };
+      const bloc = { exercice: exercice, series: [nouvelleSerie(exercice)], indice: null, record: null, ouvert: true, echauffement: echauffement };
       blocs.push(bloc);
 
       document.getElementById("recherche-exo").value = "";
       fermerPanneau();
       afficherBlocs();
       afficherResultats();
+      majEchauffement(false);
 
-      const cartes = document.querySelectorAll(".bloc-exo");
-      cartes[cartes.length - 1].scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const cartes = document.querySelectorAll(echauffement ? "#blocs-echauffement .bloc-exo" : "#blocs .bloc-exo");
+      if (cartes.length) cartes[cartes.length - 1].scrollIntoView({ behavior: "smooth", block: "nearest" });
       chargerIndice(bloc);
     }
 
@@ -528,11 +635,12 @@
 
     /* ---------- Exercices de la séance (liste repliable) ---------- */
 
-    // Séries qui seront enregistrées : au moins une répétition.
+    // Séries qui seront enregistrées : au moins une répétition (muscu) ou une durée (cardio).
     // Une série ajoutée toute seule après une validation (auto) ne compte que si tu la valides ou la modifies.
     function seriesValides(bloc) {
       return bloc.series.filter(function (s) {
-        return parseInt(s.rep, 10) > 0 && !(s.auto && !s.faite);
+        if (s.auto && !s.faite) return false;
+        return estCardio(bloc.exercice) ? nombre(s.duree) > 0 : parseInt(s.rep, 10) > 0;
       });
     }
 
@@ -540,7 +648,8 @@
 
     // Met à jour le record de l'exercice avec cette série ; renvoie le type de record battu (ou "")
     function majRecord(bloc, serie) {
-      if (!bloc.record) return "";
+      if (!bloc.record || bloc.echauffement) return "";
+      if (estCardio(bloc.exercice)) return majRecordCardio(bloc, serie);
       const charge = nombre(serie.charge);
       const reps = parseInt(serie.rep, 10) || 0;
       if (charge <= 0 || reps <= 0) return "";
@@ -555,15 +664,39 @@
       return avaitHistorique ? type : "";
     }
 
+    // Cardio : plus longue distance, plus longue durée, meilleure vitesse moyenne
+    function majRecordCardio(bloc, serie) {
+      const v = valeursCardio(serie);
+      const r = bloc.record;
+      const avaitHistorique = r.duree > 0;
+      let type = "";
+      if (v.distance_km > 0 && r.distance > 0 && v.distance_km > r.distance + 0.001) type = "distance";
+      else if (v.duree_s > r.duree && r.duree > 0) type = "duree";
+      else if (v.vitesse > 0 && r.vitesse > 0 && v.vitesse > r.vitesse + 0.05) type = "vitesse";
+      r.distance = Math.max(r.distance, v.distance_km);
+      r.duree = Math.max(r.duree, v.duree_s);
+      r.vitesse = Math.max(r.vitesse, v.vitesse);
+      return avaitHistorique ? type : "";
+    }
+
+    function texteRecord(bloc, serie, type) {
+      if (estCardio(bloc.exercice)) {
+        const v = valeursCardio(serie);
+        if (type === "distance") return "plus longue distance : " + nbFr(v.distance_km) + " km";
+        if (type === "duree") return "plus longue durée : " + texteDuree(v.duree_s);
+        return "meilleure vitesse moyenne : " + nbFr(v.vitesse) + " km/h";
+      }
+      return type === "charge"
+        ? "charge la plus lourde : " + nb(nombre(serie.charge)) + " kg"
+        : texteSerieSaisie(bloc, serie) + " (1RM estimé ≈ " + nb(nombre(serie.charge) * (1 + parseInt(serie.rep, 10) / 30)) + " kg)";
+    }
+
     let minuteurAnnonce = null;
     function annoncerRecord(bloc, serie, type) {
       const zone = document.getElementById("annonce-record");
       zone.innerHTML = "";
       zone.appendChild(el("strong", "", "🎉 Nouveau record !"));
-      zone.appendChild(el("span", "", bloc.exercice.nom + " · " + (type === "charge"
-        ? "charge la plus lourde : " + nb(nombre(serie.charge)) + " kg"
-        : texteSerie({ repetitions: parseInt(serie.rep, 10), charge: nombre(serie.charge) }) +
-          " (1RM estimé ≈ " + nb(nombre(serie.charge) * (1 + parseInt(serie.rep, 10) / 30)) + " kg)")));
+      zone.appendChild(el("span", "", bloc.exercice.nom + " · " + texteRecord(bloc, serie, type)));
       zone.hidden = false;
       zone.classList.remove("visible");
       void zone.offsetWidth;          // relance l'animation
@@ -575,7 +708,7 @@
 
     /* ---------- Saisie d'une série ---------- */
 
-    // Champ avec gros boutons − et + (pas : 1 répétition ou 2,5 kg)
+    // Champ avec gros boutons − et + (pas : 1 répétition, 2,5 kg, 5 minutes…)
     function stepper(libelle, serie, cle, pas, mode, suggestion, quandChange) {
       const bloc = el("div", "stepper");
       bloc.appendChild(el("span", "stepper-libelle", libelle));
@@ -583,7 +716,7 @@
       const moins = el("button", "stepper-btn", "−");
       moins.type = "button";
       moins.setAttribute("aria-label", "Moins " + pas + " " + libelle);
-      const champ = champNombre(libelle, serie[cle], mode, cle === "rep" ? "1" : "0.5");
+      const champ = champNombre(libelle, serie[cle], mode, cle === "rep" || mode === "numeric" ? "1" : "0.1");
       if (suggestion !== "" && suggestion !== undefined) champ.placeholder = String(suggestion).replace(".", ",");
       const plus = el("button", "stepper-btn", "+");
       plus.type = "button";
@@ -615,56 +748,91 @@
 
     // ✓ Valider : la série est faite → chrono de repos, record éventuel, série suivante préparée
     function validerSerie(bloc, serie, avant) {
-      // Rien de saisi : on reprend ce que tu as fait la dernière fois
-      if (serie.rep === "" && avant) serie.rep = String(avant.repetitions);
-      if (serie.charge === "" && avant && avant.charge > 0) serie.charge = String(avant.charge);
-      if (!(parseInt(serie.rep, 10) > 0)) {
-        informer("Indique le nombre de répétitions de la série.");
-        return;
+      const cardio = estCardio(bloc.exercice);
+      if (cardio) {
+        // Rien de saisi : on reprend ce que tu as fait la dernière fois
+        if (serie.duree === "" && avant && avant.duree_s > 0) {
+          const precedent = champsDepuisCardio(avant);
+          Object.keys(precedent).forEach(function (k) { if (serie[k] === "") serie[k] = precedent[k]; });
+        }
+        if (!(nombre(serie.duree) > 0)) {
+          informer("Indique la durée (en minutes).");
+          return;
+        }
+        // Vitesse calculée si tu as donné la distance mais pas la vitesse
+        if (serie.vitesse === "" && valeursCardio(serie).vitesse > 0 && champsCardio(bloc.exercice.nom).indexOf("vitesse") !== -1) {
+          serie.vitesse = String(valeursCardio(serie).vitesse);
+        }
+      } else {
+        if (serie.rep === "" && avant) serie.rep = String(avant.repetitions);
+        if (serie.charge === "" && avant && avant.charge > 0) serie.charge = String(avant.charge);
+        if (!(parseInt(serie.rep, 10) > 0)) {
+          informer("Indique le nombre de répétitions de la série.");
+          return;
+        }
       }
       serie.faite = true;
       serie.auto = false;
 
       const type = editionId === null ? majRecord(bloc, serie) : "";
       serie.record = !!type;
+      serie.typeRecord = type;
       if (type) annoncerRecord(bloc, serie, type);
       else vibrer(30);
 
-      // La série suivante est préparée avec les mêmes valeurs
-      if (bloc.series[bloc.series.length - 1] === serie) {
+      // Muscu : la série suivante est préparée avec les mêmes valeurs, et le chrono de repos démarre
+      if (!cardio && bloc.series[bloc.series.length - 1] === serie) {
         bloc.series.push({ rep: serie.rep, charge: serie.charge, auto: true });
       }
       afficherBlocs();
-      if (editionId === null && window.chronoSportApp) window.chronoSportApp.demarrer();   // chrono de repos (chrono.js)
+      if (!cardio && !bloc.echauffement && editionId === null && window.chronoSportApp) window.chronoSportApp.demarrer();   // chrono.js
     }
 
     // Résumé affiché quand l'exercice est replié
     function resumeBloc(bloc) {
       const valides = seriesValides(bloc);
-      if (valides.length === 0) return "Aucune série saisie";
-
-      function texte(s) {
-        return texteSerie({
-          repetitions: parseInt(s.rep, 10),
-          charge: parseFloat(String(s.charge).replace(",", ".")) || 0
-        });
+      if (valides.length === 0) return estCardio(bloc.exercice) ? "Rien de saisi" : "Aucune série saisie";
+      if (estCardio(bloc.exercice)) {
+        return valides.map(function (s) { return texteSerieSaisie(bloc, s); }).join(" + ");
       }
-      const premiere = texte(valides[0]);
-      const derniere = texte(valides[valides.length - 1]);
+      const premiere = texteSerieSaisie(bloc, valides[0]);
+      const derniere = texteSerieSaisie(bloc, valides[valides.length - 1]);
       return valides.length + " série" + (valides.length > 1 ? "s" : "") + " · " +
         (premiere === derniere ? premiere : premiere + " → " + derniere);
     }
 
+    // Les réglages d'une série : Reps / kg (muscu) ou durée, distance… (cardio)
+    function reglagesSerie(bloc, serie, avant, quandChange) {
+      const reglages = el("div", "serie-reglages" + (estCardio(bloc.exercice) ? " cardio" : ""));
+      if (!estCardio(bloc.exercice)) {
+        reglages.appendChild(stepper("Reps", serie, "rep", 1, "numeric", avant ? avant.repetitions : "", quandChange));
+        reglages.appendChild(stepper("kg", serie, "charge", 2.5, "decimal", avant && avant.charge > 0 ? avant.charge : "", quandChange));
+        return reglages;
+      }
+      const precedent = avant && avant.duree_s > 0 ? champsDepuisCardio(avant) : {};
+      champsCardio(bloc.exercice.nom).forEach(function (cle) {
+        const c = CHAMPS_CARDIO[cle];
+        let suggestion = precedent[cle] || "";
+        // Vitesse : calculée à partir de la durée et de la distance déjà saisies
+        if (cle === "vitesse" && valeursCardio(serie).vitesse > 0 && serie.vitesse === "") suggestion = valeursCardio(serie).vitesse;
+        reglages.appendChild(stepper(c.libelle, serie, cle, c.pas, c.mode, suggestion, quandChange));
+      });
+      return reglages;
+    }
+
     function afficherBlocs() {
       const zone = document.getElementById("blocs");
+      const zoneEchauffement = document.getElementById("blocs-echauffement");
       zone.innerHTML = "";
+      zoneEchauffement.innerHTML = "";
 
-      if (blocs.length === 0) {
+      if (!blocs.some(function (b) { return !b.echauffement; })) {
         zone.appendChild(el("p", "mut aucun-exo", "Aucun exercice ajouté pour l’instant."));
       }
 
       blocs.forEach(function (bloc, i) {
-        const carte = el("div", "bloc-exo" + (bloc.ouvert ? " ouvert" : ""));
+        const cardio = estCardio(bloc.exercice);
+        const carte = el("div", "bloc-exo" + (bloc.ouvert ? " ouvert" : "") + (cardio ? " cardio" : ""));
 
         // Ligne repliable : photo, nom, résumé
         const tete = el("div", "bloc-tete");
@@ -693,6 +861,7 @@
           blocs.splice(i, 1);
           afficherBlocs();
           afficherResultats();
+          majEchauffement(false);
         });
         tete.appendChild(retirer);
         carte.appendChild(tete);
@@ -710,6 +879,7 @@
             reprendre.type = "button";
             reprendre.addEventListener("click", function () {
               bloc.series = bloc.indice.series.map(function (s) {
+                if (cardio) return champsDepuisCardio(s);
                 return { rep: String(s.repetitions), charge: s.charge > 0 ? String(s.charge) : "" };
               });
               afficherBlocs();
@@ -719,6 +889,7 @@
           }
 
           const precedentes = bloc.indice ? bloc.indice.series : [];
+          const nom = cardio ? "Partie" : "Série";
           bloc.series.forEach(function (serie, j) {
             const avant = precedentes[j];
 
@@ -727,12 +898,10 @@
               const ligne = el("button", "serie-faite" + (serie.record ? " record" : ""));
               ligne.type = "button";
               ligne.appendChild(el("span", "num-serie ok", "✓"));
-              ligne.appendChild(el("span", "serie-valeurs", texteSerie({
-                repetitions: parseInt(serie.rep, 10) || 0, charge: nombre(serie.charge)
-              })));
+              ligne.appendChild(el("span", "serie-valeurs", texteSerieSaisie(bloc, serie)));
               if (serie.record) ligne.appendChild(el("span", "badge-record", "🏆 Record"));
               ligne.appendChild(el("span", "serie-modifier", "Modifier"));
-              ligne.setAttribute("aria-label", "Série " + (j + 1) + " faite, toucher pour la modifier");
+              ligne.setAttribute("aria-label", nom + " " + (j + 1) + " faite, toucher pour la modifier");
               ligne.addEventListener("click", function () {
                 serie.faite = false;
                 afficherBlocs();
@@ -744,14 +913,15 @@
             // Série à faire : gros boutons − / + et ✓ Valider
             const carteSerie = el("div", "serie-edition");
             const haut = el("div", "serie-haut");
-            haut.appendChild(el("strong", "", "Série " + (j + 1)));
-            if (avant) haut.appendChild(el("span", "serie-avant", "Dernière fois : " + texteSerie(avant)));
+            haut.appendChild(el("strong", "", cardio && bloc.series.length === 1 ? "Aujourd’hui" : nom + " " + (j + 1)));
+            // (En cardio, « Dernière fois » est déjà rappelé au-dessus)
+            if (avant && !cardio) haut.appendChild(el("span", "serie-avant", "Dernière fois : " + texteSerie(avant)));
             const supprimer = el("button", "btn-mini", "✕");
             supprimer.type = "button";
-            supprimer.setAttribute("aria-label", "Supprimer la série " + (j + 1));
+            supprimer.setAttribute("aria-label", "Supprimer : " + nom.toLowerCase() + " " + (j + 1));
             supprimer.addEventListener("click", function () {
               bloc.series.splice(j, 1);
-              if (bloc.series.length === 0) bloc.series.push({ rep: "", charge: "" });
+              if (bloc.series.length === 0) bloc.series.push(nouvelleSerie(bloc.exercice));
               afficherBlocs();
             });
             haut.appendChild(supprimer);
@@ -761,24 +931,21 @@
               resume.textContent = resumeBloc(bloc);
               sauverBrouillon();
             }
-            const reglages = el("div", "serie-reglages");
-            reglages.appendChild(stepper("Reps", serie, "rep", 1, "numeric", avant ? avant.repetitions : "", quandChange));
-            reglages.appendChild(stepper("kg", serie, "charge", 2.5, "decimal", avant && avant.charge > 0 ? avant.charge : "", quandChange));
-            carteSerie.appendChild(reglages);
+            carteSerie.appendChild(reglagesSerie(bloc, serie, avant, quandChange));
 
-            const valider = el("button", "btn valider-serie", "✓ Valider la série " + (j + 1));
+            const valider = el("button", "btn valider-serie", cardio ? "✓ Valider" : "✓ Valider la série " + (j + 1));
             valider.type = "button";
             valider.addEventListener("click", function () { validerSerie(bloc, serie, avant); });
             carteSerie.appendChild(valider);
             corps.appendChild(carteSerie);
           });
 
-          // Ajouter une série (copie les valeurs de la précédente)
-          const ajout = el("button", "btn-suppr", "+ Série");
+          // Ajouter une série (copie les valeurs de la précédente) ; en cardio, une nouvelle partie vide
+          const ajout = el("button", "btn-suppr", cardio ? "+ Ajouter une partie" : "+ Série");
           ajout.type = "button";
           ajout.addEventListener("click", function () {
             const derniere = bloc.series[bloc.series.length - 1];
-            bloc.series.push({ rep: derniere.rep, charge: derniere.charge, auto: true });
+            bloc.series.push(cardio ? nouvelleSerie(bloc.exercice) : { rep: derniere.rep, charge: derniere.charge, auto: true });
             afficherBlocs();
           });
           corps.appendChild(ajout);
@@ -786,7 +953,7 @@
           carte.appendChild(corps);
         }
 
-        zone.appendChild(carte);
+        (bloc.echauffement ? zoneEchauffement : zone).appendChild(carte);
       });
 
       sauverBrouillon();
@@ -980,7 +1147,20 @@
     // Une séance : ligne compacte qui s'ouvre pour montrer les exercices, les notes et les actions
     function ligneSeance(s, exos) {
       const d = new Date(s.date + "T12:00:00");
-      const nbSeries = exos.reduce(function (a, e) { return a + e.series.length; }, 0);
+      // Hors échauffement : séries de muscu, minutes et km de cardio
+      const travail = exos.filter(function (e) { return !e.echauffement; });
+      let nbSeries = 0, minutes = 0, km = 0;
+      travail.forEach(function (e) {
+        e.series.forEach(function (x) {
+          if (x.duree_s > 0) { minutes += x.duree_s / 60; km += x.distance_km || 0; }
+          else nbSeries++;
+        });
+      });
+      const morceaux = [];
+      if (travail.length) morceaux.push(travail.length + " exercice" + (travail.length > 1 ? "s" : ""));
+      if (nbSeries) morceaux.push(nbSeries + " série" + (nbSeries > 1 ? "s" : ""));
+      if (minutes) morceaux.push(Math.round(minutes) + " min de cardio");
+      if (km) morceaux.push(nbFr(km) + " km");
 
       const ligne = el("details", "seance-ligne");
       const resume = el("summary");
@@ -992,14 +1172,15 @@
 
       const infos = el("span", "seance-infos");
       infos.appendChild(el("span", "tag " + categorie(s.type).toLowerCase(), s.type));
-      infos.appendChild(el("span", "mut", exos.length
-        ? exos.length + " exercice" + (exos.length > 1 ? "s" : "") + " · " + nbSeries + " série" + (nbSeries > 1 ? "s" : "")
+      infos.appendChild(el("span", "mut", morceaux.length
+        ? morceaux.join(" · ")
         : (s.notes ? "Notes uniquement" : "Aucun détail")));
       resume.appendChild(infos);
       resume.appendChild(el("span", "chevron", "›"));
       ligne.appendChild(resume);
 
       const detail = el("div", "seance-detail");
+      if (s.echauffement_note) detail.appendChild(el("div", "notes-seance echauffement-note", "🔥 Échauffement : " + s.echauffement_note));
       exos.forEach(function (ex) { detail.appendChild(creerLigneExercice(ex)); });
       if (s.notes) detail.appendChild(el("div", "notes-seance", s.notes));
 
@@ -1049,21 +1230,30 @@
       }
     }
 
-    // stats : calculées à partir des exercices saisis, avant de fermer le formulaire
+    // stats : calculées à partir des exercices saisis (hors échauffement), avant de fermer le formulaire
     function statsSeance() {
-      let series = 0, volume = 0;
+      let series = 0, volume = 0, minutes = 0, km = 0;
       const records = [];
-      blocs.forEach(function (bloc) {
+      const travail = blocs.filter(function (b) { return !b.echauffement && seriesValides(b).length; });
+      travail.forEach(function (bloc) {
         seriesValides(bloc).forEach(function (s) {
-          series++;
-          volume += (parseInt(s.rep, 10) || 0) * nombre(s.charge);
-          if (s.record) records.push(bloc.exercice.nom + " : " + texteSerie({ repetitions: parseInt(s.rep, 10), charge: nombre(s.charge) }));
+          if (estCardio(bloc.exercice)) {
+            const v = valeursCardio(s);
+            minutes += v.duree_s / 60;
+            km += v.distance_km;
+          } else {
+            series++;
+            volume += (parseInt(s.rep, 10) || 0) * nombre(s.charge);
+          }
+          if (s.record) records.push(bloc.exercice.nom + " : " + texteRecord(bloc, s, s.typeRecord));
         });
       });
       return {
-        exercices: blocs.filter(function (b) { return seriesValides(b).length; }).length,
+        exercices: travail.length,
         series: series,
         volume: volume,
+        minutes: minutes,
+        km: km,
         records: records,
         duree: debutSeance ? Date.now() - debutSeance : 0
       };
@@ -1075,14 +1265,21 @@
 
       const chiffres = document.getElementById("recap-chiffres");
       chiffres.innerHTML = "";
-      [[String(stats.exercices), "exercices"], [String(stats.series), "séries"],
-       [stats.volume >= 1000 ? nb(stats.volume / 1000) + " t" : Math.round(stats.volume) + " kg", "soulevés"]]
-        .forEach(function (c) {
-          const b = el("div", "recap-chiffre");
-          b.appendChild(el("strong", "", c[0]));
-          b.appendChild(el("span", "", c[1]));
-          chiffres.appendChild(b);
-        });
+      const cases = [[String(stats.exercices), stats.exercices > 1 ? "exercices" : "exercice"]];
+      if (stats.series || !stats.minutes) {
+        cases.push([String(stats.series), "séries"]);
+        cases.push([stats.volume >= 1000 ? nb(stats.volume / 1000) + " t" : Math.round(stats.volume) + " kg", "soulevés"]);
+      }
+      if (stats.minutes) {
+        cases.push([String(Math.round(stats.minutes)), "min de cardio"]);
+        if (stats.km && cases.length < 4) cases.push([nbFr(stats.km), "km"]);
+      }
+      cases.slice(0, 4).forEach(function (c) {
+        const b = el("div", "recap-chiffre");
+        b.appendChild(el("strong", "", c[0]));
+        b.appendChild(el("span", "", c[1]));
+        chiffres.appendChild(b);
+      });
 
       const records = document.getElementById("recap-records");
       records.innerHTML = "";
@@ -1107,7 +1304,7 @@
           const avant = niveauDe(xpAvant).niveau, maintenant = niveauDe(apres).niveau;
           xp.textContent = gain > 0
             ? "+" + gain + " XP" + (maintenant > avant ? " · 🎉 Niveau " + maintenant + " atteint !" : "")
-            : "Pas d’XP pour celle-ci (une seule séance compte par jour, avec au moins 3 séries).";
+            : "Pas d’XP pour celle-ci (une seule séance compte par jour, avec au moins 3 séries ou 25 min de cardio).";
           xp.classList.toggle("gain", gain > 0);
         } catch (e) {}
       }
@@ -1141,7 +1338,7 @@
     document.getElementById("btn-nouvelle").addEventListener("click", ouvrirNouvelle);
 
     document.getElementById("btn-annuler").addEventListener("click", async function () {
-      const contenu = blocs.length > 0 || document.getElementById("notes").value.trim() !== "";
+      const contenu = formulaireRempli();
       const question = editionId !== null
         ? "Annuler les modifications ?"
         : "Abandonner cette séance ? Les exercices saisis seront perdus.";
@@ -1164,28 +1361,39 @@
         return;
       }
 
-      // Séries valides : au moins une répétition
+      // Séries valides : au moins une répétition (muscu) ou une durée (cardio) ; l'échauffement est marqué
       const lignes = [];
       blocs.forEach(function (bloc) {
         let numero = 0;
         seriesValides(bloc).forEach(function (s) {
-          const rep = parseInt(s.rep, 10);
           numero++;
-          lignes.push({
+          const ligne = {
             exercice_id: bloc.exercice.id,
             numero: numero,
-            repetitions: rep,
-            charge: parseFloat(String(s.charge).replace(",", ".")) || 0
-          });
+            repetitions: 0,
+            charge: 0
+          };
+          if (estCardio(bloc.exercice)) {
+            Object.assign(ligne, valeursCardio(s));
+          } else {
+            ligne.repetitions = parseInt(s.rep, 10);
+            ligne.charge = parseFloat(String(s.charge).replace(",", ".")) || 0;
+          }
+          if (bloc.echauffement) ligne.echauffement = true;
+          lignes.push(ligne);
         });
       });
 
+      const noteEchauffement = document.getElementById("echauffement-note").value.trim();
       const donnees = {
         date: document.getElementById("date").value || aujourdhui(),
         type: type,
         notes: document.getElementById("notes").value.trim()
       };
-
+      // La colonne n'existe qu'une fois le script SQL lancé : on ne l'envoie que si elle sert
+      if (noteEchauffement || seances.some(function (x) { return "echauffement_note" in x; })) {
+        donnees.echauffement_note = noteEchauffement || null;
+      }
       bouton.disabled = true;
       try {
         if (editionId !== null) {

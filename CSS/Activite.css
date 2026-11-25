@@ -25,6 +25,7 @@
 .tag.push { --c: var(--push); }
 .tag.pull { --c: var(--pull); }
 .tag.leg  { --c: var(--leg); }
+.tag.cardio { --c: var(--eau); }
 
 .notes-seance {
   margin-top: 8px;
@@ -925,4 +926,74 @@ body.sans-defilement {
 .mois-resume .chevron,
 .groupe-seances .chevron {
   transition: transform 0.2s;
+}
+
+/* ---------- Échauffement (facultatif, replié) ---------- */
+.echauffement {
+  margin-top: 14px;
+  background: var(--carte-douce);
+  border: 1px dashed var(--bordure);
+  border-radius: 14px;
+}
+
+.echauffement summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.echauffement summary::-webkit-details-marker {
+  display: none;
+}
+
+.echauffement-titre {
+  font-weight: 800;
+}
+
+.echauffement summary .mut {
+  flex: 1;
+  font-size: 13px;
+}
+
+.echauffement .chevron {
+  color: var(--gris);
+  transition: transform 0.2s;
+}
+
+.echauffement[open] .chevron {
+  transform: rotate(90deg);
+}
+
+.echauffement-corps {
+  padding: 0 14px 12px;
+}
+
+.echauffement-corps textarea {
+  margin-bottom: 10px;
+}
+
+.echauffement-corps .ajout-exo {
+  margin-top: 6px;
+}
+
+.echauffement-corps > p {
+  margin: 8px 0 0;
+}
+
+.echauffement-note {
+  font-style: normal;
+}
+
+/* Cardio : 3 champs par ligne quand il y a la place */
+.serie-reglages.cardio {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.serie-reglages.cardio .stepper-libelle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

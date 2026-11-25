@@ -86,6 +86,7 @@ input[type="file"] {
 .tag.push { --c: var(--push); }
 .tag.pull { --c: var(--pull); }
 .tag.leg  { --c: var(--leg); }
+.tag.cardio { --c: var(--eau); }
 
 .btn-suppr {
   margin-top: auto;
@@ -165,6 +166,7 @@ input[type="file"] {
 .tuile.push { --c: var(--push); }
 .tuile.pull { --c: var(--pull); }
 .tuile.leg  { --c: var(--leg); }
+.tuile.cardio { --c: var(--eau); }
 
 .tuile:hover {
   transform: translateY(-2px);

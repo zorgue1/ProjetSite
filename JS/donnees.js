@@ -415,11 +415,9 @@ async function chargerSeances() {
 }
 
 async function ajouterSeance(seance) {
-  const { data, error } = await client.from("seances").insert({
-    date: seance.date,
-    type: seance.type,
-    notes: seance.notes
-  }).select("id").single();
+  const ligne = { date: seance.date, type: seance.type, notes: seance.notes };
+  if (seance.echauffement_note) ligne.echauffement_note = seance.echauffement_note;
+  const { data, error } = await client.from("seances").insert(ligne).select("id").single();
   if (error) throw error;
   return data.id;
 }
@@ -613,17 +611,26 @@ async function supprimerExercice(exercice) {
 
 /* ---------- Séries d'une séance ---------- */
 
+// Les champs de cardio et d'échauffement ne sont envoyés que s'ils sont remplis
+// (l'appli marche donc aussi tant que le script SQL « cardio » n'a pas été lancé)
+const CHAMPS_SERIE_CARDIO = ["duree_s", "distance_km", "vitesse", "inclinaison", "resistance", "calories"];
+
+function ligneSerie(seanceId, s) {
+  const ligne = {
+    seance_id: seanceId,
+    exercice_id: s.exercice_id,
+    numero: s.numero,
+    repetitions: s.repetitions || 0,
+    charge: s.charge || 0
+  };
+  CHAMPS_SERIE_CARDIO.forEach(function (k) { if (s[k] > 0) ligne[k] = s[k]; });
+  if (s.echauffement) ligne.echauffement = true;
+  return ligne;
+}
+
 async function ajouterSeries(seanceId, series) {
   if (series.length === 0) return;
-  const lignes = series.map(function (s) {
-    return {
-      seance_id: seanceId,
-      exercice_id: s.exercice_id,
-      numero: s.numero,
-      repetitions: s.repetitions,
-      charge: s.charge
-    };
-  });
+  const lignes = series.map(function (s) { return ligneSerie(seanceId, s); });
   const { error } = await client.from("series").insert(lignes);
   if (error) throw error;
 }
@@ -633,48 +640,68 @@ async function chargerSeries(seanceIds) {
   if (seanceIds.length === 0) return [];
   const { data, error } = await client
     .from("series")
-    .select("*, exercices(nom, image_url)")
+    .select("*, exercices(nom, image_url, muscle)")
     .in("seance_id", seanceIds)
     .order("id", { ascending: true });
   if (error) throw error;
   return data;
 }
 
-// Regroupe les lignes : { idSéance: [ { nom, image_url, series: [...] } ] }
+// Une ligne de la base → une série à afficher (nombres)
+function serieDepuisLigne(l) {
+  const s = { repetitions: l.repetitions, charge: Number(l.charge) };
+  CHAMPS_SERIE_CARDIO.forEach(function (k) { if (l[k] !== null && l[k] !== undefined) s[k] = Number(l[k]); });
+  return s;
+}
+
+// Regroupe les lignes : { idSéance: [ { nom, image_url, echauffement, series: [...] } ] }
+// Un même exercice à l'échauffement et dans la séance donne deux groupes
 function grouperSeries(lignes) {
   const parSeance = {};
   lignes.forEach(function (l) {
     const liste = parSeance[l.seance_id] || (parSeance[l.seance_id] = []);
-    let ex = liste.find(function (e) { return e.exercice_id === l.exercice_id; });
+    const echauffement = !!l.echauffement;
+    let ex = liste.find(function (e) { return e.exercice_id === l.exercice_id && e.echauffement === echauffement; });
     if (!ex) {
       ex = {
         exercice_id: l.exercice_id,
         nom: l.exercices ? l.exercices.nom : "Exercice",
         image_url: l.exercices ? l.exercices.image_url : null,
+        muscle: l.exercices ? l.exercices.muscle : "",
+        echauffement: echauffement,
         series: []
       };
       liste.push(ex);
     }
-    ex.series.push({ repetitions: l.repetitions, charge: Number(l.charge) });
+    ex.series.push(serieDepuisLigne(l));
+  });
+  // L'échauffement d'abord
+  Object.keys(parSeance).forEach(function (id) {
+    parSeance[id].sort(function (a, b) { return (b.echauffement ? 1 : 0) - (a.echauffement ? 1 : 0); });
   });
   return parSeance;
 }
 
-// Pour un exercice : ce que tu as fait la dernière fois (indice) et tes records (record)
-// record = { charge : la plus lourde, e1rm : meilleur 1RM estimé (formule d'Epley) }
+// Pour un exercice : ce que tu as fait la dernière fois (indice) et tes records (record).
+// Muscu : record = { charge : la plus lourde, e1rm : meilleur 1RM estimé (formule d'Epley) }
+// Cardio : record = { duree (s), distance (km), vitesse (km/h moyenne) }
+// L'échauffement ne compte pas.
 async function chargerInfosExercice(exerciceId) {
-  const historique = await chargerHistoriqueExercice(exerciceId);
-  if (historique.length === 0) return { indice: null, record: { charge: 0, e1rm: 0 } };
+  const historique = (await chargerHistoriqueExercice(exerciceId)).filter(function (l) { return !l.echauffement; });
+  const record = { charge: 0, e1rm: 0, duree: 0, distance: 0, vitesse: 0 };
+  if (historique.length === 0) return { indice: null, record: record };
 
   // La séance la plus récente (par date, puis par identifiant)
   let derniere = historique[0];
-  let charge = 0, e1rm = 0;
   historique.forEach(function (l) {
     const a = l.seances.date, b = derniere.seances.date;
     if (a > b || (a === b && l.seance_id > derniere.seance_id)) derniere = l;
-    const c = Number(l.charge);
-    if (c > charge) charge = c;
-    if (c > 0 && c * (1 + l.repetitions / 30) > e1rm) e1rm = c * (1 + l.repetitions / 30);
+    const s = serieDepuisLigne(l);
+    if (s.charge > record.charge) record.charge = s.charge;
+    if (s.charge > 0 && s.charge * (1 + s.repetitions / 30) > record.e1rm) record.e1rm = s.charge * (1 + s.repetitions / 30);
+    if (s.duree_s > record.duree) record.duree = s.duree_s;
+    if (s.distance_km > record.distance) record.distance = s.distance_km;
+    if (s.duree_s > 0 && vitesseMoyenne(s) > record.vitesse) record.vitesse = vitesseMoyenne(s);
   });
 
   return {
@@ -683,18 +710,69 @@ async function chargerInfosExercice(exerciceId) {
       series: historique
         .filter(function (l) { return l.seance_id === derniere.seance_id; })
         .sort(function (x, y) { return x.numero - y.numero; })
-        .map(function (l) { return { repetitions: l.repetitions, charge: Number(l.charge) }; })
+        .map(serieDepuisLigne)
     },
-    record: { charge: charge, e1rm: e1rm }
+    record: record
   };
 }
 
 /* ---------- Affichage des exercices (partagé par plusieurs pages) ---------- */
 
 function texteSerie(s) {
+  if (s.duree_s > 0) return texteCardio(s);
   return s.charge > 0
     ? s.repetitions + " × " + String(s.charge).replace(".", ",") + " kg"
     : s.repetitions + " reps";
+}
+
+/* ---------- Cardio : durée, distance, vitesse… au lieu de reps × kg ---------- */
+
+// Un exercice de cardio est rangé dans le muscle « Cardio »
+function estCardio(ex) {
+  return !!ex && ex.muscle === "Cardio";
+}
+
+// Les champs proposés selon la machine (la durée est toujours là)
+function champsCardio(nom) {
+  const n = normaliser(nom || "");
+  if (/tapis|course|marche|running|footing/.test(n)) return ["duree", "distance", "vitesse", "inclinaison", "calories"];
+  if (/stepper|corde/.test(n)) return ["duree", "resistance", "calories"];
+  if (/velo|rameur|elliptique|bike|ski/.test(n)) return ["duree", "distance", "resistance", "calories"];
+  return ["duree", "distance", "calories"];
+}
+
+const CHAMPS_CARDIO = {
+  duree:       { libelle: "Durée (min)", pas: 5, mode: "numeric" },
+  distance:    { libelle: "Distance (km)", pas: 0.5, mode: "decimal" },
+  vitesse:     { libelle: "Vitesse (km/h)", pas: 0.5, mode: "decimal" },
+  inclinaison: { libelle: "Inclinaison (%)", pas: 1, mode: "decimal" },
+  resistance:  { libelle: "Résistance", pas: 1, mode: "decimal" },
+  calories:    { libelle: "Calories", pas: 10, mode: "numeric" }
+};
+
+function nbFr(v) { return String(Math.round(v * 10) / 10).replace(".", ","); }
+
+function texteDuree(s) {
+  const min = Math.round(s / 60);
+  return min >= 60 ? Math.floor(min / 60) + " h " + String(min % 60).padStart(2, "0") : min + " min";
+}
+
+// Vitesse moyenne (km/h) : celle saisie, sinon calculée avec la distance et la durée
+function vitesseMoyenne(s) {
+  if (s.vitesse > 0) return Number(s.vitesse);
+  return s.distance_km > 0 && s.duree_s > 0 ? s.distance_km / (s.duree_s / 3600) : 0;
+}
+
+// « 30 min · 5,2 km · 10,4 km/h · 6 % · niv. 8 · 320 kcal »
+function texteCardio(s) {
+  const morceaux = [texteDuree(s.duree_s)];
+  if (s.distance_km > 0) morceaux.push(nbFr(s.distance_km) + " km");
+  const v = vitesseMoyenne(s);
+  if (v > 0 && (s.vitesse > 0 || s.distance_km > 0)) morceaux.push(nbFr(v) + " km/h");
+  if (s.inclinaison > 0) morceaux.push(nbFr(s.inclinaison) + " %");
+  if (s.resistance > 0) morceaux.push("niv. " + nbFr(s.resistance));
+  if (s.calories > 0) morceaux.push(Math.round(s.calories) + " kcal");
+  return morceaux.join(" · ");
 }
 
 // Photo de l'exercice ; sinon son dessin (dessins.js) ; sinon son initiale
@@ -733,6 +811,12 @@ function creerLigneExercice(ex) {
   const nom = document.createElement("div");
   nom.className = "exo-nom-ligne";
   nom.textContent = ex.nom;
+  if (ex.echauffement) {
+    const badge = document.createElement("span");
+    badge.className = "badge-echauffement";
+    badge.textContent = "Échauffement";
+    nom.appendChild(badge);
+  }
   detail.appendChild(nom);
 
   const puces = document.createElement("div");
@@ -752,14 +836,15 @@ function creerLigneExercice(ex) {
 
 /* ---------- Catégories d'exercices ---------- */
 
-const MUSCLES = ["Pecs", "Dos", "Épaules", "Biceps", "Triceps", "Jambes", "Abdos", "Autre"];
-const GROUPES_SEANCE = ["Push", "Pull", "Leg", "Autre"];
+const MUSCLES = ["Pecs", "Dos", "Épaules", "Biceps", "Triceps", "Jambes", "Abdos", "Cardio", "Autre"];
+const GROUPES_SEANCE = ["Push", "Pull", "Leg", "Cardio", "Autre"];
 
 // Séance proposée par défaut pour chaque muscle (modifiable ensuite)
 const GROUPE_PAR_MUSCLE = {
   "Pecs": "Push", "Épaules": "Push", "Triceps": "Push",
   "Dos": "Pull", "Biceps": "Pull",
   "Jambes": "Leg",
+  "Cardio": "Cardio",
   "Abdos": "Autre", "Autre": "Autre"
 };
 
@@ -779,7 +864,7 @@ async function modifierExercice(id, champs) {
 async function chargerHistoriqueExercice(exerciceId) {
   const { data, error } = await client
     .from("series")
-    .select("seance_id, numero, repetitions, charge, seances(date)")
+    .select("*, seances(date)")
     .eq("exercice_id", exerciceId)
     .order("id", { ascending: true });
   if (error) throw error;

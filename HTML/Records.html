@@ -227,8 +227,9 @@
     function remplirExercices() {
       const select = $("pr-exo");
       select.innerHTML = "";
+      // Un PR à 1 répétition n'a pas de sens pour le cardio
       MUSCLES.forEach(function (m) {
-        const liste = exercices.filter(function (e) { return e.muscle === m; });
+        const liste = exercices.filter(function (e) { return e.muscle === m && !estCardio(e); });
         if (!liste.length) return;
         const groupe = document.createElement("optgroup");
         groupe.label = m;
@@ -368,11 +369,18 @@
 
         const infos = el("div", "serie-infos");
         infos.appendChild(el("div", "exo-nom-ligne", ex.nom));
-        infos.appendChild(el("div", "mut", ex.muscle + " · " + r.nb_seances + " séance" + (r.nb_seances > 1 ? "s" : "")));
+        const nbS = r.cardio ? r.cardio.nb_seances : r.nb_seances;
+        infos.appendChild(el("div", "mut", ex.muscle + " · " + nbS + " séance" + (nbS > 1 ? "s" : "")));
         ligne.appendChild(infos);
 
         const chiffres = el("div", "serie-chiffres");
-        if (Number(r.charge_max) > 0) {
+        if (r.cardio) {
+          // Cardio : la plus longue distance (ou durée), et la meilleure vitesse moyenne
+          const c = r.cardio;
+          chiffres.appendChild(el("strong", "", c.distance > 0 ? nbFr(c.distance) + " km" : texteDuree(c.duree)));
+          chiffres.appendChild(el("span", "", (c.distance > 0 ? "⏱ " + texteDuree(c.duree) : "") +
+            (c.vitesse > 0 ? (c.distance > 0 ? " · " : "") + "⚡ " + nbFr(c.vitesse) + " km/h" : "")));
+        } else if (Number(r.charge_max) > 0) {
           chiffres.appendChild(el("strong", "", nb(r.charge_max) + " kg × " + r.charge_reps));
           chiffres.appendChild(el("span", "", "1RM est. " + nb(r.rm_max) + " kg"));
         } else {
@@ -387,6 +395,31 @@
 
     $("recherche").addEventListener("input", afficherListe);
 
+    // Records de cardio, calculés ici à partir de tes séances (hors échauffement) :
+    // plus longue distance, plus longue durée, meilleure vitesse moyenne
+    async function ajouterRecordsCardio() {
+      const ids = exercices.filter(estCardio).map(function (e) { return e.id; });
+      if (!ids.length) return;
+      const { data, error } = await client.from("series").select("*").in("exercice_id", ids);
+      if (error) return;
+      const parExo = {};
+      data.forEach(function (l) {
+        if (l.echauffement || !(l.duree_s > 0)) return;
+        const s = serieDepuisLigne(l);
+        const c = parExo[l.exercice_id] || (parExo[l.exercice_id] = { distance: 0, duree: 0, vitesse: 0, seances: {} });
+        c.distance = Math.max(c.distance, s.distance_km || 0);
+        c.duree = Math.max(c.duree, s.duree_s);
+        c.vitesse = Math.max(c.vitesse, vitesseMoyenne(s));
+        c.seances[l.seance_id] = true;
+      });
+      Object.keys(parExo).forEach(function (id) {
+        const c = parExo[id];
+        c.nb_seances = Object.keys(c.seances).length;
+        const ex = exercices.find(function (e) { return String(e.id) === String(id); });
+        if (ex) records[ex.id] = { exercice_id: ex.id, cardio: c };
+      });
+    }
+
     /* ---------- Démarrage ---------- */
 
     (async function () {
@@ -396,6 +429,7 @@
         const resultats = await Promise.all([chargerExercices(), chargerRecords()]);
         exercices = resultats[0];
         resultats[1].forEach(function (r) { records[r.exercice_id] = r; });
+        await ajouterRecordsCardio();
         remplirExercices();
         afficherChips();
         afficherListe();

@@ -530,7 +530,7 @@
       const compte = {};
       let tonnage = 0;
       seriesPeriode.forEach(function (l) {
-        if ((dateDe[l.seance_id] || "") < debut) return;
+        if ((dateDe[l.seance_id] || "") < debut || l.echauffement) return;
         const m = muscleDe[l.exercice_id] || "Autre";
         compte[m] = (compte[m] || 0) + 1;
         tonnage += (Number(l.repetitions) || 0) * (Number(l.charge) || 0);
@@ -714,8 +714,9 @@
       donneesProg.forEach(function (l) {
         const d = l.seances && l.seances.date;
         if (!d) return;
+        if (l.echauffement) return;     // l'échauffement ne compte pas
         if (!parDate[d]) parDate[d] = { date: d, series: [] };
-        parDate[d].series.push({ repetitions: Number(l.repetitions), charge: Number(l.charge) });
+        parDate[d].series.push(serieDepuisLigne(l));
       });
       const liste = Object.keys(parDate).sort().map(function (d) { return parDate[d]; });
 
@@ -727,6 +728,7 @@
       }
       $("prog-aucune").hidden = true;
       $("prog-contenu").hidden = false;
+      if (estCardio(ex)) return afficherProgCardio(ex, liste);
 
       liste.forEach(function (s) {
         s.chargeMax = Math.max.apply(null, s.series.map(function (x) { return x.charge; }));
@@ -817,6 +819,87 @@
         : "";
 
       // Dernières séances
+      const histo = $("historique-exo");
+      histo.innerHTML = "";
+      liste.slice(-5).reverse().forEach(function (s) {
+        const ligne = el("div", "histo-seance");
+        ligne.appendChild(el("span", "histo-date", dateFr(s.date)));
+        const puces = el("div", "puces");
+        s.series.forEach(function (x) { puces.appendChild(el("span", "puce", texteSerie(x))); });
+        ligne.appendChild(puces);
+        histo.appendChild(ligne);
+      });
+    }
+
+    // Cardio : distance, durée et vitesse moyenne au lieu de la charge
+    function afficherProgCardio(ex, liste) {
+      liste.forEach(function (s) {
+        s.distance = s.series.reduce(function (a, x) { return a + (x.distance_km || 0); }, 0);
+        s.duree = s.series.reduce(function (a, x) { return a + (x.duree_s || 0); }, 0) / 60;
+        s.vitesse = Math.max.apply(null, s.series.map(vitesseMoyenne).concat([0]));
+      });
+      const meilleur = function (cle) {
+        return liste.reduce(function (m, s) { return s[cle] > m[cle] ? s : m; }, liste[0]);
+      };
+      const avecDistance = liste.some(function (s) { return s.distance > 0; });
+
+      const hero = $("exo-hero");
+      hero.innerHTML = "";
+      hero.appendChild(creerVignette(ex));
+      const titre = el("div", "exo-hero-titre");
+      titre.appendChild(el("div", "exo-hero-nom", ex.nom));
+      titre.appendChild(el("div", "mut", "Cardio · depuis le " + dateFr(liste[0].date)));
+      hero.appendChild(titre);
+      const cleProgres = avecDistance ? "distance" : "duree";
+      const premier = liste[0][cleProgres], dernier = liste[liste.length - 1][cleProgres];
+      if (liste.length > 1 && premier > 0) {
+        const pct = Math.round((dernier - premier) / premier * 100);
+        const badge = el("div", "progres " + (pct > 0 ? "hausse" : pct < 0 ? "baisse" : "egal"));
+        badge.appendChild(el("strong", "", signe(pct) + Math.abs(pct) + " %"));
+        badge.appendChild(el("span", "", avecDistance ? "distance" : "durée"));
+        hero.appendChild(badge);
+      }
+
+      const zoneRec = $("records");
+      zoneRec.innerHTML = "";
+      if (avecDistance) {
+        const rd = meilleur("distance");
+        zoneRec.appendChild(tuile("Plus longue distance", nbFr(rd.distance) + " km", dateFr(rd.date), "accent"));
+      }
+      const rt = meilleur("duree");
+      zoneRec.appendChild(tuile("Plus longue durée", texteDuree(rt.duree * 60), dateFr(rt.date), avecDistance ? "" : "accent"));
+      const rv = meilleur("vitesse");
+      if (rv.vitesse > 0) zoneRec.appendChild(tuile("Meilleure vitesse", nbFr(rv.vitesse) + " km/h", dateFr(rv.date)));
+      zoneRec.appendChild(tuile("Séances", String(liste.length), "dernière " + dateFr(liste[liste.length - 1].date)));
+
+      const metriques = [["duree", "Durée", 0, " min"]];
+      if (avecDistance) metriques.unshift(["distance", "Distance", 1, " km"]);
+      if (liste.some(function (s) { return s.vitesse > 0; })) metriques.push(["vitesse", "Vitesse", 1, " km/h"]);
+      if (!metriques.some(function (m) { return m[0] === metrique; })) metrique = metriques[0][0];
+      const zoneM = $("metriques");
+      zoneM.innerHTML = "";
+      metriques.forEach(function (m) {
+        const b = el("button", "chip", m[1]);
+        b.type = "button";
+        b.setAttribute("aria-pressed", String(m[0] === metrique));
+        b.addEventListener("click", function () { metrique = m[0]; afficherProg(); });
+        zoneM.appendChild(b);
+      });
+      const choix = metriques.find(function (m) { return m[0] === metrique; });
+      let record = -Infinity;
+      const points = liste.map(function (s, i) {
+        const v = s[choix[0]];
+        const estRecord = i > 0 && v > record;
+        record = Math.max(record, v);
+        return { t: enDate(s.date).getTime(), v: v, record: estRecord };
+      });
+      dessinerCourbe($("g-exercice"), points, {
+        id: "exo", aria: "Progression de " + ex.nom, ref: null,
+        axe: function (v) { return choix[2] ? nbFr(v) : String(Math.round(v)); },
+        format: function (v) { return (choix[2] ? nbFr(v) : Math.round(v)) + choix[3]; }
+      });
+      $("prog-note").textContent = "";
+
       const histo = $("historique-exo");
       histo.innerHTML = "";
       liste.slice(-5).reverse().forEach(function (s) {

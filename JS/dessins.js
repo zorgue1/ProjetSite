@@ -28,7 +28,8 @@ const REGLES_MUSCLES = [
   [/crunch|releve|gainage|roue|mountain|hollow|abdo/, ["abdos"], ["obliques"]],
   [/farmer/, ["avantBras", "trapezes"], ["abdos"]],
   [/rameur/, ["dorsaux", "quadriceps"], ["biceps", "ischios"]],
-  [/velo|elliptique|tapis|stepper|corde|burpee|traineau|swing/, ["quadriceps", "mollets"], ["fessiers"]]
+  [/natation|nage/, ["dorsaux", "epaulesAv"], ["triceps", "quadriceps"]],
+  [/velo|elliptique|tapis|stepper|corde|burpee|traineau|swing|course|marche|running|footing/, ["quadriceps", "mollets"], ["fessiers"]]
 ];
 
 const MUSCLES_PAR_GROUPE = {
@@ -39,6 +40,7 @@ const MUSCLES_PAR_GROUPE = {
   "Triceps": [["triceps"], []],
   "Jambes": [["quadriceps", "fessiers"], ["ischios", "mollets"]],
   "Abdos": [["abdos"], ["obliques"]],
+  "Cardio": [["quadriceps", "mollets"], ["fessiers"]],
   "Autre": [[], []]
 };
 
@@ -331,6 +333,9 @@ const POSES = {
     fond: ligne([40, 6], [160, 6], 4, COUL.fer) + ligne([40, 6], [40, 141], 5, COUL.banc) + ligne([160, 6], [160, 141], 5, COUL.banc) + sol() },
   dips: { vue: "profil", S: [102, 64], H: [96, 104], K: [104, 126], P: [86, 136], E: [84, 76], M: [104, 92], bs: -1,
     fond: ligne([70, 92], [140, 92], 5, COUL.fer) + ligne([76, 92], [76, 141], 5, COUL.banc) + ligne([134, 92], [134, 141], 5, COUL.banc) + sol() },
+  // --- Dans l'eau
+  nage: { vue: "profil", S: [120, 86], H: [80, 90], K: [56, 92], P: [32, 90], K2: [56, 86], P2: [32, 80], E: [140, 80], M: [162, 76], E2: [104, 96], M2: [88, 104], avant: 1, pied: [-8, 2], pied2: [-8, -2],
+    T: [134, 80], fond: trace("M6 96 Q26 88 46 96 T86 96 T126 96 T166 96 T206 96", COUL.cable, 2), devant: trace("M6 104 Q26 96 46 104 T86 104 T126 104 T166 104 T206 104", COUL.cable, 2) },
   // --- Cardio sur machine
   velo: { vue: "profil", S: [114, 58], H: [86, 92], K: [112, 100], P: [100, 128], E: [130, 66], M: [144, 64],
     fond: sol() + boite(76, 96, 20, 6, COUL.banc, 3) + ligne([86, 100], [104, 138], 6, COUL.fer) + ligne([104, 138], [140, 138], 6, COUL.fer) + ligne([140, 138], [146, 66], 6, COUL.fer) + rond([136, 120], 14, COUL.banc) },
@@ -427,6 +432,8 @@ const REGLES_DESSIN = [
   [/rameur/, "rameur", "poulie"],
   [/velo(?! elliptique)/, "velo"],
   [/tapis|elliptique|stepper/, "tapis"],
+  [/course|footing|running|marche/, "marche"],
+  [/natation|nage/, "nage"],
   [/corde a sauter/, "sautCorde"],
   [/burpee/, "burpee"],
   [/kettlebell|swing/, "swing", "kettlebell"],
@@ -437,7 +444,7 @@ const REGLES_DESSIN = [
 // Exercice inconnu : une position selon le muscle choisi
 const DESSIN_PAR_MUSCLE = {
   "Pecs": "bancPousse", "Dos": "rowing", "Épaules": "deboutTete", "Biceps": "deboutCurl",
-  "Triceps": "deboutPushdown", "Jambes": "squat", "Abdos": "crunch", "Autre": "marche"
+  "Triceps": "deboutPushdown", "Jambes": "squat", "Abdos": "crunch", "Cardio": "tapis", "Autre": "marche"
 };
 
 function materielDuNom(n, defaut) {
