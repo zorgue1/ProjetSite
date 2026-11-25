@@ -165,7 +165,7 @@
     // Série saisie (textes) → valeurs pour l'affichage et l'enregistrement
     function valeursCardio(s) {
       const v = {
-        duree_s: Math.round(nombre(s.duree) * 60),
+        duree_s: dureeEnSecondes(s.duree),
         distance_km: nombre(s.distance),
         inclinaison: nombre(s.inclinaison),
         resistance: nombre(s.resistance),
@@ -179,7 +179,7 @@
     function champsDepuisCardio(s) {
       function t(v) { return v > 0 ? String(Math.round(v * 10) / 10) : ""; }
       return {
-        duree: s.duree_s > 0 ? String(Math.round(s.duree_s / 6) / 10) : "",
+        duree: s.duree_s > 0 ? texteChampDuree(s.duree_s) : "",
         distance: t(s.distance_km), vitesse: t(s.vitesse), inclinaison: t(s.inclinaison),
         resistance: t(s.resistance), calories: t(s.calories)
       };
@@ -201,11 +201,12 @@
       const c = document.createElement("input");
       // Décimaux (kg, km…) : champ texte avec pavé numérique, pour accepter la virgule
       // (sur iPhone, un champ « number » refuse « 22,7 »)
-      if (mode === "decimal") {
+      // Durée : « 24,57 » ou « 24:57 » = 24 min 57 s
+      if (mode === "decimal" || mode === "duree") {
         c.type = "text";
         c.autocomplete = "off";
         c.addEventListener("input", function () {
-          const propre = c.value.replace(/[^0-9.,]/g, "").replace(/[.,](?=.*[.,])/g, "");
+          const propre = c.value.replace(mode === "duree" ? /[^0-9.,:]/g : /[^0-9.,]/g, "").replace(/[.,:](?=.*[.,:])/g, "");
           if (propre !== c.value) c.value = propre;
         });
       } else {
@@ -213,7 +214,7 @@
         c.min = "0";
         c.step = pas;
       }
-      c.inputMode = mode;
+      c.inputMode = mode === "duree" ? "decimal" : mode;
       c.placeholder = placeholder;
       c.setAttribute("aria-label", placeholder);
       c.value = valeur;
@@ -651,7 +652,7 @@
     function seriesValides(bloc) {
       return bloc.series.filter(function (s) {
         if (s.auto && !s.faite) return false;
-        return estCardio(bloc.exercice) ? nombre(s.duree) > 0 : parseInt(s.rep, 10) > 0;
+        return estCardio(bloc.exercice) ? dureeEnSecondes(s.duree) > 0 : parseInt(s.rep, 10) > 0;
       });
     }
 
@@ -740,6 +741,13 @@
         quandChange();
       }
       function pousser(sens) {
+        // Durée : ±5 min en gardant les secondes
+        if (mode === "duree") {
+          const depart = champ.value !== "" ? dureeEnSecondes(champ.value) : dureeEnSecondes(suggestion);
+          changer(texteChampDuree(Math.max(0, depart + sens * pas * 60)));
+          vibrer(10);
+          return;
+        }
         // Sans valeur, on part de la suggestion (ce que tu as fait la dernière fois)
         const base = champ.value !== "" ? nombre(champ.value) : nombre(suggestion);
         const v = Math.max(0, Math.round((base + sens * pas) * 100) / 100);
@@ -766,8 +774,8 @@
           const precedent = champsDepuisCardio(avant);
           Object.keys(precedent).forEach(function (k) { if (serie[k] === "") serie[k] = precedent[k]; });
         }
-        if (!(nombre(serie.duree) > 0)) {
-          informer("Indique la durée (en minutes).");
+        if (!(dureeEnSecondes(serie.duree) > 0)) {
+          informer("Indique la durée : 30 pour 30 min, ou 24,57 pour 24 min 57 s.");
           return;
         }
         // Vitesse calculée si tu as donné la distance mais pas la vitesse
@@ -828,6 +836,7 @@
         if (cle === "vitesse" && valeursCardio(serie).vitesse > 0 && serie.vitesse === "") suggestion = valeursCardio(serie).vitesse;
         reglages.appendChild(stepper(c.libelle, serie, cle, c.pas, c.mode, suggestion, quandChange));
       });
+      reglages.appendChild(el("p", "mut petit aide-duree", "Durée : 24,57 = 24 min 57 s"));
       return reglages;
     }
 
@@ -1315,7 +1324,7 @@
           const avant = niveauDe(xpAvant).niveau, maintenant = niveauDe(apres).niveau;
           xp.textContent = gain > 0
             ? "+" + gain + " XP" + (maintenant > avant ? " · 🎉 Niveau " + maintenant + " atteint !" : "")
-            : "Pas d’XP pour celle-ci (une seule séance compte par jour, avec au moins 3 séries ou 25 min de cardio).";
+            : "Pas d’XP pour celle-ci (une seule séance compte par jour, avec au moins 3 séries ou 20 min de cardio).";
           xp.classList.toggle("gain", gain > 0);
         } catch (e) {}
       }

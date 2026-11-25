@@ -745,7 +745,7 @@ function champsCardio(nom) {
 }
 
 const CHAMPS_CARDIO = {
-  duree:       { libelle: "Durée (min)", pas: 5, mode: "numeric" },
+  duree:       { libelle: "Durée (min)", pas: 5, mode: "duree" },
   distance:    { libelle: "Distance (km)", pas: 0.5, mode: "decimal" },
   vitesse:     { libelle: "Vitesse (km/h)", pas: 0.5, mode: "decimal" },
   inclinaison: { libelle: "Inclinaison (%)", pas: 1, mode: "decimal" },
@@ -755,9 +755,34 @@ const CHAMPS_CARDIO = {
 
 function nbFr(v) { return String(Math.round(v * 10) / 10).replace(".", ","); }
 
+// « 24 min 57 s », « 25 min », « 1 h 05 »
 function texteDuree(s) {
-  const min = Math.round(s / 60);
-  return min >= 60 ? Math.floor(min / 60) + " h " + String(min % 60).padStart(2, "0") : min + " min";
+  s = Math.round(s || 0);
+  if (s >= 3600) {
+    const min = Math.round(s / 60);
+    return Math.floor(min / 60) + " h " + String(min % 60).padStart(2, "0");
+  }
+  const min = Math.floor(s / 60), sec = s % 60;
+  return sec ? (min ? min + " min " : "") + sec + " s" : min + " min";
+}
+
+// Champ « Durée » : « 24,57 » ou « 24:57 » = 24 min 57 s ; « 24,5 » = 24 min 50 s ; « 25 » = 25 min
+function dureeEnSecondes(texte) {
+  const t = String(texte === undefined || texte === null ? "" : texte).trim().replace(/[’']/g, ":");
+  if (!t) return 0;
+  const m = t.match(/^(\d+)(?:[.,:](\d{1,2}))?$/);
+  if (!m) return Math.round((parseFloat(t.replace(",", ".")) || 0) * 60);
+  const sec = m[2] ? (m[2].length === 1 ? Number(m[2]) * 10 : Number(m[2])) : 0;
+  // Plus de 59 « secondes » : c'étaient des minutes décimales (24,75 = 24 min 45 s)
+  if (sec >= 60) return Math.round(parseFloat(m[1] + "." + m[2]) * 60);
+  return Number(m[1]) * 60 + sec;
+}
+
+// Secondes → texte du champ (« 24,57 », « 25 », « 24,05 »)
+function texteChampDuree(s) {
+  s = Math.round(s || 0);
+  const min = Math.floor(s / 60), sec = s % 60;
+  return sec ? min + "," + String(sec).padStart(2, "0") : String(min);
 }
 
 // Vitesse moyenne (km/h) : celle saisie, sinon calculée avec la distance et la durée

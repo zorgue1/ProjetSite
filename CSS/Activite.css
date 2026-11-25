@@ -997,3 +997,8 @@ body.sans-defilement {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.aide-duree {
+  grid-column: 1 / -1;
+  margin: -4px 0 0;
+}
