@@ -885,27 +885,6 @@ body.avec-barre {
 
 
 
-.bienvenue-points {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-.bienvenue-points > * {
-  width: 8px;
-  height: 8px;
-  background: var(--bordure);
-  border-radius: 50%;
-  transition: width 0.2s, background 0.2s;
-}
-
-.bienvenue-points > .actif {
-  width: 22px;
-  background: var(--accent);
-  border-radius: 999px;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .squelette,
   .charge::after,
@@ -1113,136 +1092,161 @@ body.avec-barre {
   }
 }
 
-/* ---------- Tutoriel ---------- */
+/* ---------- Visite guidée : projecteur sur le vrai bouton + bulle ---------- */
 body.sans-defilement {
   overflow: hidden;
 }
 
-.tuto {
-  width: min(100%, 400px);
-  padding: 0;
-  overflow: hidden;
+.visite {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  touch-action: none;
 }
 
-.tuto-tete {
-  --c1: #ff6a3d;
-  --c2: #ffa12e;
-  position: relative;
-  display: grid;
-  place-items: center;
-  height: 150px;
-  background:
-    radial-gradient(160px 120px at 80% 20%, rgba(255, 255, 255, 0.35), transparent 70%),
-    linear-gradient(135deg, var(--c1), var(--c2));
+/* Le trou lumineux : tout le reste de l'écran est assombri par l'ombre */
+.visite-spot {
+  position: fixed;
+  border-radius: 16px;
+  box-shadow: 0 0 0 9999px rgba(5, 8, 14, 0.74), 0 0 0 3px var(--accent), 0 0 24px 6px var(--accent-halo);
+  transition: top 0.3s cubic-bezier(0.22, 1, 0.36, 1), left 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.3s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
 }
 
-.tuto-tete.violet    { --c1: #7c3aed; --c2: #c084fc; }
-.tuto-tete.vert      { --c1: #16a34a; --c2: #84cc16; }
-.tuto-tete.turquoise { --c1: #0d9488; --c2: #22d3ee; }
-.tuto-tete.or        { --c1: #d97706; --c2: #facc15; }
-
-.tuto-emoji {
-  font-size: 68px;
-  line-height: 1;
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25));
-  animation: dialogue-entree 0.35s cubic-bezier(0.22, 1.4, 0.36, 1) both;
+.visite-bulle {
+  position: fixed;
+  left: 50%;
+  width: min(calc(100vw - 24px), 380px);
+  padding: 14px 16px 14px;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: 18px;
+  box-shadow: var(--ombre);
+  transform: translateX(-50%);
+  animation: visite-bulle 0.25s cubic-bezier(0.22, 1.2, 0.36, 1) both;
 }
 
-.tuto-compteur {
+.visite-bulle.centre {
+  top: 50% !important;
+  transform: translate(-50%, -50%);
+  animation-name: fondu;
+}
+
+@keyframes visite-bulle {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+}
+
+/* Petite flèche vers l'élément éclairé */
+.visite-bulle.dessous::before,
+.visite-bulle.dessus::after {
+  content: "";
   position: absolute;
-  top: 12px;
-  left: 14px;
-  padding: 3px 10px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.visite-bulle.dessous::before {
+  top: -8px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.visite-bulle.dessus::after {
+  bottom: -8px;
+  border-top: 0;
+  border-left: 0;
+}
+
+.visite-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.visite-compteur {
   font-size: 12px;
   font-weight: 800;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.22);
-  border-radius: 999px;
+  color: var(--accent);
 }
 
-.tuto-passer {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 6px 14px;
+.visite-passer {
+  padding: 4px 10px;
   font: inherit;
-  font-size: 14px;
-  font-weight: 800;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.22);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gris);
+  background: none;
   border: 0;
   border-radius: 999px;
   cursor: pointer;
 }
 
-.tuto-passer:hover {
-  background: rgba(0, 0, 0, 0.35);
+.visite-bulle h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 800;
 }
 
-.tuto-corps {
-  padding: 20px 20px 18px;
-  text-align: center;
-}
-
-.tuto-corps h2 {
-  margin: 0 0 8px;
-  font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 30px;
-  text-transform: uppercase;
-}
-
-.tuto-texte {
+.visite-bulle p {
   margin: 0 0 12px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.45;
   color: var(--gris);
 }
 
-.tuto-astuces {
-  margin: 0 0 16px;
-  padding: 12px 14px;
-  text-align: left;
-  list-style: none;
-  background: var(--carte-douce);
-  border-radius: 14px;
+.visite-boutons {
+  display: flex;
+  gap: 8px;
 }
 
-.tuto-astuces li {
-  position: relative;
-  padding-left: 24px;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.45;
+.visite-boutons .btn {
+  margin: 0;
 }
 
-.tuto-astuces li + li {
-  margin-top: 6px;
+.visite-boutons .btn:last-child {
+  flex: 1;
 }
 
-.tuto-astuces li::before {
-  content: "✓";
-  position: absolute;
-  left: 0;
-  font-weight: 900;
-  color: var(--pull);
+.visite-boutons .btn.secondaire {
+  flex: 0 0 48px;
+  padding-left: 0;
+  padding-right: 0;
+  font-size: 20px;
 }
 
-.tuto .bienvenue-points {
-  margin-bottom: 16px;
-}
-
-.tuto .bienvenue-points > button {
+/* Bouton « ? » du bandeau : relance le guide de la page */
+.aide-page {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  margin-left: auto;
   padding: 0;
-  border: 0;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--bandeau-texte);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: 50%;
   cursor: pointer;
 }
 
-.tuto .dialogue-boutons .btn {
-  text-align: center;
-  text-decoration: none;
+.aide-page:hover {
+  background: var(--bandeau-survol);
 }
 
-.tuto .btn:disabled {
-  opacity: 0.4;
+@media (prefers-reduced-motion: reduce) {
+  .visite-spot,
+  .visite-bulle {
+    transition: none;
+    animation: none;
+  }
 }
 
 /* ---------- Chrono de repos (commun à toutes les pages) ---------- */

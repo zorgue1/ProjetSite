@@ -164,12 +164,12 @@
     <details class="card reglage" name="reglages" id="r-aide">
       <summary>
         <span class="reglage-icone" aria-hidden="true">❓</span>
-        <span class="reglage-titre"><strong>Aide</strong><span class="mut">Revoir le tutoriel de l’appli</span></span>
+        <span class="reglage-titre"><strong>Aide</strong><span class="mut">Revoir les guides de l’appli</span></span>
         <span class="chevron" aria-hidden="true">›</span>
       </summary>
       <div class="reglage-corps">
-        <p class="mut">Le tour complet de SportApp : séances, records, nutrition, progression, défis, amis et notifications.</p>
-        <button class="btn" id="btn-tutoriel" type="button">Revoir le tutoriel</button>
+        <p class="mut">Chaque page a son petit guide qui montre où toucher. Tu peux aussi le relancer à tout moment avec le bouton « ? » en haut de l’écran.</p>
+        <button class="btn" id="btn-tutoriel" type="button">Revoir tous les guides</button>
       </div>
     </details>
 
@@ -563,7 +563,7 @@
     });
 
     document.getElementById("btn-tutoriel").addEventListener("click", function () {
-      lancerTutoriel(profilCharge && profilCharge.prenom);
+      revoirTousLesGuides();
     });
 
     /* ---------- Mes données : export et suppression du compte ---------- */

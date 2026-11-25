@@ -539,8 +539,11 @@
       afficherProfil(p, seances, poids);
       await Promise.all([afficherCartePR(), afficherCarteNiveau(), afficherCarteFil()]);
       afficherInstallation();
-      // Nouveau compte : le tutoriel complet se lance une seule fois (il se revoit dans Paramètres → Aide)
-      if (!tutorielDejaVu() && seances.length === 0) lancerTutoriel(p.prenom, seance);
+      // Visite guidée de l’accueil : une fois pour tout le monde, ou demandée depuis Paramètres → Aide
+      if (!tutorielDejaVu() || location.hash === "#tutoriel") {
+        if (location.hash === "#tutoriel") history.replaceState(null, "", location.pathname);
+        setTimeout(function () { lancerTutoriel(p.prenom); }, 400);
+      }
     }
 
     document.getElementById("mois-prec").addEventListener("click", function () {

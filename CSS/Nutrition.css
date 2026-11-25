@@ -1263,10 +1263,6 @@ body.sans-defilement {
 }
 
 .guide-contenu .fiche-chiffres div,
-.guide-contenu .tuto-astuces {
-  background: var(--carte);
-}
-
 /* ---------- Compose ton repas : aliments courants ---------- */
 .aliments {
   margin-top: 4px;
