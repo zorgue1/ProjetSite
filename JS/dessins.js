@@ -57,10 +57,9 @@ function musclesDe(nom, muscle) {
 
 /* ---------- Petits outils de dessin ---------- */
 
-const COUL = {
-  corps: "var(--d-corps)", loin: "var(--d-loin)", p: "var(--d-principal)", s: "var(--d-secondaire)",
-  fer: "var(--d-fer)", noir: "var(--d-noir)", banc: "var(--d-banc)", sol: "var(--d-sol)", cable: "var(--d-cable)"
-};
+// Noms de couleur : la vraie couleur vient des classes .t-* (traits) et .r-* (remplissage) de Commun.css.
+// (Pas de var() dans les attributs style du SVG : Safari sur iPhone ne dessinait pas les traits.)
+const COUL = { corps: "corps", loin: "loin", p: "p", s: "s", fer: "fer", noir: "noir", banc: "banc", sol: "sol", cable: "cable" };
 
 function pt(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
 function plus(a, b) { return [a[0] + b[0], a[1] + b[1]]; }
@@ -68,18 +67,18 @@ function r1(v) { return Math.round(v * 10) / 10; }
 
 function ligne(a, b, w, c) {
   return '<line x1="' + r1(a[0]) + '" y1="' + r1(a[1]) + '" x2="' + r1(b[0]) + '" y2="' + r1(b[1]) +
-    '" style="stroke:' + c + ';stroke-width:' + w + ';stroke-linecap:round"/>';
+    '" stroke-width="' + r1(w) + '" stroke-linecap="round" class="t-' + c + '"/>';
 }
 function rond(c, r, coul) {
-  return '<circle cx="' + r1(c[0]) + '" cy="' + r1(c[1]) + '" r="' + r + '" style="fill:' + coul + '"/>';
+  return '<circle cx="' + r1(c[0]) + '" cy="' + r1(c[1]) + '" r="' + r + '" class="r-' + coul + '"/>';
 }
 function boite(x, y, w, h, c, rx) {
-  return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + (rx || 2) + '" style="fill:' + c + '"/>';
+  return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + (rx || 2) + '" class="r-' + c + '"/>';
 }
 function trace(d, c, w) {
-  return '<path d="' + d + '" style="fill:none;stroke:' + c + ';stroke-width:' + (w || 2) + ';stroke-linecap:round;stroke-linejoin:round"/>';
+  return '<path d="' + d + '" fill="none" stroke-width="' + (w || 2) + '" stroke-linecap="round" stroke-linejoin="round" class="t-' + c + '"/>';
 }
-function forme(d, c) { return '<path d="' + d + '" style="fill:' + c + '"/>'; }
+function forme(d, c) { return '<path d="' + d + '" class="r-' + c + '"/>'; }
 
 // Côté de p par rapport au segment a→b (+1 / −1 ; 0 si aligné)
 function cote(a, b, p) {
@@ -223,7 +222,7 @@ const POSES = {
   bancFront: { vue: "profil", S: [70, 88], H: [116, 90], K: [144, 80], P: [150, 134], E: [66, 62], M: [50, 72], bs: -1, pied: [9, 1], fond: sol() + bancPlat(48, 150, 98) },
   bancPullover: { vue: "profil", S: [70, 88], H: [116, 90], K: [144, 80], P: [150, 134], E: [48, 76], M: [28, 74], pied: [9, 1], fond: sol() + bancPlat(48, 150, 98) },
   bancDecline: { vue: "profil", S: [64, 98], H: [114, 80], K: [138, 74], P: [150, 100], E: [66, 72], M: [66, 50], pied: [8, 4],
-    fond: sol() + '<path d="M44 106 L128 86 L130 92 L46 112 Z" style="fill:' + COUL.banc + '"/>' + boite(84, 100, 6, 41, COUL.fer) + boite(70, 137, 30, 4, COUL.fer) + rond([152, 96], 5, COUL.banc) },
+    fond: sol() + forme("M44 106 L128 86 L130 92 L46 112 Z", COUL.banc) + boite(84, 100, 6, 41, COUL.fer) + boite(70, 137, 30, 4, COUL.fer) + rond([152, 96], 5, COUL.banc) },
   // --- Banc incliné (dos vers la gauche)
   inclinePousse: { vue: "profil", S: [72, 66], H: [102, 98], K: [130, 96], P: [134, 134], E: [76, 42], M: [79, 20],
     fond: sol() + ligne([92, 112], [58, 76], 8, COUL.banc) + boite(88, 108, 34, 7, COUL.banc) + boite(100, 115, 6, 26, COUL.fer) + boite(84, 137, 36, 4, COUL.fer) },
@@ -281,7 +280,7 @@ const POSES = {
   tapis: { vue: "profil", S: [100, 40], H: [98, 82], K: [110, 104], P: [104, 126], K2: [88, 106], P2: [78, 124], E: [92, 62], M: [104, 74], E2: [108, 60], M2: [118, 68],
     fond: boite(40, 128, 140, 8, COUL.banc, 4) + ligne([170, 128], [176, 60], 5, COUL.fer) + boite(166, 54, 18, 8, COUL.banc, 3) + ligne([6, 141], [194, 141], 2, COUL.sol) },
   sautCorde: { vue: "profil", S: [98, 40], H: [98, 82], K: [101, 106], P: [100, 128], E: [96, 64], M: [110, 76], pied: [9, 3],
-    fond: '<ellipse cx="106" cy="70" rx="24" ry="66" style="fill:none;stroke:' + COUL.cable + ';stroke-width:1.6"/>' + sol() },
+    fond: '<ellipse cx="106" cy="70" rx="24" ry="66" fill="none" stroke-width="1.6" class="t-cable"/>' + sol() },
   burpee: { vue: "profil", S: [100, 36], H: [100, 78], K: [102, 102], P: [102, 126], E: [106, 16], M: [110, -4], pied: [8, 4], fond: sol() },
   farmer: { vue: "profil", S: [100, 46], H: [98, 88], K: [108, 112], P: [104, 136], K2: [90, 112], P2: [80, 132], E: [100, 72], M: [101, 96], eq: "halteres", fond: sol() },
   fente: { vue: "profil", S: [96, 50], H: [96, 92], K: [122, 110], P: [122, 136], K2: [84, 128], P2: [60, 134], pied2: [-2, 6], E: [97, 76], M: [98, 100], fond: sol() },

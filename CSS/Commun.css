@@ -1714,3 +1714,23 @@ body.avec-chrono .ajout-rapide {
 .miniature.dessin .dessin-exo {
   transform: scale(1.45);
 }
+
+/* Couleurs des dessins : t- = trait, r- = remplissage (classes plutôt que var() dans le SVG, pour Safari) */
+.dessin-exo .t-corps { stroke: var(--d-corps); }
+.dessin-exo .t-loin { stroke: var(--d-loin); }
+.dessin-exo .t-p { stroke: var(--d-principal); }
+.dessin-exo .t-s { stroke: var(--d-secondaire); }
+.dessin-exo .t-fer { stroke: var(--d-fer); }
+.dessin-exo .t-noir { stroke: var(--d-noir); }
+.dessin-exo .t-banc { stroke: var(--d-banc); }
+.dessin-exo .t-sol { stroke: var(--d-sol); }
+.dessin-exo .t-cable { stroke: var(--d-cable); }
+.dessin-exo .r-corps { fill: var(--d-corps); }
+.dessin-exo .r-loin { fill: var(--d-loin); }
+.dessin-exo .r-p { fill: var(--d-principal); }
+.dessin-exo .r-s { fill: var(--d-secondaire); }
+.dessin-exo .r-fer { fill: var(--d-fer); }
+.dessin-exo .r-noir { fill: var(--d-noir); }
+.dessin-exo .r-banc { fill: var(--d-banc); }
+.dessin-exo .r-sol { fill: var(--d-sol); }
+.dessin-exo .r-cable { fill: var(--d-cable); }
