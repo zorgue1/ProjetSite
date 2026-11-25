@@ -164,7 +164,7 @@
       '<div class="ajout-pesee" hidden>' +
         '<label for="ajout-poids">Ton poids aujourd’hui</label>' +
         '<div class="ajout-pesee-ligne">' +
-          '<div class="champ-unite"><input id="ajout-poids" type="number" step="0.1" min="20" max="400" inputmode="decimal"><span>kg</span></div>' +
+          '<div class="champ-unite"><input id="ajout-poids" type="text" autocomplete="off" inputmode="decimal"><span>kg</span></div>' +
           '<button type="button" class="btn" id="ajout-poids-ok">Enregistrer</button>' +
         '</div>' +
       '</div>' +

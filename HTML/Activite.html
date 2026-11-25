@@ -199,9 +199,20 @@
 
     function champNombre(placeholder, valeur, mode, pas) {
       const c = document.createElement("input");
-      c.type = "number";
-      c.min = "0";
-      c.step = pas;
+      // Décimaux (kg, km…) : champ texte avec pavé numérique, pour accepter la virgule
+      // (sur iPhone, un champ « number » refuse « 22,7 »)
+      if (mode === "decimal") {
+        c.type = "text";
+        c.autocomplete = "off";
+        c.addEventListener("input", function () {
+          const propre = c.value.replace(/[^0-9.,]/g, "").replace(/[.,](?=.*[.,])/g, "");
+          if (propre !== c.value) c.value = propre;
+        });
+      } else {
+        c.type = "number";
+        c.min = "0";
+        c.step = pas;
+      }
       c.inputMode = mode;
       c.placeholder = placeholder;
       c.setAttribute("aria-label", placeholder);
@@ -732,7 +743,7 @@
         // Sans valeur, on part de la suggestion (ce que tu as fait la dernière fois)
         const base = champ.value !== "" ? nombre(champ.value) : nombre(suggestion);
         const v = Math.max(0, Math.round((base + sens * pas) * 100) / 100);
-        changer(String(v));
+        changer(mode === "decimal" ? String(v).replace(".", ",") : String(v));
         vibrer(10);
       }
       moins.addEventListener("click", function () { pousser(-1); });
