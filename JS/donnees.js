@@ -631,7 +631,10 @@ function ligneSerie(seanceId, s) {
 async function ajouterSeries(seanceId, series) {
   if (series.length === 0) return;
   const lignes = series.map(function (s) { return ligneSerie(seanceId, s); });
-  const { error } = await client.from("series").insert(lignes);
+  // defaultToNull: false → une case absente d'une ligne prend la valeur par défaut de la base
+  // (sinon, quand les lignes n'ont pas toutes les mêmes cases, Supabase y met « vide » et
+  // « echauffement » est refusé)
+  const { error } = await client.from("series").insert(lignes, { defaultToNull: false });
   if (error) throw error;
 }
 
