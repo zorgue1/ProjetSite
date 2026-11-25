@@ -1065,3 +1065,54 @@ body.sans-defilement {
 .guide-contenu .tuto-astuces {
   background: var(--carte);
 }
+
+/* ---------- Compose ton repas : aliments courants ---------- */
+.aliments {
+  margin-top: 4px;
+}
+
+.aliment-cats {
+  display: flex;
+  gap: 6px;
+  margin: 10px -4px 0;
+  padding: 0 4px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.aliment-cats::-webkit-scrollbar {
+  display: none;
+}
+
+.aliment-cats .chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.aliment-liste {
+  margin: 10px 0 14px;
+  max-height: 168px;
+  overflow-y: auto;
+}
+
+.chip.aliment {
+  font-weight: 600;
+  color: var(--texte);
+  background: var(--carte-douce);
+}
+
+.chip.aliment.pris {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.chip.aliment.pris::after {
+  content: " ✓";
+}
+
+.produit-emoji {
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
