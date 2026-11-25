@@ -576,6 +576,32 @@ async function ajouterExercice(exercice, fichierPhoto) {
   }
 }
 
+// Ajoute, change (fichier) ou retire (null) la photo d'un exercice existant
+async function changerPhotoExercice(exercice, fichierPhoto) {
+  let imageUrl = null, chemin = null;
+  if (fichierPhoto) {
+    const { data: { user } } = await client.auth.getUser();
+    const blob = await preparerPhoto(fichierPhoto);
+    chemin = user.id + "/" + Date.now() + ".jpg";
+    const { error: e1 } = await client.storage
+      .from("exercices").upload(chemin, blob, { contentType: "image/jpeg" });
+    if (e1) throw e1;
+    imageUrl = client.storage.from("exercices").getPublicUrl(chemin).data.publicUrl;
+  }
+  const { error } = await client.from("exercices")
+    .update({ image_url: imageUrl, image_chemin: chemin }).eq("id", exercice.id);
+  if (error) {
+    if (chemin) await client.storage.from("exercices").remove([chemin]);
+    throw error;
+  }
+  // L'ancienne photo envoyée depuis l'appareil ne sert plus
+  if (exercice.image_chemin) {
+    try { await client.storage.from("exercices").remove([exercice.image_chemin]); } catch (e) {}
+  }
+  exercice.image_url = imageUrl;
+  exercice.image_chemin = chemin;
+}
+
 async function supprimerExercice(exercice) {
   const { error } = await client.from("exercices").delete().eq("id", exercice.id);
   if (error) throw error;

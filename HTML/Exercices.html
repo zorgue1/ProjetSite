@@ -111,6 +111,46 @@
       afficherListe();
     }
 
+    // Le nom devient un champ, avec Enregistrer / Annuler
+    function renommer(ex, entete) {
+      const zone = el("div", "renommer");
+      const champ = document.createElement("input");
+      champ.type = "text";
+      champ.maxLength = 60;
+      champ.value = ex.nom;
+      champ.setAttribute("aria-label", "Nouveau nom de l’exercice");
+      const ok = el("button", "btn", "Enregistrer");
+      ok.type = "button";
+      const annuler = el("button", "btn secondaire", "Annuler");
+      annuler.type = "button";
+      zone.appendChild(champ);
+      const boutons = el("div", "renommer-boutons");
+      boutons.appendChild(annuler);
+      boutons.appendChild(ok);
+      zone.appendChild(boutons);
+      entete.replaceWith(zone);
+      champ.focus();
+      champ.select();
+
+      annuler.addEventListener("click", afficherListe);
+      champ.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") ok.click();
+        if (e.key === "Escape") afficherListe();
+      });
+      ok.addEventListener("click", async function () {
+        const nom = champ.value.replace(/\s+/g, " ").trim();
+        if (!nom) { champ.focus(); return; }
+        if (nom === ex.nom) return afficherListe();
+        const deja = exercices.find(function (e) { return e.id !== ex.id && normaliser(e.nom) === normaliser(nom); });
+        if (deja) return informer("Un exercice « " + deja.nom + " » existe déjà.");
+        if (ex.commun && !(await demander("« " + ex.nom + " » est un exercice commun : le nouveau nom « " + nom + " » s’affichera pour tous les utilisateurs.",
+          { ok: "Renommer" }))) return;
+        ok.disabled = true;
+        await changer(ex, { nom: nom });
+        confirmer("Exercice renommé");
+      });
+    }
+
     /* ---------- Boutons des muscles ---------- */
 
     function afficherTuiles() {
@@ -163,6 +203,14 @@
       const entete = el("div", "exo-entete");
       entete.appendChild(el("div", "exo-nom", ex.nom));
       if (ex.commun) entete.appendChild(el("span", "badge-commun", "Commun"));
+      if (estAMoi) {
+        // ✏️ Corriger le nom (faute de frappe…) : les séances et records suivent, ils sont liés à l'exercice
+        const crayon = el("button", "btn-renommer", "✏️");
+        crayon.type = "button";
+        crayon.setAttribute("aria-label", "Renommer " + ex.nom);
+        crayon.addEventListener("click", function () { renommer(ex, entete); });
+        entete.appendChild(crayon);
+      }
       corps.appendChild(entete);
 
       if (estAMoi) {
@@ -174,9 +222,51 @@
           changer(ex, { groupe: v });
         }));
 
+        // Photo : ajouter, changer ou retirer
+        const photos = el("div", "exo-photo-actions");
+        const fichier = document.createElement("input");
+        fichier.type = "file";
+        fichier.accept = "image/*";
+        fichier.hidden = true;
+        const choisir = el("button", "btn-photo", ex.image_url ? "📷 Changer la photo" : "📷 Ajouter une photo");
+        choisir.type = "button";
+        choisir.addEventListener("click", function () { fichier.click(); });
+        fichier.addEventListener("change", async function () {
+          if (!fichier.files[0]) return;
+          choisir.disabled = true;
+          choisir.textContent = "Envoi…";
+          try {
+            await changerPhotoExercice(ex, fichier.files[0]);
+            confirmer("Photo de « " + ex.nom + " » enregistrée");
+          } catch (e) {
+            informer("Photo impossible : " + e.message);
+          }
+          afficherListe();
+        });
+        photos.appendChild(choisir);
+        photos.appendChild(fichier);
+        if (ex.image_url) {
+          const retirer = el("button", "btn-photo discret", "Retirer");
+          retirer.type = "button";
+          retirer.addEventListener("click", async function () {
+            if (!(await demander("Retirer la photo de « " + ex.nom + " » ?", { ok: "Retirer" }))) return;
+            try {
+              await changerPhotoExercice(ex, null);
+            } catch (e) {
+              informer("Erreur : " + e.message);
+            }
+            afficherListe();
+          });
+          photos.appendChild(retirer);
+        }
+        corps.appendChild(photos);
+
         const bouton = el("button", "btn-suppr", "Supprimer");
         bouton.addEventListener("click", async function () {
-          if (!(await demander("Supprimer l'exercice « " + ex.nom + " » ?", { ok: "Supprimer", danger: true }))) return;
+          const question = ex.commun
+            ? "⚠️ « " + ex.nom + " » est un exercice commun.\n\nLe supprimer le retire pour tous les utilisateurs. (Impossible s’il est déjà utilisé dans une séance.)"
+            : "Supprimer l'exercice « " + ex.nom + " » ?";
+          if (!(await demander(question, { ok: ex.commun ? "Supprimer pour tous" : "Supprimer", danger: true }))) return;
           try {
             await supprimerExercice(ex);
             exercices = await chargerExercices();

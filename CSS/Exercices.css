@@ -242,3 +242,63 @@ input[type="file"] {
 .ajout-zone .btn {
   width: 100%;
 }
+/* Ajouter / changer / retirer la photo d'un exercice */
+.exo-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.btn-photo {
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.btn-photo.discret {
+  color: var(--gris);
+  background: none;
+  border-color: var(--bordure);
+}
+
+.btn-photo:disabled {
+  opacity: 0.6;
+}
+
+/* ✏️ Renommer un exercice */
+.btn-renommer {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  background: var(--carte-douce);
+  border: 1px solid var(--bordure);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.renommer {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.renommer-boutons {
+  display: flex;
+  gap: 8px;
+}
+
+.renommer-boutons .btn {
+  flex: 1;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 14px;
+}
