@@ -48,15 +48,18 @@
 }
 
 /* ---------- Le cercle ---------- */
-.bilan-jour {
-  padding-top: 26px;
+/* Le cercle à gauche, le reste à droite : tout le bilan tient dans une carte basse */
+.bilan-haut {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 18px;
 }
 
 .anneau-zone {
   position: relative;
-  width: min(240px, 70vw);
+  width: clamp(120px, 36vw, 160px);
   aspect-ratio: 1;
-  margin: 0 auto 18px;
 }
 
 .anneau {
@@ -115,15 +118,17 @@
 
 .anneau-chiffre {
   font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: clamp(44px, 14vw, 58px);
+  font-size: clamp(32px, 10vw, 42px);
   font-weight: 900;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .anneau-legende {
-  margin-top: 4px;
-  font-size: 13px;
+  max-width: 80%;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.2;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -139,28 +144,32 @@
   content: "+";
 }
 
-/* ---------- Objectif / Mangé / Repas ---------- */
-.trio {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  margin-bottom: 20px;
-  text-align: center;
+/* ---------- Mangé / Objectif ---------- */
+.bilan-cote {
+  min-width: 0;
 }
 
-.trio > div + div {
+.duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 12px;
+}
+
+.duo > div + div {
+  padding-left: 12px;
   border-left: 1px solid var(--bordure);
 }
 
-.trio strong {
+.duo strong {
   display: block;
   font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 800;
   line-height: 1.1;
 }
 
-.trio span {
-  font-size: 13px;
+.duo span {
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -174,7 +183,7 @@
 /* ---------- Barres des macros ---------- */
 .macros {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .macro { --couleur: var(--accent); }
@@ -186,9 +195,9 @@
 .macro-haut {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-  font-size: 14px;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 13px;
 }
 
 .macro-nom {
@@ -217,7 +226,7 @@
 }
 
 .macro-barre {
-  height: 9px;
+  height: 7px;
   overflow: hidden;
   background: var(--carte-douce);
   border-radius: 999px;
@@ -231,14 +240,6 @@
   transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ---------- Bouton et formulaire d'ajout ---------- */
-.ajout-repas {
-  display: block;
-  width: 100%;
-  margin-bottom: 16px;
-  padding: 15px;
-  font-size: 17px;
-}
 
 .onglets.quatre {
   grid-template-columns: repeat(4, 1fr);
@@ -284,54 +285,123 @@
   font-weight: 600;
 }
 
-/* ---------- Journal des repas ---------- */
+/* ---------- Mes repas : une carte, les 4 moments, une ligne par repas ---------- */
+.journal-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.journal-tete h2 {
+  margin: 0;
+}
+
+.btn.petit {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
 .moment {
-  padding-top: 16px;
-  padding-bottom: 10px;
+  padding: 10px 0;
+}
+
+.moment + .moment {
+  border-top: 1px solid var(--bordure);
 }
 
 .moment-tete {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 4px;
+  align-items: center;
+  gap: 10px;
+}
+
+.moment-icone {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  font-size: 18px;
+  background: var(--carte-douce);
+  border-radius: 10px;
 }
 
 .moment h3 {
+  flex: 1;
   margin: 0;
-  font-family: "Big Shoulders Display", Impact, sans-serif;
-  font-size: 22px;
+  font-size: 16px;
   font-weight: 800;
-  text-transform: uppercase;
+}
+
+.vide-moment h3 {
+  color: var(--gris);
+  font-weight: 600;
 }
 
 .moment-total {
-  font-weight: 700;
+  font-weight: 800;
   color: var(--accent);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
-.repas-ligne {
+.moment-plus {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.moment-plus:active {
+  transform: scale(0.92);
+}
+
+/* Un repas replié : nom sur une ligne + calories ; on touche pour les détails */
+.repas {
+  margin: 6px 0 0 44px;
+  background: var(--carte-douce);
+  border-radius: 12px;
+}
+
+.repas-resume {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 0;
+  gap: 8px;
+  padding: 10px 12px;
+  list-style: none;
+  cursor: pointer;
 }
 
-.repas-ligne + .repas-ligne {
-  border-top: 1px solid var(--bordure);
-}
-
-.repas-infos {
-  flex: 1;
-  min-width: 0;
+.repas-resume::-webkit-details-marker {
+  display: none;
 }
 
 .repas-nom {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
   font-weight: 600;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .repas-kcal {
+  font-size: 14px;
   font-weight: 800;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -339,31 +409,182 @@
 
 .repas-kcal::after {
   content: " kcal";
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--gris);
 }
 
-.repas-suppr {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 auto;
-  font-size: 20px;
-  line-height: 1;
+.repas .chevron {
   color: var(--gris);
+  transition: transform 0.2s;
+}
+
+.repas[open] .chevron {
+  transform: rotate(90deg);
+}
+
+.repas-corps {
+  padding: 0 12px 10px;
+  animation: monter 0.2s ease both;
+}
+
+.repas-elements {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+.repas-elements li + li {
+  margin-top: 2px;
+}
+
+.repas-nom-complet {
+  margin: 0 0 8px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.repas-corps .puce.proteines { box-shadow: inset 3px 0 0 var(--proteines); }
+.repas-corps .puce.glucides  { box-shadow: inset 3px 0 0 var(--glucides); }
+.repas-corps .puce.lipides   { box-shadow: inset 3px 0 0 var(--lipides); }
+
+.repas-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.btn-texte {
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
   background: none;
-  border: 1px solid var(--bordure);
-  border-radius: 10px;
+  border: 0;
+  border-radius: 8px;
   cursor: pointer;
 }
 
-.repas-suppr:hover {
+.btn-texte.danger {
   color: var(--danger);
-  border-color: var(--danger);
 }
 
-#journal {
-  margin-bottom: 16px;
+.btn-texte:disabled {
+  opacity: 0.5;
+}
+
+.journal-vide {
+  margin: 8px 0 0;
+}
+
+/* ---------- Feuille d'ajout d'un repas (monte du bas) ---------- */
+.feuille-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: fondu 0.15s ease both;
+}
+
+.feuille-fond[hidden] {
+  display: none;
+}
+
+.feuille {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 560px);
+  max-height: 94vh;
+  max-height: 94dvh;
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  box-shadow: var(--ombre);
+  animation: feuille-entree 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes feuille-entree {
+  from { transform: translateY(100%); }
+}
+
+.feuille-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 6px;
+}
+
+.feuille-tete h2 {
+  margin: 0;
+}
+
+.feuille-fermer {
+  width: 36px;
+  height: 36px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--gris);
+  background: var(--carte-douce);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.feuille-corps {
+  flex: 1;
+  padding: 0 18px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.feuille-corps > label:first-child {
+  margin-top: 6px;
+}
+
+.feuille-pied {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--bordure);
+}
+
+.feuille-pied .btn {
+  margin: 0;
+}
+
+/* Dans la feuille : les 4 moments sur une ligne, les repas récents défilent sur le côté */
+.feuille .onglets.quatre {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.feuille .onglets.quatre .onglet {
+  padding-left: 2px;
+  padding-right: 2px;
+  font-size: 13px;
+}
+
+.feuille #recents {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.feuille #recents .chip {
+  flex: 0 0 auto;
+  max-width: 240px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* ---------- Mes besoins ---------- */
@@ -921,26 +1142,6 @@ body.sans-defilement {
   color: var(--gris);
 }
 
-.eau-verres {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 10px;
-}
-
-.verre {
-  width: 10px;
-  height: 14px;
-  border: 2px solid color-mix(in srgb, var(--eau) 50%, var(--bordure));
-  border-top: 0;
-  border-radius: 0 0 4px 4px;
-}
-
-.verre.plein {
-  background: var(--eau);
-  border-color: var(--eau);
-}
-
 .eau-boutons {
   display: flex;
   gap: 6px;
@@ -1115,4 +1316,26 @@ body.sans-defilement {
   place-items: center;
   font-size: 28px;
   background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* Carte de l'eau compacte : titre et quantité sur une ligne, boutons dessous */
+.eau-bouteille {
+  width: 36px;
+  height: 72px;
+}
+
+.eau-ligne {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.eau-ligne .eau-chiffres {
+  margin: 0;
+}
+
+.eau-ligne .eau-chiffres strong {
+  font-size: 26px;
 }

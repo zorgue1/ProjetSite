@@ -35,6 +35,7 @@
 
     <!-- Bilan du jour : le cercle et les macros -->
     <section class="card bilan-jour">
+      <div class="bilan-haut">
       <div class="anneau-zone">
         <svg class="anneau" viewBox="0 0 200 200" aria-hidden="true">
           <defs>
@@ -52,22 +53,24 @@
         </div>
       </div>
 
-      <div class="trio">
-        <div><strong id="v-objectif">–</strong><span>Objectif</span></div>
-        <div><strong id="v-mange">0</strong><span>Mangé</span></div>
-        <div><strong id="v-repas">0</strong><span>Repas</span></div>
+      <div class="bilan-cote">
+        <div class="duo">
+          <div><strong id="v-mange">0</strong><span>Mangé</span></div>
+          <div><strong id="v-objectif">–</strong><span>Objectif</span></div>
+        </div>
+        <div class="macros" id="macros"></div>
       </div>
-
-      <div class="macros" id="macros"></div>
+      </div>
     </section>
 
     <!-- Hydratation du jour -->
     <section class="card eau" id="carte-eau">
       <div class="eau-bouteille" aria-hidden="true"><span class="eau-niveau" id="eau-niveau"></span></div>
       <div class="eau-infos">
-        <div class="eau-titre">💧 Eau</div>
-        <div class="eau-chiffres"><strong id="eau-bu">0</strong> <span id="eau-objectif">/ 2 L</span></div>
-        <div class="eau-verres" id="eau-verres" aria-hidden="true"></div>
+        <div class="eau-ligne">
+          <span class="eau-titre">💧 Eau</span>
+          <span class="eau-chiffres"><strong id="eau-bu">0</strong> <span id="eau-objectif">/ 2 L</span></span>
+        </div>
         <div class="eau-boutons">
           <button class="btn-eau moins" id="eau-moins" type="button" aria-label="Retirer un verre">−</button>
           <button class="btn-eau" id="eau-verre" type="button">+ 1 verre</button>
@@ -76,74 +79,13 @@
       </div>
     </section>
 
-    <button class="btn ajout-repas" id="btn-ajout" type="button">+ Ajouter un repas</button>
-
-    <!-- Formulaire d'ajout d'un repas -->
-    <section class="card" id="formulaire" hidden>
-      <h2>Ajouter un repas</h2>
-
-      <!-- Recopier en un geste les repas de la veille -->
-      <button class="btn secondaire btn-refaire" id="btn-refaire" type="button" hidden></button>
-
-      <div id="zone-recents" hidden>
-        <label>Déjà mangé récemment</label>
-        <div class="chips" id="recents"></div>
+    <!-- Les repas du jour : les 4 moments, un repas = une ligne (détails au toucher) -->
+    <section class="card journal">
+      <div class="journal-tete">
+        <h2>Mes repas</h2>
       </div>
-
-      <label id="label-moment">Moment</label>
-      <div class="onglets quatre" id="choix-moment" role="group" aria-labelledby="label-moment"></div>
-
-      <!-- Aliments courants : un toucher pour les ajouter au repas, macros calculées -->
-      <div class="aliments">
-        <label for="aliment-recherche">Compose ton repas</label>
-        <input id="aliment-recherche" type="search" placeholder="Cherche : riz, poulet, banane, sauce tomate…" autocomplete="off" enterkeyhint="search">
-        <div class="aliment-cats" id="aliment-cats" role="group" aria-label="Catégories d’aliments"></div>
-        <div class="chips aliment-liste" id="aliment-liste"></div>
-      </div>
-
-      <!-- Scanner le code-barres d'un paquet : calories et macros remplies toutes seules -->
-      <button class="btn secondaire btn-scanner" id="btn-scanner" type="button">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V4h3M18 4h3v3M21 17v3h-3M6 20H3v-3"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg>
-        <span id="btn-scanner-texte">Scanner un code-barres</span>
-      </button>
-      <div class="produit" id="produit" hidden></div>
-
-      <label for="repas-nom">Ce que tu as mangé</label>
-      <input id="repas-nom" type="text" maxlength="100" placeholder="Ex. : Riz, poulet, brocolis" autocomplete="off">
-
-      <label for="repas-kcal">Calories</label>
-      <div class="champ-unite grand">
-        <input id="repas-kcal" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex. : 650">
-        <span>kcal</span>
-      </div>
-
-      <details class="detail-macros" id="detail-macros">
-        <summary>Ajouter les macros <span class="mut">(facultatif)</span></summary>
-        <div class="row trois">
-          <div>
-            <label for="repas-p">Protéines</label>
-            <div class="champ-unite"><input id="repas-p" type="number" min="0" step="0.1" inputmode="decimal"><span>g</span></div>
-          </div>
-          <div>
-            <label for="repas-g">Glucides</label>
-            <div class="champ-unite"><input id="repas-g" type="number" min="0" step="0.1" inputmode="decimal"><span>g</span></div>
-          </div>
-          <div>
-            <label for="repas-l">Lipides</label>
-            <div class="champ-unite"><input id="repas-l" type="number" min="0" step="0.1" inputmode="decimal"><span>g</span></div>
-          </div>
-        </div>
-        <p class="mut aide">Tu as les macros mais pas les calories ? Laisse « Calories » vide, on les calcule pour toi.</p>
-      </details>
-
-      <div class="actions">
-        <button class="btn" id="btn-enregistrer" type="button">Enregistrer le repas</button>
-        <button class="btn secondaire" id="btn-annuler" type="button">Annuler</button>
-      </div>
+      <div id="journal"><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div></div>
     </section>
-
-    <!-- Les repas du jour, rangés par moment -->
-    <section id="journal"><div class="squelette"></div><div class="squelette"></div><div class="squelette"></div></section>
 
     <!-- Réglage des besoins -->
     <details class="card besoins" id="besoins">
@@ -176,7 +118,6 @@
         <button class="btn" id="btn-besoins" type="button">Enregistrer mes besoins</button>
       </div>
     </details>
-
 
     <!-- Comprendre la nutrition : fiches repliables -->
     <details class="card guide" id="guide">
@@ -352,6 +293,75 @@
     </details>
   </main>
 
+  <!-- Ajout d'un repas : feuille qui monte du bas de l'écran -->
+  <div class="feuille-fond" id="formulaire" hidden>
+    <section class="feuille" role="dialog" aria-modal="true" aria-labelledby="titre-formulaire">
+      <div class="feuille-tete">
+        <h2 id="titre-formulaire">Ajouter un repas</h2>
+        <button class="feuille-fermer" id="btn-fermer-form" type="button" aria-label="Fermer">✕</button>
+      </div>
+      <div class="feuille-corps">
+        <label id="label-moment">Moment</label>
+        <div class="onglets quatre" id="choix-moment" role="group" aria-labelledby="label-moment"></div>
+
+        <!-- Recopier en un geste les repas de la veille -->
+        <button class="btn secondaire btn-refaire" id="btn-refaire" type="button" hidden></button>
+
+        <div id="zone-recents" hidden>
+          <label>Déjà mangé récemment</label>
+          <div class="chips" id="recents"></div>
+        </div>
+
+        <!-- Aliments courants : un toucher pour les ajouter au repas, macros calculées -->
+        <div class="aliments">
+          <label for="aliment-recherche">Compose ton repas</label>
+          <input id="aliment-recherche" type="search" placeholder="Cherche : riz, poulet, banane, sauce tomate…" autocomplete="off" enterkeyhint="search">
+          <div class="aliment-cats" id="aliment-cats" role="group" aria-label="Catégories d’aliments"></div>
+          <div class="chips aliment-liste" id="aliment-liste"></div>
+        </div>
+
+        <!-- Scanner le code-barres d'un paquet : calories et macros remplies toutes seules -->
+        <button class="btn secondaire btn-scanner" id="btn-scanner" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V4h3M18 4h3v3M21 17v3h-3M6 20H3v-3"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg>
+          <span id="btn-scanner-texte">Scanner un code-barres</span>
+        </button>
+        <div class="produit" id="produit" hidden></div>
+
+        <label for="repas-nom">Ce que tu as mangé</label>
+        <input id="repas-nom" type="text" maxlength="100" placeholder="Ex. : Riz, poulet, brocolis" autocomplete="off">
+
+        <label for="repas-kcal">Calories</label>
+        <div class="champ-unite grand">
+          <input id="repas-kcal" type="number" min="0" step="1" inputmode="numeric" placeholder="Ex. : 650">
+          <span>kcal</span>
+        </div>
+
+        <details class="detail-macros" id="detail-macros">
+          <summary>Ajouter les macros <span class="mut">(facultatif)</span></summary>
+          <div class="row trois">
+            <div>
+              <label for="repas-p">Protéines</label>
+              <div class="champ-unite"><input id="repas-p" type="number" min="0" step="0.1" inputmode="decimal"><span>g</span></div>
+            </div>
+            <div>
+              <label for="repas-g">Glucides</label>
+              <div class="champ-unite"><input id="repas-g" type="number" min="0" step="0.1" inputmode="decimal"><span>g</span></div>
+            </div>
+            <div>
+              <label for="repas-l">Lipides</label>
+              <div class="champ-unite"><input id="repas-l" type="number" min="0" step="0.1" inputmode="decimal"><span>g</span></div>
+            </div>
+          </div>
+          <p class="mut aide">Tu as les macros mais pas les calories ? Laisse « Calories » vide, on les calcule pour toi.</p>
+        </details>
+      </div>
+      <div class="feuille-pied">
+        <button class="btn secondaire" id="btn-annuler" type="button">Annuler</button>
+        <button class="btn" id="btn-enregistrer" type="button">Enregistrer</button>
+      </div>
+    </section>
+  </div>
+
   <!-- Lecture du code-barres avec la caméra -->
   <div class="scan-fond" id="scan" hidden>
     <div class="scan-carte" role="dialog" aria-modal="true" aria-labelledby="scan-titre">
@@ -375,6 +385,7 @@
   <script src="../JS/aliments.js"></script>
   <script>
     const MOMENTS = ["Petit-déj", "Déjeuner", "Collation", "Dîner"];
+    const ICONES_MOMENT = { "Petit-déj": "🌅", "Déjeuner": "☀️", "Collation": "🍎", "Dîner": "🌙" };
     const MACROS = [
       { cle: "proteines", nom: "Protéines" },
       { cle: "glucides",  nom: "Glucides" },
@@ -474,14 +485,6 @@
       $("eau-niveau").style.height = (part * 100) + "%";
       $("carte-eau").classList.toggle("atteint", eauBue >= objectif);
       $("eau-moins").disabled = eauBue <= 0;
-
-      // Un petit verre par tranche de 250 ml de l'objectif
-      const zone = $("eau-verres");
-      zone.innerHTML = "";
-      const total = Math.ceil(objectif / VERRE);
-      for (let i = 0; i < total; i++) {
-        zone.appendChild(el("span", "verre" + (i < Math.floor(eauBue / VERRE) ? " plein" : "")));
-      }
     }
 
     async function chargerEauDuJour() {
@@ -543,7 +546,6 @@
       const plein = $("anneau-plein");
 
       $("v-mange").textContent = entier(t.calories);
-      $("v-repas").textContent = repasDuJour.length;
 
       if (!besoins || besoins.manque.length) {
         // Pas d'objectif : le cercle montre seulement ce qui a été mangé
@@ -609,50 +611,81 @@
       const zone = $("journal");
       zone.innerHTML = "";
 
-      if (!repasDuJour.length) {
-        zone.appendChild(el("div", "vide", jour === aujourdhui()
-          ? "Rien de noté aujourd’hui. Ajoute ton premier repas !"
-          : "Aucun repas noté ce jour-là."));
-        return;
-      }
-
+      // Les 4 moments sont toujours là, chacun avec son ＋ ; un repas = une ligne, les détails au toucher
       MOMENTS.forEach(function (moment) {
         const liste = repasDuJour.filter(function (r) { return r.moment === moment; });
-        if (!liste.length) return;
+        const bloc = el("div", "moment" + (liste.length ? "" : " vide-moment"));
 
-        const carte = el("section", "card moment");
         const tete = el("div", "moment-tete");
+        tete.appendChild(el("span", "moment-icone", ICONES_MOMENT[moment] || "🍽️"));
         tete.appendChild(el("h3", "", moment));
         const total = liste.reduce(function (s, r) { return s + r.calories; }, 0);
-        tete.appendChild(el("span", "moment-total", entier(total) + " kcal"));
-        carte.appendChild(tete);
+        tete.appendChild(el("span", "moment-total", liste.length ? entier(total) + " kcal" : ""));
+        const plus = el("button", "moment-plus", "+");
+        plus.type = "button";
+        plus.setAttribute("aria-label", "Ajouter un repas : " + moment);
+        plus.addEventListener("click", function () { ouvrirFormulaire(moment); });
+        tete.appendChild(plus);
+        bloc.appendChild(tete);
 
         liste.forEach(function (r) {
-          const ligne = el("div", "repas-ligne");
-          const infos = el("div", "repas-infos");
-          infos.appendChild(el("div", "repas-nom", r.nom));
+          const repas = el("details", "repas");
+          const resume = el("summary", "repas-resume");
+          resume.appendChild(el("span", "repas-nom", r.nom));
+          resume.appendChild(el("span", "repas-kcal", entier(r.calories)));
+          resume.appendChild(el("span", "chevron", "›"));
+          repas.appendChild(resume);
+
+          const corps = el("div", "repas-corps");
+          // « Riz 150 g + Poulet 150 g » : un aliment par ligne
+          const elements = r.nom.split(" + ");
+          if (elements.length > 1) {
+            const ul = el("ul", "repas-elements");
+            elements.forEach(function (e) { ul.appendChild(el("li", "", e)); });
+            corps.appendChild(ul);
+          } else {
+            corps.appendChild(el("p", "repas-nom-complet", r.nom));
+          }
 
           const puces = el("div", "puces");
-          [["P", r.proteines], ["G", r.glucides], ["L", r.lipides]].forEach(function (m) {
-            if (m[1] !== null && m[1] !== undefined) puces.appendChild(el("span", "puce", m[0] + " " + nb(m[1]) + " g"));
+          [["proteines", "Protéines", r.proteines], ["glucides", "Glucides", r.glucides], ["lipides", "Lipides", r.lipides]].forEach(function (m) {
+            if (m[2] !== null && m[2] !== undefined) puces.appendChild(el("span", "puce " + m[0], m[1] + " " + nb(m[2]) + " g"));
           });
-          if (puces.children.length) infos.appendChild(puces);
-          ligne.appendChild(infos);
+          if (puces.children.length) corps.appendChild(puces);
 
-          ligne.appendChild(el("span", "repas-kcal", entier(r.calories)));
-
-          const suppr = el("button", "repas-suppr", "×");
+          const actions = el("div", "repas-actions");
+          const encore = el("button", "btn-texte", "↺ En reprendre");
+          encore.type = "button";
+          encore.addEventListener("click", async function () {
+            encore.disabled = true;
+            try {
+              await ajouterRepas({ date: jour, moment: moment, nom: r.nom, calories: r.calories,
+                proteines: r.proteines, glucides: r.glucides, lipides: r.lipides });
+              confirmer("« " + r.nom + " » ajouté une 2e fois");
+              await chargerJour();
+            } catch (e) {
+              encore.disabled = false;
+              informer(erreurLisible(e));
+            }
+          });
+          const suppr = el("button", "btn-texte danger", "Supprimer");
           suppr.type = "button";
-          suppr.setAttribute("aria-label", "Supprimer " + r.nom);
           suppr.addEventListener("click", function () {
-            supprimerAvecAnnulation("« " + r.nom + " » supprimé", ligne,
+            supprimerAvecAnnulation("« " + r.nom + " » supprimé", repas,
               function () { return supprimerRepas(r.id); }, chargerJour);
           });
-          ligne.appendChild(suppr);
-          carte.appendChild(ligne);
+          actions.appendChild(encore);
+          actions.appendChild(suppr);
+          corps.appendChild(actions);
+          repas.appendChild(corps);
+          bloc.appendChild(repas);
         });
-        zone.appendChild(carte);
+        zone.appendChild(bloc);
       });
+
+      if (!repasDuJour.length && jour !== aujourdhui()) {
+        zone.appendChild(el("p", "mut petit journal-vide", "Aucun repas noté ce jour-là."));
+      }
     }
 
     /* ---------- Formulaire d'ajout ---------- */
@@ -690,6 +723,7 @@
     function viderFormulaire() {
       ["repas-nom", "repas-kcal", "repas-p", "repas-g", "repas-l"].forEach(function (id) { $(id).value = ""; });
       $("detail-macros").open = false;
+      majBoutonEnregistrer();
       oublierProduits();
     }
 
@@ -801,7 +835,7 @@
       scan.flux = null;
       $("scan-video").srcObject = null;
       $("scan").hidden = true;
-      document.body.classList.remove("sans-defilement");
+      if ($("formulaire").hidden) document.body.classList.remove("sans-defilement");
     }
 
     $("btn-scanner").addEventListener("click", ouvrirScanner);
@@ -896,6 +930,7 @@
       $("repas-g").value = arrondi(total.g);
       $("repas-l").value = arrondi(total.l);
       $("detail-macros").open = total.p !== null || total.g !== null || total.l !== null;
+      majBoutonEnregistrer();
 
       const ligne = document.getElementById("produits-total");
       if (ligne) {
@@ -1118,14 +1153,17 @@
 
     $("aliment-recherche").addEventListener("input", afficherAliments);
 
-    async function ouvrirFormulaire() {
-      momentChoisi = momentDeLHeure();
+    // moment : celui du ＋ touché (sinon selon l'heure)
+    async function ouvrirFormulaire(moment) {
+      momentChoisi = typeof moment === "string" ? moment : momentDeLHeure();
       construireMoments();
       $("formulaire").hidden = false;
-      $("btn-ajout").hidden = true;
+      document.body.classList.add("sans-defilement");
+      document.querySelector(".feuille-corps").scrollTop = 0;
       // Pas de clavier d'emblée : on commence par toucher des aliments
       $("aliment-recherche").value = "";
       afficherAliments();
+      majBoutonEnregistrer();
 
       // Repas récents : un clic pour tout remplir
       try {
@@ -1142,6 +1180,8 @@
             $("repas-g").value = r.glucides !== null ? r.glucides : "";
             $("repas-l").value = r.lipides !== null ? r.lipides : "";
             $("detail-macros").open = r.proteines !== null || r.glucides !== null || r.lipides !== null;
+            majBoutonEnregistrer();
+            $("repas-nom").scrollIntoView({ behavior: "smooth", block: "center" });
           });
           zone.appendChild(c);
         });
@@ -1197,18 +1237,27 @@
 
     function fermerFormulaire() {
       $("formulaire").hidden = true;
-      $("btn-ajout").hidden = false;
+      document.body.classList.remove("sans-defilement");
       viderFormulaire();
     }
 
-    $("btn-ajout").addEventListener("click", ouvrirFormulaire);
+    // « Enregistrer · 551 kcal » : le total du repas toujours sous le pouce
+    function majBoutonEnregistrer() {
+      const kcal = lireNombre("repas-kcal");
+      $("btn-enregistrer").textContent = kcal > 0 ? "Enregistrer · " + entier(kcal) + " kcal" : "Enregistrer";
+    }
+    $("repas-kcal").addEventListener("input", majBoutonEnregistrer);
+    $("btn-fermer-form").addEventListener("click", fermerFormulaire);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !$("formulaire").hidden && $("scan").hidden) fermerFormulaire();
+    });
+
 
     // Lien « Nutrition.html#ajout » (bouton ＋) : ouvre directement le formulaire
     function ouvrirSiDemande() {
       if (location.hash !== "#ajout") return;
       history.replaceState(null, "", location.pathname);
       if ($("formulaire").hidden) ouvrirFormulaire();
-      $("formulaire").scrollIntoView({ behavior: "smooth", block: "start" });
     }
     window.addEventListener("hashchange", ouvrirSiDemande);
     ouvrirSiDemande();
