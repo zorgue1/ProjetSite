@@ -697,11 +697,16 @@ function texteSerie(s) {
     : s.repetitions + " reps";
 }
 
-// Photo de l'exercice, ou son initiale s'il n'y en a pas
+// Photo de l'exercice ; sinon son dessin (dessins.js) ; sinon son initiale
 function creerVignette(ex) {
   const initiale = (ex.nom || "?").charAt(0).toUpperCase();
   function vide() {
     const d = document.createElement("div");
+    if (typeof dessinExercice === "function") {
+      d.className = "miniature dessin";
+      d.innerHTML = dessinExercice(ex.nom, ex.muscle);
+      return d;
+    }
     d.className = "miniature vide";
     d.textContent = initiale;
     return d;

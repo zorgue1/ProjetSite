@@ -71,6 +71,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ" crossorigin="anonymous"></script>
   <script src="../JS/supabase.js"></script>
   <script src="../JS/donnees.js"></script>
+  <script src="../JS/dessins.js"></script>
   <script>
     let exercices = [];
     let muscleChoisi = null;   // null = rien d'affiché ; "Tous" = toute la bibliothèque
@@ -184,18 +185,23 @@
 
         function creerCarte(ex) {
       const carte = el("article", "card exo");
-      const initiale = ex.nom.charAt(0).toUpperCase();
       const estAMoi = ex.user_id === moiId;
 
+      // Sans photo : le dessin de l'exercice (muscle travaillé en rouge)
+      function sansPhoto() {
+        const d = el("div", "exo-vide exo-dessin");
+        d.innerHTML = dessinExercice(ex.nom, ex.muscle);
+        return d;
+      }
       if (ex.image_url) {
         const img = el("img", "exo-photo");
         img.src = ex.image_url;
         img.alt = ex.nom;
         img.loading = "lazy";
-        img.onerror = function () { img.replaceWith(el("div", "exo-vide", initiale)); };
+        img.onerror = function () { img.replaceWith(sansPhoto()); };
         carte.appendChild(img);
       } else {
-        carte.appendChild(el("div", "exo-vide", initiale));
+        carte.appendChild(sansPhoto());
       }
 
       const corps = el("div", "exo-corps");
